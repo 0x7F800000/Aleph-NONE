@@ -206,31 +206,29 @@ static uint16 sSavedRandomSeed;
 
 
 // ZZZ: If not already in predictive mode, save off partial game-state for later restoration.
-static void
-enter_predictive_mode()
+static void enter_predictive_mode()
 {
-	if(sPredictedTicks == 0)
+	if(sPredictedTicks)
+		return;
+	
+	for(ix i = 0; i < dynamic_world->player_count; i++)
 	{
-		for(short i = 0; i < dynamic_world->player_count; i++)
-		{
-			sSavedPlayerData[i] = *get_player_data(i);
-			if(sSavedPlayerData[i].monster_index != NONE)
-			{
-				sSavedPlayerMonsterData[i] = *get_monster_data(sSavedPlayerData[i].monster_index);
-				if(sSavedPlayerMonsterData[i].object_index != NONE)
-				{
-					sSavedPlayerObjectData[i] = *get_object_data(sSavedPlayerMonsterData[i].object_index);
-					sSavedPlayerObjectNextObject[i] = sSavedPlayerObjectData[i].next_object;
-					if(sSavedPlayerObjectData[i].parasitic_object != NONE)
-						sSavedPlayerParasiticObjectData[i] = *get_object_data(sSavedPlayerObjectData[i].parasitic_object);
-				}
-			}
-		}
+		sSavedPlayerData[i] = *get_player_data(i);
+		if(isNONE(sSavedPlayerData[i].monster_index))
+			continue;
 		
-		// Sanity checking
-		sSavedTickCount = dynamic_world->tick_count;
-		sSavedRandomSeed = get_random_seed();
+		sSavedPlayerMonsterData[i] = *get_monster_data(sSavedPlayerData[i].monster_index);
+		if(isNONE(sSavedPlayerMonsterData[i].object_index))
+			continue;
+		
+		sSavedPlayerObjectData[i] = *get_object_data(sSavedPlayerMonsterData[i].object_index);
+		sSavedPlayerObjectNextObject[i] = sSavedPlayerObjectData[i].next_object;
+		if(sSavedPlayerObjectData[i].parasitic_object != NONE)
+			sSavedPlayerParasiticObjectData[i] = *get_object_data(sSavedPlayerObjectData[i].parasitic_object);
 	}
+	// Sanity checking
+	sSavedTickCount = dynamic_world->tick_count;
+	sSavedRandomSeed = get_random_seed();
 }
 
 
@@ -276,65 +274,66 @@ compare_memory(const char* inChunk1, const char* inChunk2, size_t inSize, size_t
 // to _exactly_ the same full game-state we saved earlier, else problems.)
 static void exit_predictive_mode()
 {
-	if(sPredictedTicks > 0)
+	if(sPredictedTicks <= 0)
+		return;
+	
+	for(ix i = 0; i < dynamic_world->player_count; i++)
 	{
-		for(short i = 0; i < dynamic_world->player_count; i++)
-		{
-			player_data* player = get_player_data(i);
-			
-			assert(player->monster_index == sSavedPlayerData[i].monster_index);
-
-			{
-				// We *don't* restore this tiny part of the game-state back because
-				// otherwise the player can't use [] to scroll the inventory panel.
-				// [] scrolling happens outside the normal input/update system, so that's
-				// enough to persuade me that not restoring this won't OOS any more often
-				// than []-scrolling did before prediction.  :)
-				int16 saved_interface_flags = player->interface_flags;
-				int16 saved_interface_decay = player->interface_decay;
-				
-				*player = sSavedPlayerData[i];
-
-				player->interface_flags = saved_interface_flags;
-				player->interface_decay = saved_interface_decay;
-			}
-
-			if(sSavedPlayerData[i].monster_index != NONE)
-			{
-				assert(get_monster_data(sSavedPlayerData[i].monster_index)->object_index == sSavedPlayerMonsterData[i].object_index);
-
-				*get_monster_data(sSavedPlayerData[i].monster_index) = sSavedPlayerMonsterData[i];
-				
-				if(sSavedPlayerMonsterData[i].object_index != NONE)
-				{
-					assert(get_object_data(sSavedPlayerMonsterData[i].object_index)->parasitic_object == sSavedPlayerObjectData[i].parasitic_object);
-
-					remove_object_from_polygon_object_list(sSavedPlayerMonsterData[i].object_index);
-					
-					*get_object_data(sSavedPlayerMonsterData[i].object_index) = sSavedPlayerObjectData[i];
-
-					// We have to defer this insertion since the object lists could still have other players
-					// in their predictive locations etc. - we need to reconstruct everything exactly as it
-					// was when we entered predictive mode.
-					deferred_add_object_to_polygon_object_list(sSavedPlayerMonsterData[i].object_index, sSavedPlayerObjectNextObject[i]);
-					
-					if(sSavedPlayerObjectData[i].parasitic_object != NONE)
-						*get_object_data(sSavedPlayerObjectData[i].parasitic_object) = sSavedPlayerParasiticObjectData[i];
-				}
-			}
-		}
-
-		perform_deferred_polygon_object_list_manipulations();
+		player_data* player = get_player_data(i);
 		
-		sPredictedTicks = 0;
+		assert(player->monster_index == sSavedPlayerData[i].monster_index);
+		
+		// We *don't* restore this tiny part of the game-state back because
+		// otherwise the player can't use [] to scroll the inventory panel.
+		// [] scrolling happens outside the normal input/update system, so that's
+		// enough to persuade me that not restoring this won't OOS any more often
+		// than []-scrolling did before prediction.  :)
+		auto saved_interface_flags = player->interface_flags;
+		auto saved_interface_decay = player->interface_decay;
+		
+		*player = sSavedPlayerData[i];
 
-		// Sanity checking
-		if(sSavedTickCount != dynamic_world->tick_count)
-			logWarning2("saved tick count %d != dynamic_world->tick_count %d", sSavedTickCount, dynamic_world->tick_count);
+		player->interface_flags = saved_interface_flags;
+		player->interface_decay = saved_interface_decay;
+	
 
-		if(sSavedRandomSeed != get_random_seed())
-			logWarning2("saved random seed %d != get_random_seed() %d", sSavedRandomSeed, get_random_seed());
+		if( isNONE (sSavedPlayerData[i].monster_index ) )
+			continue;
+		
+		assert(
+		get_monster_data(sSavedPlayerData[i].monster_index)->object_index 
+		== sSavedPlayerMonsterData[i].object_index);
+
+		*get_monster_data(sSavedPlayerData[i].monster_index) = sSavedPlayerMonsterData[i];
+		
+		if( isNONE( sSavedPlayerMonsterData[i].object_index ) )
+			continue;
+		
+		assert(get_object_data(sSavedPlayerMonsterData[i].object_index)->parasitic_object == sSavedPlayerObjectData[i].parasitic_object);
+
+		remove_object_from_polygon_object_list(sSavedPlayerMonsterData[i].object_index);
+		
+		*get_object_data(sSavedPlayerMonsterData[i].object_index) = sSavedPlayerObjectData[i];
+
+		// We have to defer this insertion since the object lists could still have other players
+		// in their predictive locations etc. - we need to reconstruct everything exactly as it
+		// was when we entered predictive mode.
+		deferred_add_object_to_polygon_object_list(sSavedPlayerMonsterData[i].object_index, sSavedPlayerObjectNextObject[i]);
+		
+		if( !isNONE(sSavedPlayerObjectData[i].parasitic_object) ) 
+			*get_object_data(sSavedPlayerObjectData[i].parasitic_object) = sSavedPlayerParasiticObjectData[i];
 	}
+
+	perform_deferred_polygon_object_list_manipulations();
+	
+	sPredictedTicks = 0;
+
+	// Sanity checking
+	if(sSavedTickCount != dynamic_world->tick_count)
+		logWarning2("saved tick count %d != dynamic_world->tick_count %d", sSavedTickCount, dynamic_world->tick_count);
+
+	if(sSavedRandomSeed != get_random_seed())
+		logWarning2("saved random seed %d != get_random_seed() %d", sSavedRandomSeed, get_random_seed());
 }
 
 
@@ -355,20 +354,15 @@ overlay_queue_with_queue_into_queue(ActionQueues* inBaseQueues, ActionQueues* in
         }
         
         if(!haveFlagsForAllPlayers)
-        {
                 return false;
-        }
         
         for(int p = 0; p < dynamic_world->player_count; p++)
         {
                 // Trust me, this is right - we dequeue from the Base Queues whether or not they get overridden.
                 uint32 action_flags = inBaseQueues->dequeueActionFlags(p);
                 
-                if(inOverlayQueues != NULL && inOverlayQueues->countActionFlags(p) > 0)
-                {
+                if(inOverlayQueues != nullptr && inOverlayQueues->countActionFlags(p) > 0)
                         action_flags = inOverlayQueues->dequeueActionFlags(p);
-                }
-                
                 inOutputQueues->enqueueActionFlags(p, &action_flags, 1);
         }
         
@@ -377,20 +371,18 @@ overlay_queue_with_queue_into_queue(ActionQueues* inBaseQueues, ActionQueues* in
 
 
 // Return values for update_world_elements_one_tick()
-enum {
+enum 
+{
         kUpdateNormalCompletion,
         kUpdateGameOver,
         kUpdateChangeLevel
 };
 
 // ZZZ: split out from update_world()'s loop.
-static int
-update_world_elements_one_tick()
+static int update_world_elements_one_tick()
 {
 	if (m1_solo_player_in_terminal()) 
-	{
 		update_m1_solo_player_in_terminal(GameQueue);
-	} 
 	else
 	{
 		L_Call_Idle();
@@ -435,8 +427,8 @@ update_world_elements_one_tick()
         }
 #endif // !defined(DISABLE_NETWORKING)
 
-        dynamic_world->tick_count+= 1;
-        dynamic_world->game_information.game_time_remaining-= 1;
+        dynamic_world->tick_count++;
+        dynamic_world->game_information.game_time_remaining--;
         
         return kUpdateNormalCompletion;
 }
@@ -445,12 +437,11 @@ update_world_elements_one_tick()
 // Now returns (whether something changed, number of real ticks elapsed) since, with
 // prediction, something can change even if no real ticks have elapsed.
 
-std::pair<bool, int16>
-update_world()
+std::pair<bool, int16> update_world()
 {
         short theElapsedTime = 0;
         bool canUpdate = true;
-        int theUpdateResult = kUpdateNormalCompletion;
+        auto theUpdateResult = kUpdateNormalCompletion;
 
 #ifndef DISABLE_NETWORKING
 	if (game_is_networked)
@@ -461,10 +452,8 @@ update_world()
         {
                 // If we have flags in the GameQueue, or can put a tick's-worth there, we're ok.
                 // Note that GameQueue should be stocked evenly (i.e. every player has the same # of flags)
-                if(GameQueue->countActionFlags(0) == 0)
-                {
+                if(!GameQueue->countActionFlags(0))
                         canUpdate = overlay_queue_with_queue_into_queue(GetRealActionQueues(), GetLuaActionQueues(), GameQueue);
-                }
 
 		if(!sPredictionWanted)
 		{
@@ -476,16 +465,12 @@ update_world()
 #endif
 
 			if(dynamic_world->tick_count >= theMostRecentAllowedTick)
-			{
 				canUpdate = false;
-			}
 		}
                 
                 // If we can't update, we can't update.  We're done for now.
                 if(!canUpdate)
-                {
                         break;
-                }
 
 		// Transition from predictive -> real update mode, if necessary.
 		exit_predictive_mode();
@@ -501,16 +486,12 @@ update_world()
                 
                 L_Call_PostIdle();
                 if(theUpdateResult != kUpdateNormalCompletion || Movie::instance()->IsRecording())
-                {
                         canUpdate = false;
-                }
 	}
 
         // This and the following voodoo comes, effectively, from Bungie's code.
         if(theUpdateResult == kUpdateChangeLevel)
-        {
                 theElapsedTime = 0;
-        }
 
 	/* Game is over. */
 	if(theUpdateResult == kUpdateGameOver) 
@@ -642,7 +623,7 @@ bool entering_map(bool restoring_saved)
 		success = NetSync(); /* make sure everybody is ready */
 #endif 
 
-	/* make sure nobodyÕs holding a weapon illegal in the new environment */
+	/* make sure nobodyÃ•s holding a weapon illegal in the new environment */
 	check_player_weapons_for_environment_change();
 
 #if !defined(DISABLE_NETWORKING)
@@ -672,7 +653,7 @@ bool entering_map(bool restoring_saved)
 void changed_polygon(short original_polygon_index, short new_polygon_index, short player_index)
 {
 	polygon_data *new_polygon = get_polygon_data(new_polygon_index);
-	player_data *player = player_index!=NONE ? get_player_data(player_index) : nullptr;
+	player_data *player = !isNONE(player_index) ? get_player_data(player_index) : nullptr;
 	
 	(void) (original_polygon_index);
 	
@@ -738,21 +719,20 @@ void changed_polygon(short original_polygon_index, short new_polygon_index, shor
 	too many civilians died during _mission_rescue) */
 short calculate_level_completion_state()
 {
-	short completion_state= _level_finished;
+	short completion_state = _level_finished;
 	
-	/* if there are any monsters left on an extermination map, we havenÕt finished yet */
-	if (static_world->mission_flags&_mission_extermination)
-	{
-		if (live_aliens_on_map()) completion_state= _level_unfinished;
-	}
+	/* if there are any monsters left on an extermination map, we havenÃ•t finished yet */
+	if( static_world->mission_flags & _mission_extermination && live_aliens_on_map() ) 
+		completion_state = _level_unfinished;
 	
-	/* if there are any polygons which must be explored and have not been entered, weÕre not done */
-	if (static_world->mission_flags&_mission_exploration)
+	
+	/* if there are any polygons which must be explored and have not been entered, weÃ•re not done */
+	if (static_world->mission_flags & _mission_exploration)
 	{
 		short polygon_index;
-		struct polygon_data *polygon;
+		polygon_data *polygon;
 		
-		for (polygon_index= 0, polygon= map_polygons; polygon_index<dynamic_world->polygon_count; ++polygon_index, ++polygon)
+		for (polygon_index = 0, polygon = map_polygons; polygon_index < dynamic_world->polygon_count; ++polygon_index, ++polygon)
 		{
 			if (polygon->type==_polygon_must_be_explored)
 			{
@@ -762,45 +742,37 @@ short calculate_level_completion_state()
 		}
 	}
 	
-	/* if there are any polygons which must be seen and have not been mapped, weÕre not done */
-	if ((static_world->mission_flags&_mission_exploration_m1) &&
-	    dynamic_world->player_count == 1)
+	/* if there are any polygons which must be seen and have not been mapped, weÃ•re not done */
+	if (static_world->mission_flags & _mission_exploration_m1 && dynamic_world->player_count == 1)
 	{
 		short polygon_index;
-		struct polygon_data *polygon;
+		polygon_data *polygon;
 		
-		for (polygon_index= 0, polygon= map_polygons; polygon_index<dynamic_world->polygon_count; ++polygon_index, ++polygon)
+		for (polygon_index = 0, polygon = map_polygons; polygon_index < dynamic_world->polygon_count; ++polygon_index, ++polygon)
 		{
-			if (polygon->type==_polygon_must_be_explored &&
-			    !POLYGON_IS_IN_AUTOMAP(polygon_index))
+			if (polygon->type == _polygon_must_be_explored && !POLYGON_IS_IN_AUTOMAP(polygon_index))
 			{
-				completion_state= _level_unfinished;
+				completion_state = _level_unfinished;
 				break;
 			}
 		}
 	}
 	
-	/* if there are any items left on this map, weÕre not done */
-	if (static_world->mission_flags&_mission_retrieval)
-	{
-		if (unretrieved_items_on_map()) completion_state= _level_unfinished;
-	}
-	
-	/* if there are any untoggled repair switches on this level then weÕre not there */
-	if (static_world->mission_flags&_mission_repair)
-	{
-		if (untoggled_repair_switches_on_level()) completion_state= _level_unfinished;
-	}
+	/* if there are any items left on this map, weÃ•re not done */
+	if( static_world->mission_flags & _mission_retrieval && unretrieved_items_on_map() )
+		completion_state = _level_unfinished;
 
-	/* if weÕve finished the level, check failure conditions */
-	if (completion_state==_level_finished)
+	/* if there are any untoggled repair switches on this level then weÃ•re not there */
+	if( static_world->mission_flags & _mission_repair && untoggled_repair_switches_on_level() ) 
+		completion_state = _level_unfinished;
+
+	/* if weÃ•ve finished the level, check failure conditions */
+	if(completion_state == _level_finished)
 	{
 		/* if this is a rescue mission and more than half of the civilians died, the mission failed */
-		if (static_world->mission_flags&(_mission_rescue|_mission_rescue_m1) &&
-			dynamic_world->current_civilian_causalties>dynamic_world->current_civilian_count/2)
-		{
-			completion_state= _level_failed;
-		}
+		if(static_world->mission_flags&(_mission_rescue|_mission_rescue_m1) &&
+			dynamic_world->current_civilian_causalties > dynamic_world->current_civilian_count/2)
+			completion_state = _level_failed;
 	}
 	
 	return completion_state;
@@ -808,24 +780,25 @@ short calculate_level_completion_state()
 
 short calculate_damage(struct damage_definition *damage)
 {
-	auto total_damage = damage->base + (damage->random ? global_random() % damage->random : 0);
+	auto total_damage = damage->base + ( damage->random ? global_random() % damage->random : 0 );
 	
-	total_damage = FIXED_INTEGERAL_PART(total_damage*damage->scale);
-	
+	total_damage = FIXED_INTEGERAL_PART( total_damage * damage->scale );
+
+	if (!( damage->flags & _alien_damage ))
+		return total_damage;
+		
 	/* if this damage was caused by an alien modify it for the current difficulty level */
-	if (damage->flags&_alien_damage)
+	switch (dynamic_world->game_information.difficulty_level)
 	{
-		switch (dynamic_world->game_information.difficulty_level)
-		{
-			case _wuss_level: 
-				total_damage -= total_damage / 2; 
-				break;
-			case _easy_level: 
-				total_damage -= total_damage / 4; 
-				break;
-			/* harder levels do not cause more damage */
-		}
+		case _wuss_level: 
+			total_damage -= total_damage / 2; 
+			break;
+		case _easy_level: 
+			total_damage -= total_damage / 4; 
+			break;
+		/* harder levels do not cause more damage */
 	}
+
 	return total_damage;
 }
 
@@ -840,21 +813,21 @@ short calculate_damage(struct damage_definition *damage)
 
 void cause_polygon_damage(short polygon_index, short monster_index)
 {
-	struct polygon_data *polygon= get_polygon_data(polygon_index);
-	struct monster_data *monster= get_monster_data(monster_index);
-	struct object_data *object= get_object_data(monster->object_index);
-    
-    short polygon_type = polygon->type;
+	polygon_data *polygon = get_polygon_data(polygon_index);
+	monster_data *monster = get_monster_data(monster_index);
+	object_data *object = get_object_data(monster->object_index);
+
+    auto polygon_type = polygon->type;
     // apply damage from flooded platforms
     if (polygon->type == _polygon_is_platform)
 	{
-		struct platform_data *platform= get_platform_data(polygon->permutation);
+		platform_data *platform = get_platform_data(polygon->permutation);
 		if (platform && PLATFORM_IS_FLOODED(platform))
 		{
-			short adj_index = find_flooding_polygon(polygon_index);
+			auto adj_index = find_flooding_polygon(polygon_index);
 			if (adj_index != NONE)
 			{
-				struct polygon_data *adj_polygon = get_polygon_data(adj_index);
+				polygon_data *adj_polygon = get_polygon_data(adj_index);
 				polygon_type = adj_polygon->type;
 			}
 		}
@@ -865,13 +838,13 @@ void cause_polygon_damage(short polygon_index, short monster_index)
 	{
 		damage_definition damage;
 		
-		damage.flags= _alien_damage;
-		damage.type= polygon_type==_polygon_is_minor_ouch ? _damage_polygon : _damage_major_polygon;
-		damage.base= polygon_type==_polygon_is_minor_ouch ? MINOR_OUCH_DAMAGE : MAJOR_OUCH_DAMAGE;
-		damage.random= 0;
-		damage.scale= FIXED_ONE;
+		damage.flags = _alien_damage;
+		damage.type = polygon_type == _polygon_is_minor_ouch ? _damage_polygon : _damage_major_polygon;
+		damage.base = polygon_type == _polygon_is_minor_ouch ? MINOR_OUCH_DAMAGE : MAJOR_OUCH_DAMAGE;
+		damage.random = 0;
+		damage.scale = FIXED_ONE;
 		
-		damage_monster(monster_index, NONE, NONE, (world_point3d *) NULL, &damage, NONE);
+		damage_monster(monster_index, NONE, NONE, nullptr, &damage, NONE);
 	}
 
 }
