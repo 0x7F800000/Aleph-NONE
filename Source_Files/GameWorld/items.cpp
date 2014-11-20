@@ -85,10 +85,6 @@ Feb 11, 2001 (Loren Petrich):
 //MH: Lua scripting
 #include "lua_script.h"
 
-#ifdef env68k
-#pragma segment marathon
-#endif
-
 /* ---------- structures */
 
 #define strITEM_NAME_LIST 150
@@ -527,7 +523,7 @@ bool try_and_add_player_item(short player_index, short type)
 
 	switch (definition->item_kind)
 	{
-		case _powerup: /* powerups don’t get added to your inventory */
+		case _powerup: /* powerups don√ït get added to your inventory */
 			if (legal_player_powerup(player_index, type))
 			{
 				process_player_powerup(player_index, type);
