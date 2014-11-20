@@ -274,7 +274,10 @@ public:
 	inline bool isPlayer()		{	return type == _monster_marine;						}
 	inline bool needsPath()		{	return MONSTER_NEEDS_PATH(this);					}
 	inline bool isActive()		{	return MONSTER_IS_ACTIVE(this);						}
+	inline bool isIdle()		{	return MONSTER_IS_IDLE(this);						}
 	inline bool isDying()		{	return MONSTER_IS_DYING(this);						}
+	inline bool isBerserk()		{	return MONSTER_IS_BERSERK(this);					}
+	inline bool hasTargetDoneDamage()	{	return TARGET_HAS_DONE_DAMAGE(this);		}
 	inline bool isAttacking()	{	return isAttackingClose()	||	isAttackingFar();	}
 	inline bool hasVelocity()	{	return external_velocity || vertical_velocity;		}
 	inline bool hasValidTarget(){	return MONSTER_HAS_VALID_TARGET(this);				}
