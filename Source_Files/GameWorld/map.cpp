@@ -228,6 +228,12 @@ object_data *get_object_data(const short object_index)
 	return object;
 }
 
+struct object_data& object_data::Get(const ix index)
+{
+	assert(index < MAXIMUM_OBJECTS_PER_MAP);
+	return ObjectList[index];
+}
+
 polygon_data *get_polygon_data(const short polygon_index)
 {
 	assert(map_polygons);	
@@ -241,7 +247,6 @@ polygon_data *get_polygon_data(const short polygon_index)
 struct polygon_data& polygon_data::Get(const ix index)
 {
 	assert(index < dynamic_world->polygon_count);
-	
 	return PolygonList[index];
 }
 
@@ -255,6 +260,12 @@ line_data *get_line_data(const short line_index)
 	return line;
 }
 
+struct line_data& line_data::Get(const ix index)
+{
+	assert(index < dynamic_world->line_count);
+	return LineList[index];
+}
+
 side_data *get_side_data(const short side_index)
 {
 	assert(map_sides);
@@ -265,6 +276,12 @@ side_data *get_side_data(const short side_index)
 	return side;
 }
 
+struct side_data& side_data::Get(const ix index)
+{
+	assert(index < dynamic_world->side_count);
+	return SideList[index];
+}
+
 endpoint_data *get_endpoint_data(const short endpoint_index)
 {
 	assert(map_endpoints);
@@ -273,6 +290,12 @@ endpoint_data *get_endpoint_data(const short endpoint_index)
 	vassert(endpoint, csprintf(temporary, "endpoint index #%d is out of range", endpoint_index));
 	
 	return endpoint;
+}
+
+struct endpoint_data& endpoint_data::Get(const ix index)
+{
+	assert(index < dynamic_world->endpoint_count);
+	return EndpointList[index];
 }
 
 short *get_map_indexes(const short index, const short count)
