@@ -47,9 +47,6 @@ on very small maps, choose_random_flood_node() may not terminate
 #include <stdlib.h>
 #include <limits.h>
 
-#ifdef env68k
-#pragma segment map
-#endif
 
 /* ---------- constants */
 
@@ -77,9 +74,10 @@ struct node_data /* 16 bytes */
 
 /* ---------- globals */
 
-static short node_count= 0, last_node_index_expanded= NONE;
-static struct node_data *nodes = NULL;
-static short *visited_polygons = NULL;
+static short node_count = 0;
+static short last_node_index_expanded = NONE;
+static struct node_data *nodes = nullptr;
+static short *visited_polygons = nullptr;
 
 /* ---------- private prototypes */
 
@@ -87,39 +85,39 @@ static void add_node(short parent_node_index, short polygon_index, short depth, 
 
 /* ---------- code */
 
-void allocate_flood_map_memory(
-	void)
+void allocate_flood_map_memory()
 {
 	// Made reentrant because this must be called every time a map is loaded
-	if (nodes) delete []nodes;
-	nodes= new node_data[MAXIMUM_FLOOD_NODES];
-	if (visited_polygons) delete []visited_polygons;
-	visited_polygons= new short[MAXIMUM_POLYGONS_PER_MAP];
-	assert(nodes&&visited_polygons);
+	if (nodes) 
+		delete [] nodes;
+	nodes = new node_data[MAXIMUM_FLOOD_NODES];
+	if (visited_polygons) 
+		delete [] visited_polygons;
+	visited_polygons = new short[MAXIMUM_POLYGONS_PER_MAP];
+	assert(nodes && visited_polygons);
 }
 
 /* returns next polygon index or NONE if there are no more polygons left cheaper than maximum_cost */
-short flood_map(
-	short first_polygon_index,
+short flood_map(short first_polygon_index,
 	int32 maximum_cost,
 	cost_proc_ptr cost_proc,
 	short flood_mode,
 	void *caller_data)
 {
 	short lowest_cost_node_index, node_index;
-	struct node_data *node;
+	node_data *node;
 	short polygon_index;
 	int32 lowest_cost;
 
 	/* initialize ourselves if first_polygon_index!=NONE */
-	if (first_polygon_index!=NONE)
+	if(first_polygon_index != NONE)
 	{
 		/* clear the visited polygon array */
 		objlist_set(visited_polygons, NONE, MAXIMUM_POLYGONS_PER_MAP);
 		
-		node_count= 0;
-		last_node_index_expanded= NONE;
-		add_node(NONE, first_polygon_index, 0, 0, (flood_mode==_flagged_breadth_first) ? *((int32*)caller_data) : 0);
+		node_count = 0;
+		last_node_index_expanded = NONE;
+		add_node(NONE, first_polygon_index, 0, 0, (flood_mode == _flagged_breadth_first) ? *((int32*)caller_data) : 0);
 	}
 	
 	switch (flood_mode)
@@ -129,7 +127,7 @@ short flood_map(
 			lowest_cost= maximum_cost, lowest_cost_node_index= NONE;
 			for (node= nodes, node_index= 0; node_index<node_count; ++node_index, ++node)
 			{
-				if (NODE_IS_UNEXPANDED(node)&&node->cost<lowest_cost)
+				if (NODE_IS_UNEXPANDED(node) && node->cost < lowest_cost)
 				{
 					lowest_cost_node_index= node_index;
 					lowest_cost= node->cost;
@@ -140,20 +138,21 @@ short flood_map(
 		case _breadth_first:
 		case _flagged_breadth_first:
 			/* find the next unexpanded node in the list under maximum_cost */
-			node_index= (last_node_index_expanded==NONE) ? 0 : (last_node_index_expanded+1);
+			node_index = isNONE(last_node_index_expanded) ? 0 : last_node_index_expanded + 1;
+			
 			for (node= nodes+node_index; node_index<node_count; ++node_index, ++node)
+				if (node->cost < maximum_cost) 
+					break;
+					
+			if (node_index == node_count)
 			{
-				if (node->cost<maximum_cost) break;
-			}
-			if (node_index==node_count)
-			{
-				lowest_cost_node_index= NONE;
-				lowest_cost= maximum_cost;
+				lowest_cost_node_index = NONE;
+				lowest_cost = maximum_cost;
 			}
 			else
 			{
-				lowest_cost_node_index= node_index;
-				lowest_cost= node->cost;
+				lowest_cost_node_index = node_index;
+				lowest_cost = node->cost;
 			}
 			break;
 		
@@ -167,47 +166,44 @@ short flood_map(
 			break;
 	}
 
-	/* if we found a node, mark it as expanded and add itÕs adjacent non-solid polygons to the search tree */
-	if (lowest_cost_node_index!=NONE)
+	/* if we found a node, mark it as expanded and add itÃ•s adjacent non-solid polygons to the search tree */
+	if(isNONE(lowest_cost_node_index) )
+		return NONE;
+	
+	/* for flood_depth() and reverse_flood_map(), remember which node we successfully expanded last */
+	last_node_index_expanded = lowest_cost_node_index;
+
+	/* get pointer to lowest cost node */
+	assert(lowest_cost_node_index >= 0 && lowest_cost_node_index < node_count);
+	node = nodes+lowest_cost_node_index;
+
+	polygon_data *polygon = get_polygon_data(node->polygon_index);
+	assert(!POLYGON_IS_DETACHED(polygon));
+
+	/* mark node as expanded */
+	MARK_NODE_AS_EXPANDED(node);
+
+	for(ix i = 0; i < polygon->vertex_count; ++i)		
 	{
-		struct polygon_data *polygon;
-		short i;
-		
-		/* for flood_depth() and reverse_flood_map(), remember which node we successfully expanded last */
-		last_node_index_expanded= lowest_cost_node_index;
-
-		/* get pointer to lowest cost node */
-		assert(lowest_cost_node_index>=0&&lowest_cost_node_index<node_count);
-		node= nodes+lowest_cost_node_index;
-
-		polygon= get_polygon_data(node->polygon_index);
-		assert(!POLYGON_IS_DETACHED(polygon));
-
-		/* mark node as expanded */
-		MARK_NODE_AS_EXPANDED(node);
-
-		for (i= 0; i<polygon->vertex_count; ++i)		
+		auto destination_polygon_index = polygon->adjacent_polygon_indexes[i];
+		//todo: invert this if
+		if (destination_polygon_index != NONE &&
+			(maximum_cost != INT32_MAX || visited_polygons[destination_polygon_index] == UNVISITED))
 		{
-			short destination_polygon_index= polygon->adjacent_polygon_indexes[i];
+			auto new_user_flags = node->user_flags;
+			auto cost = cost_proc ? cost_proc(node->polygon_index, polygon->line_indexes[i], destination_polygon_index, (flood_mode==_flagged_breadth_first) ? &new_user_flags : caller_data) : polygon->area;
 			
-			if (destination_polygon_index!=NONE &&
-				(maximum_cost!=INT32_MAX || visited_polygons[destination_polygon_index]==UNVISITED))
-			{
-				int32 new_user_flags= node->user_flags;
-				int32 cost= cost_proc ? cost_proc(node->polygon_index, polygon->line_indexes[i], destination_polygon_index, (flood_mode==_flagged_breadth_first) ? &new_user_flags : caller_data) : polygon->area;
-				
-				/* polygons with zero or negative costs are not added to the node list */
-				if (cost>0) add_node(lowest_cost_node_index, destination_polygon_index, node->depth+1, lowest_cost+cost, new_user_flags);
-			}
+			/* polygons with zero or negative costs are not added to the node list */
+			if(cost > 0) 
+				add_node(lowest_cost_node_index, destination_polygon_index, 
+				node->depth + 1, lowest_cost+cost, new_user_flags);
 		}
-		
-		polygon_index= node->polygon_index;
-		if (flood_mode==_flagged_breadth_first) *((int32*)caller_data)= node->user_flags;
 	}
-	else
-	{
-		polygon_index= NONE;
-	}
+	
+	polygon_index = node->polygon_index;
+	if( flood_mode == _flagged_breadth_first ) 
+		*(int32*) caller_data = node->user_flags;
+
 	
 	return polygon_index;
 }
@@ -216,128 +212,118 @@ short flood_map(
 	when there are no more polygons to return.  this is useful for pathfinding: when
 	flood_map() returns the destination polygon index, calling reverse_flood_map() will return
 	the polygons traversed to reach the destination) */
-short reverse_flood_map(
-	void)
+short reverse_flood_map()
 {
-	short polygon_index= NONE;
+	if (isNONE(last_node_index_expanded))
+		return NONE;
 	
-	if (last_node_index_expanded!=NONE)
-	{
-		struct node_data *node;
-		
-		assert(last_node_index_expanded>=0&&last_node_index_expanded<node_count);
-		node= nodes+last_node_index_expanded;
+	assert(last_node_index_expanded >= 0 && last_node_index_expanded < node_count);
+	node_data *node = nodes + last_node_index_expanded;
 
-		last_node_index_expanded= node->parent_node_index;
-		polygon_index= node->polygon_index;
-	}
+	last_node_index_expanded = node->parent_node_index;
+	auto polygon_index = node->polygon_index;
+
 	
 	return polygon_index;
 }
 
 /* returns depth (in polygons) at last_node_index_expanded */
-short flood_depth(
-	void)
+short flood_depth()
 {
-	assert(last_node_index_expanded>=0&&last_node_index_expanded<node_count);
+	assert(last_node_index_expanded >=0 && last_node_index_expanded < node_count);
 
-	return last_node_index_expanded==NONE ? 0 : nodes[last_node_index_expanded].depth;
+	return isNONE(last_node_index_expanded) ? 0 : nodes[last_node_index_expanded].depth;
 }
 
 #define MAXIMUM_BIASED_RETRIES 10
 
 /* when looking for a random path, always choose a random node.  if bias is not NULL, then try
 	and choose a destination in that direction */
-void choose_random_flood_node(
-	world_vector2d *bias)
+void choose_random_flood_node(world_vector2d *bias)
 {
 	world_point2d origin;
 	
-	assert(node_count>=1);
+	assert(node_count >= 1);
 	find_center_of_polygon(nodes[0].polygon_index, &origin);
 	
-	if (node_count>1)
+	if(node_count =< 1)
+		return;
+	
+	bool suitable;
+	short retries = MAXIMUM_BIASED_RETRIES;
+	
+	do
 	{
-		bool suitable;
-		short retries= MAXIMUM_BIASED_RETRIES;
-		
 		do
 		{
-			do
-			{
-				last_node_index_expanded= global_random()%node_count;
-			}
-			while (NODE_IS_UNEXPANDED(nodes+last_node_index_expanded));
-
-			/* if we have no bias, this node is automatically suitable if it has been expanded;
-				if we have a bias, this node is only suitable if it is in the same general
-				direction (by sign of dot product) as the bias */
-			suitable= true;
-			if (bias && (retries-= 1)>=0)
-			{
-				struct node_data *node= nodes+last_node_index_expanded;
-				world_point2d destination;
-				
-				find_center_of_polygon(node->polygon_index, &destination);
-				if (bias->i*(destination.x-origin.x) + bias->j*(destination.y-origin.y)<0) suitable= false;
-			}
+			last_node_index_expanded = global_random() % node_count;
 		}
-		while (!suitable);
+		while( NODE_IS_UNEXPANDED( nodes + last_node_index_expanded ) );
+
+		/* if we have no bias, this node is automatically suitable if it has been expanded;
+			if we have a bias, this node is only suitable if it is in the same general
+			direction (by sign of dot product) as the bias */
+		suitable = true;
+		if(bias && --retries >=0)
+		{
+			const node_data *node = nodes + last_node_index_expanded;
+			world_point2d destination;
+			
+			find_center_of_polygon(node->polygon_index, &destination);
+			if (bias->i * (destination.x - origin.x) + bias->j * (destination.y - origin.y) < 0) 
+				suitable = false;
+		}
 	}
+	while (!suitable);
+
 }
 
 /* ---------- private code */
 
 /* checks to see if the given node is already in the node list */
-static void add_node(
-	short parent_node_index,
-	short polygon_index,
-	short depth,
-	int32 cost,
-	int32 user_flags)
+static void add_node(short parent_node_index,
+	short polygon_index, short depth, int32 cost, int32 user_flags)
 {
-	if (node_count<MAXIMUM_FLOOD_NODES)
+	if (node_count >= MAXIMUM_FLOOD_NODES)
+		return;
+	
+	node_data *node;
+
+	/* see if this polygon already exists in the node list anywhere */
+	assert( polygon_index >= 0 && polygon_index < dynamic_world->polygon_count );
+	auto node_index = visited_polygons[polygon_index];
+	
+	if ( node_index != UNVISITED)
 	{
-		struct node_data *node;
-		short node_index;
-		
-		/* see if this polygon already exists in the node list anywhere */
-		assert(polygon_index>=0&&polygon_index<dynamic_world->polygon_count);
-		if ((node_index= visited_polygons[polygon_index])!=UNVISITED)
-		{
-			/* there is already a node referencing this polygon; if it has a higher cost
-				than the cost we are attempting to add, replace it (because we are doing
-				a best-first search, we are guarenteed never to find a better path to an
-				expanded node, and in fact if we find a path to a node we have already
-				expanded weÕre backtracking and can ignore the node) */
-			assert(node_index>=0&&node_index<node_count);
-			node= nodes+node_index;
-			if (NODE_IS_EXPANDED(node)||node->cost<=cost) node= (struct node_data *) NULL;
-		}
-		else
-		{
-			node_index= node_count;
-			node= nodes + node_index;
-		}
-		
-		if (node)
-		{
-			if (node_index==node_count)
-			{
-				node_count+= 1;
-			}
-			
-			node->flags= 0;
-			node->parent_node_index= parent_node_index;
-			node->polygon_index= polygon_index;
-			node->depth= depth;
-			node->cost= cost;
-			node->user_flags= user_flags;
-			
-			assert(polygon_index>=0&&polygon_index<dynamic_world->polygon_count);
-			visited_polygons[polygon_index]= node_index;
-			
-//			dprintf("added polygon #%d to node #%d (nodes=%p,visited=%p)", polygon_index, node_index, nodes, visited_polygons);
-		}
+		/* there is already a node referencing this polygon; if it has a higher cost
+			than the cost we are attempting to add, replace it (because we are doing
+			a best-first search, we are guarenteed never to find a better path to an
+			expanded node, and in fact if we find a path to a node we have already
+			expanded weÃ•re backtracking and can ignore the node) */
+		assert( node_index >= 0 && node_index < node_count );
+		node = nodes + node_index;
+		if( NODE_IS_EXPANDED(node) || node->cost <= cost) 
+			node = nullptr;
 	}
+	else
+	{
+		node_index = node_count;
+		node = nodes + node_index;
+	}
+	
+	if (!node)
+		return;
+
+	if (node_index == node_count)
+		++node_count;
+	
+	node->flags = 0;
+	node->parent_node_index = parent_node_index;
+	node->polygon_index = polygon_index;
+	node->depth = depth;
+	node->cost = cost;
+	node->user_flags = user_flags;
+	
+	assert(polygon_index >= 0 && polygon_index < dynamic_world->polygon_count);
+	visited_polygons[polygon_index] = node_index;
 }
