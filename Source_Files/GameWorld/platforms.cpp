@@ -84,9 +84,6 @@ Jun 30, 2002 (tiennou):
 
 #include "editor.h" // MARATHON_ONE_DATA_VERSION
 
-#ifdef env68k
-#pragma segment doors
-#endif
 
 /*
 //opening sounds made by closed platforms are sometimes obscured
@@ -139,106 +136,96 @@ short new_platform(
 	short polygon_index,
 	short version)
 {
-	short platform_index= NONE;
-	struct platform_data *platform;
+	short platform_index = NONE;
+	platform_data *platform;
 
 	assert(NUMBER_OF_DYNAMIC_PLATFORM_FLAGS<=16);
 	assert(NUMBER_OF_STATIC_PLATFORM_FLAGS<=32);
 	// LP: OK for a platform to be a do-nothing platform
 	// assert(data->static_flags&(FLAG(_platform_comes_from_floor)|FLAG(_platform_comes_from_ceiling)));
 
-	if (dynamic_world->platform_count<int(MAXIMUM_PLATFORMS_PER_MAP))
+	if (dynamic_world->platform_count >= int(MAXIMUM_PLATFORMS_PER_MAP))
+		return NONE;
+	
+	polygon_data *polygon = get_polygon_data(polygon_index);
+	ix i;
+	
+	platform_index = dynamic_world->platform_count++;
+	platform = platforms+platform_index;
+
+	/* remember the platform_index in the polygonﾃ不 .permutation field */
+	polygon->permutation= platform_index;
+	polygon->type= _polygon_is_platform;
+	
+	/* initialize the platform */
+	platform->type= data->type;
+	platform->static_flags= data->static_flags;
+	platform->tag= data->tag;
+	platform->speed= data->speed;
+	platform->delay= data->delay;
+	platform->polygon_index= polygon_index;
+	platform->parent_platform_index= NONE;
+	calculate_platform_extrema(platform_index, data->minimum_height, data->maximum_height);
+	
+	if (version == MARATHON_ONE_DATA_VERSION)
 	{
-		struct polygon_data *polygon= get_polygon_data(polygon_index);
-		short i;
-		
-		platform_index= dynamic_world->platform_count++;
-		platform= platforms+platform_index;
-
-		/* remember the platform_index in the polygonﾕs .permutation field */
-		polygon->permutation= platform_index;
-		polygon->type= _polygon_is_platform;
-		
-		/* initialize the platform */
-		platform->type= data->type;
-		platform->static_flags= data->static_flags;
-		platform->tag= data->tag;
-		platform->speed= data->speed;
-		platform->delay= data->delay;
-		platform->polygon_index= polygon_index;
-		platform->parent_platform_index= NONE;
-		calculate_platform_extrema(platform_index, data->minimum_height, data->maximum_height);
-		
-		if (version == MARATHON_ONE_DATA_VERSION)
-		{
-			switch (platform->type)
-			{
-			case 0: // marathon door
-			case 3: // pfhor door
-				SET_PLATFORM_IS_DOOR(platform, true);
-				break;
-			}
-			
-			if (PLATFORM_IS_LOCKED(platform))
-			{
-				SET_PLATFORM_IS_LOCKED(platform, false);
-				SET_PLATFORM_FLOODS_M1(platform, true);
-			}
-		}
-
-#if 0
 		switch (platform->type)
 		{
-			case _platform_is_spht_door:
-			case _platform_is_spht_split_door:
-			case _platform_is_locked_spht_door:
-			case _platform_is_pfhor_door:
-				SET_PLATFORM_IS_DOOR(platform, true);
-				break;
-		}
-#endif
-		
-		/* stuff in the correct defaults; if the platform is initially active it begins moving
-			immediately */
-		platform->dynamic_flags= 0;
-		platform->floor_height= polygon->floor_height;
-		platform->ceiling_height= polygon->ceiling_height;
-		if (PLATFORM_IS_INITIALLY_ACTIVE(platform))
-		{
-			SET_PLATFORM_IS_ACTIVE(platform, true);
-			SET_PLATFORM_HAS_BEEN_ACTIVATED(platform);
-			SET_PLATFORM_IS_MOVING(platform, true);
-		}
-		if (PLATFORM_IS_INITIALLY_EXTENDED(platform))
-		{
-			if (PLATFORM_COMES_FROM_FLOOR(platform)) platform->floor_height= platform->maximum_floor_height;
-			if (PLATFORM_COMES_FROM_CEILING(platform)) platform->ceiling_height= platform->minimum_ceiling_height;
-			SET_PLATFORM_IS_CONTRACTING(platform);
-			SET_PLATFORM_IS_FULLY_EXTENDED(platform);
-		}
-		else
-		{
-			if (PLATFORM_COMES_FROM_FLOOR(platform)) platform->floor_height= platform->minimum_floor_height;
-			if (PLATFORM_COMES_FROM_CEILING(platform)) platform->ceiling_height= platform->maximum_ceiling_height;
-			SET_PLATFORM_IS_EXTENDING(platform);
-			SET_PLATFORM_IS_FULLY_CONTRACTED(platform);
+		case 0: // marathon door
+		case 3: // pfhor door
+			SET_PLATFORM_IS_DOOR(platform, true);
+			break;
 		}
 		
-		/* remember what polygons and lines are adjacent to the endpoints of the platform
-			polygon so we can quickly recalculate heights later */
-		for (i= 0; i<polygon->vertex_count; ++i)
+		if (PLATFORM_IS_LOCKED(platform))
 		{
-			calculate_endpoint_polygon_owners(polygon->endpoint_indexes[i], &platform->endpoint_owners[i].first_polygon_index,
-				&platform->endpoint_owners[i].polygon_index_count);
-			calculate_endpoint_line_owners(polygon->endpoint_indexes[i], &platform->endpoint_owners[i].first_line_index,
-				&platform->endpoint_owners[i].line_index_count);
+			SET_PLATFORM_IS_LOCKED(platform, false);
+			SET_PLATFORM_FLOODS_M1(platform, true);
 		}
-		
-		polygon->floor_height= platform->floor_height;
-		polygon->ceiling_height= platform->ceiling_height;
-		adjust_platform_endpoint_and_line_heights(platform_index);
-		adjust_platform_for_media(platform_index, true);
 	}
+
+	
+	/* stuff in the correct defaults; if the platform is initially active it begins moving
+		immediately */
+	platform->dynamic_flags= 0;
+	platform->floor_height= polygon->floor_height;
+	platform->ceiling_height= polygon->ceiling_height;
+	if (PLATFORM_IS_INITIALLY_ACTIVE(platform))
+	{
+		SET_PLATFORM_IS_ACTIVE(platform, true);
+		SET_PLATFORM_HAS_BEEN_ACTIVATED(platform);
+		SET_PLATFORM_IS_MOVING(platform, true);
+	}
+	if (PLATFORM_IS_INITIALLY_EXTENDED(platform))
+	{
+		if (PLATFORM_COMES_FROM_FLOOR(platform)) platform->floor_height= platform->maximum_floor_height;
+		if (PLATFORM_COMES_FROM_CEILING(platform)) platform->ceiling_height= platform->minimum_ceiling_height;
+		SET_PLATFORM_IS_CONTRACTING(platform);
+		SET_PLATFORM_IS_FULLY_EXTENDED(platform);
+	}
+	else
+	{
+		if (PLATFORM_COMES_FROM_FLOOR(platform)) platform->floor_height= platform->minimum_floor_height;
+		if (PLATFORM_COMES_FROM_CEILING(platform)) platform->ceiling_height= platform->maximum_ceiling_height;
+		SET_PLATFORM_IS_EXTENDING(platform);
+		SET_PLATFORM_IS_FULLY_CONTRACTED(platform);
+	}
+	
+	/* remember what polygons and lines are adjacent to the endpoints of the platform
+		polygon so we can quickly recalculate heights later */
+	for (i = 0; i<polygon->vertex_count; ++i)
+	{
+		calculate_endpoint_polygon_owners(polygon->endpoint_indexes[i], &platform->endpoint_owners[i].first_polygon_index,
+			&platform->endpoint_owners[i].polygon_index_count);
+		calculate_endpoint_line_owners(polygon->endpoint_indexes[i], &platform->endpoint_owners[i].first_line_index,
+			&platform->endpoint_owners[i].line_index_count);
+	}
+	
+	polygon->floor_height= platform->floor_height;
+	polygon->ceiling_height= platform->ceiling_height;
+	adjust_platform_endpoint_and_line_heights(platform_index);
+	adjust_platform_for_media(platform_index, true);
+	
 	
 	return platform_index;
 }
@@ -263,160 +250,158 @@ void update_platforms(
 	{
 		CLEAR_PLATFORM_WAS_JUST_ACTIVATED_OR_DEACTIVATED(platform);
 		
-		if (PLATFORM_IS_ACTIVE(platform))
+		if (!PLATFORM_IS_ACTIVE(platform))
+			continue;
+			
+		polygon_data *polygon= get_polygon_data(platform->polygon_index);
+		short sound_code = NONE;
+		bool was_flooded = PLATFORM_IS_FLOODED(platform);
+		
+		// Should there be some warning message about platform-polygon inconsistences?
+		// assert(polygon->permutation==platform_index);
+		if (!(polygon->permutation==platform_index)) 
+			continue;
+		
+		if (!PLATFORM_IS_MOVING(platform))
 		{
-			struct polygon_data *polygon= get_polygon_data(platform->polygon_index);
-			short sound_code= NONE;
-			bool was_flooded = PLATFORM_IS_FLOODED(platform);
-			
-			// Should there be some warning message about platform-polygon inconsistences?
-			// assert(polygon->permutation==platform_index);
-			if (!(polygon->permutation==platform_index)) continue;
-			
-			if (!PLATFORM_IS_MOVING(platform))
+			/* waiting to move */
+			if ((platform->ticks_until_restart-= 1)<=0)
 			{
-				/* waiting to move */
-				if ((platform->ticks_until_restart-= 1)<=0)
-				{
-					SET_PLATFORM_IS_MOVING(platform, true);
-					sound_code= _starting_sound;
-				}
+				SET_PLATFORM_IS_MOVING(platform, true);
+				sound_code= _starting_sound;
 			}
+		}
 
-			if (PLATFORM_IS_MOVING(platform))
+		if (PLATFORM_IS_MOVING(platform))
+		{
+			struct platform_definition *definition= get_platform_definition(platform->type);
+			if (!definition) continue;
+			world_distance new_floor_height= platform->floor_height, new_ceiling_height= platform->ceiling_height;
+			world_distance delta_height= PLATFORM_IS_EXTENDING(platform) ? platform->speed :
+				(PLATFORM_CONTRACTS_SLOWER(platform) ? (-(platform->speed>>2)) : -platform->speed);
+
+			/* adjust and pin heights: if we think weﾃ瓶e fully contracted or expanded, make
+				sure our heights reflect that (we donﾃ付 want a split platform to have blank
+				space between it because it didnﾃ付 quite close all the way) */
+			CLEAR_PLATFORM_POSITIONING_FLAGS(platform);
+			if (PLATFORM_COMES_FROM_FLOOR(platform))
 			{
-				struct platform_definition *definition= get_platform_definition(platform->type);
-				if (!definition) continue;
-				world_distance new_floor_height= platform->floor_height, new_ceiling_height= platform->ceiling_height;
-				world_distance delta_height= PLATFORM_IS_EXTENDING(platform) ? platform->speed :
-					(PLATFORM_CONTRACTS_SLOWER(platform) ? (-(platform->speed>>2)) : -platform->speed);
-
-				/* adjust and pin heights: if we think weﾕre fully contracted or expanded, make
-					sure our heights reflect that (we donﾕt want a split platform to have blank
-					space between it because it didnﾕt quite close all the way) */
-				CLEAR_PLATFORM_POSITIONING_FLAGS(platform);
-				if (PLATFORM_COMES_FROM_FLOOR(platform))
-				{
-					new_floor_height+= delta_height;
-					if (new_floor_height>=platform->maximum_floor_height)
-						SET_PLATFORM_IS_FULLY_EXTENDED(platform);
-					if (new_floor_height<=platform->minimum_floor_height)
-						SET_PLATFORM_IS_FULLY_CONTRACTED(platform);
-				}
+				new_floor_height+= delta_height;
+				if (new_floor_height>=platform->maximum_floor_height)
+					SET_PLATFORM_IS_FULLY_EXTENDED(platform);
+				if (new_floor_height<=platform->minimum_floor_height)
+					SET_PLATFORM_IS_FULLY_CONTRACTED(platform);
+			}
+			if (PLATFORM_COMES_FROM_CEILING(platform))
+			{
+				new_ceiling_height-= delta_height;
+				if (new_ceiling_height>=platform->maximum_ceiling_height)
+					SET_PLATFORM_IS_FULLY_CONTRACTED(platform);
+				if (new_ceiling_height<=platform->minimum_ceiling_height)
+					SET_PLATFORM_IS_FULLY_EXTENDED(platform);
+			}
+			if (PLATFORM_IS_FULLY_EXTENDED(platform))
+			{
+				if (PLATFORM_COMES_FROM_FLOOR(platform)) new_floor_height= platform->maximum_floor_height;
+				if (PLATFORM_COMES_FROM_CEILING(platform)) new_ceiling_height= platform->minimum_ceiling_height;
+			}
+			if (PLATFORM_IS_FULLY_CONTRACTED(platform))
+			{
+				if (PLATFORM_COMES_FROM_FLOOR(platform)) new_floor_height= platform->minimum_floor_height;
+				if (PLATFORM_COMES_FROM_CEILING(platform)) new_ceiling_height= platform->maximum_ceiling_height;
+			}
+			
+			/* calculate new ceiling and floor heights for the platform polygon and see if
+				the change is obstructed */
+			if (change_polygon_height(platform->polygon_index, new_floor_height, new_ceiling_height,
+				PLATFORM_CAUSES_DAMAGE(platform) ? &definition->damage : (struct damage_definition *) NULL))
+			{
+				/* if we werenﾃ付 blocked, remember that we moved last time, change our current
+					level, adjust the textures if weﾃ瓶e coming down from the ceiling,
+					and finally adjust the heights of all endpoints and lines which make
+					up our polygon to reflect the height change */
 				if (PLATFORM_COMES_FROM_CEILING(platform))
+					adjust_platform_sides(platform_index, platform->ceiling_height, new_ceiling_height);
+				platform->ceiling_height= new_ceiling_height, platform->floor_height= new_floor_height;
+				SET_PLATFORM_WAS_MOVING(platform);
+				adjust_platform_endpoint_and_line_heights(platform_index);
+				adjust_platform_for_media(platform_index, false);
+			}
+			else
+			{
+				/* if we were blocked, play a sound if we werenﾃ付 blocked last time and reverse
+					directions if weﾃ瓶e supposed to */
+				if (PLATFORM_WAS_MOVING(platform)) sound_code= _obstructed_sound;
+				if (PLATFORM_REVERSES_DIRECTION_WHEN_OBSTRUCTED(platform))
 				{
-					new_ceiling_height-= delta_height;
-					if (new_ceiling_height>=platform->maximum_ceiling_height)
-						SET_PLATFORM_IS_FULLY_CONTRACTED(platform);
-					if (new_ceiling_height<=platform->minimum_ceiling_height)
-						SET_PLATFORM_IS_FULLY_EXTENDED(platform);
-				}
-				if (PLATFORM_IS_FULLY_EXTENDED(platform))
-				{
-					if (PLATFORM_COMES_FROM_FLOOR(platform)) new_floor_height= platform->maximum_floor_height;
-					if (PLATFORM_COMES_FROM_CEILING(platform)) new_ceiling_height= platform->minimum_ceiling_height;
-				}
-				if (PLATFORM_IS_FULLY_CONTRACTED(platform))
-				{
-					if (PLATFORM_COMES_FROM_FLOOR(platform)) new_floor_height= platform->minimum_floor_height;
-					if (PLATFORM_COMES_FROM_CEILING(platform)) new_ceiling_height= platform->maximum_ceiling_height;
-				}
-				
-				/* calculate new ceiling and floor heights for the platform polygon and see if
-					the change is obstructed */
-				if (change_polygon_height(platform->polygon_index, new_floor_height, new_ceiling_height,
-					PLATFORM_CAUSES_DAMAGE(platform) ? &definition->damage : (struct damage_definition *) NULL))
-				{
-					/* if we werenﾕt blocked, remember that we moved last time, change our current
-						level, adjust the textures if weﾕre coming down from the ceiling,
-						and finally adjust the heights of all endpoints and lines which make
-						up our polygon to reflect the height change */
-					if (PLATFORM_COMES_FROM_CEILING(platform))
-						adjust_platform_sides(platform_index, platform->ceiling_height, new_ceiling_height);
-					platform->ceiling_height= new_ceiling_height, platform->floor_height= new_floor_height;
-					SET_PLATFORM_WAS_MOVING(platform);
-					adjust_platform_endpoint_and_line_heights(platform_index);
-					adjust_platform_for_media(platform_index, false);
+					PLATFORM_IS_EXTENDING(platform) ?
+						SET_PLATFORM_IS_CONTRACTING(platform) :
+						SET_PLATFORM_IS_EXTENDING(platform);
 				}
 				else
 				{
-					/* if we were blocked, play a sound if we werenﾕt blocked last time and reverse
-						directions if weﾕre supposed to */
-					if (PLATFORM_WAS_MOVING(platform)) sound_code= _obstructed_sound;
-					if (PLATFORM_REVERSES_DIRECTION_WHEN_OBSTRUCTED(platform))
-					{
-						PLATFORM_IS_EXTENDING(platform) ?
-							SET_PLATFORM_IS_CONTRACTING(platform) :
-							SET_PLATFORM_IS_EXTENDING(platform);
-					}
-					else
-					{
-						SET_PLATFORM_WAS_BLOCKED(platform);
-					}
-				}
-
-				if (PLATFORM_IS_FULLY_EXTENDED(platform) || PLATFORM_IS_FULLY_CONTRACTED(platform))
-				{
-					bool deactivate= false;
-					
-					SET_PLATFORM_IS_MOVING(platform, false);
-					platform->ticks_until_restart= platform->delay;
-					sound_code= _stopping_sound;
-					
-					/* handle changing directions at extremes and deactivating if necessary */
-					if (PLATFORM_IS_FULLY_CONTRACTED(platform))
-					{
-						if (PLATFORM_IS_INITIALLY_CONTRACTED(platform) && PLATFORM_DEACTIVATES_AT_INITIAL_LEVEL(platform))
-							deactivate= true;
-						SET_PLATFORM_IS_EXTENDING(platform);
-					}
-					else
-					{
-						if (PLATFORM_IS_FULLY_EXTENDED(platform))
-						{
-							if (platform->floor_height==platform->ceiling_height)
-								take_out_the_garbage(platform_index);
-							if (PLATFORM_IS_INITIALLY_EXTENDED(platform)
-									&& PLATFORM_DEACTIVATES_AT_INITIAL_LEVEL(platform))
-								deactivate= true;
-							SET_PLATFORM_IS_CONTRACTING(platform);
-						}
-						else
-						{
-							assert(false);
-						}
-					}
-					if (PLATFORM_DEACTIVATES_AT_EACH_LEVEL(platform)) deactivate= true;
-					
-					if (PLATFORM_ACTIVATES_ADJACENT_PLATFORMS_AT_EACH_LEVEL(platform)) set_adjacent_platform_states(platform_index, true);
-					if (deactivate) set_platform_state(platform_index, false, NONE);
+					SET_PLATFORM_WAS_BLOCKED(platform);
 				}
 			}
 
-			if (sound_code!=NONE) play_platform_sound(platform_index, sound_code);
-			
-			if (was_flooded != PLATFORM_IS_FLOODED(platform))
+			if (PLATFORM_IS_FULLY_EXTENDED(platform) || PLATFORM_IS_FULLY_CONTRACTED(platform))
 			{
-				// flood status changed - update side lights
-				// FIXME: this assumes Marathon 1 map lighting
-				for (int i = 0; i < polygon->vertex_count; i++)
+				bool deactivate= false;
+				
+				SET_PLATFORM_IS_MOVING(platform, false);
+				platform->ticks_until_restart= platform->delay;
+				sound_code= _stopping_sound;
+				
+				/* handle changing directions at extremes and deactivating if necessary */
+				if (PLATFORM_IS_FULLY_CONTRACTED(platform))
 				{
-					short side_index = polygon->side_indexes[i];
-					if (side_index == NONE) continue;
-					guess_side_lightsource_indexes(side_index);
+					if (PLATFORM_IS_INITIALLY_CONTRACTED(platform) && PLATFORM_DEACTIVATES_AT_INITIAL_LEVEL(platform))
+						deactivate= true;
+					SET_PLATFORM_IS_EXTENDING(platform);
 				}
+				else
+				{
+					if (PLATFORM_IS_FULLY_EXTENDED(platform))
+					{
+						if (platform->floor_height==platform->ceiling_height)
+							take_out_the_garbage(platform_index);
+						if (PLATFORM_IS_INITIALLY_EXTENDED(platform)
+								&& PLATFORM_DEACTIVATES_AT_INITIAL_LEVEL(platform))
+							deactivate= true;
+						SET_PLATFORM_IS_CONTRACTING(platform);
+					}
+					else
+					{
+						assert(false);
+					}
+				}
+				if (PLATFORM_DEACTIVATES_AT_EACH_LEVEL(platform)) deactivate= true;
+				
+				if (PLATFORM_ACTIVATES_ADJACENT_PLATFORMS_AT_EACH_LEVEL(platform)) set_adjacent_platform_states(platform_index, true);
+				if (deactivate) set_platform_state(platform_index, false, NONE);
 			}
 		}
+
+		if (sound_code!=NONE) play_platform_sound(platform_index, sound_code);
+		
+		if (was_flooded != PLATFORM_IS_FLOODED(platform))
+		{
+			// flood status changed - update side lights
+			// FIXME: this assumes Marathon 1 map lighting
+			for (int i = 0; i < polygon->vertex_count; i++)
+			{
+				short side_index = polygon->side_indexes[i];
+				if (side_index == NONE) continue;
+				guess_side_lightsource_indexes(side_index);
+			}
+		}
+	
 	}
 }
 
-bool platform_is_on(
-	short platform_index)
+bool platform_is_on(short platform_index)
 {
-	struct platform_data *platform;
-
-	platform= get_platform_data(platform_index);	
-	
+	platform_data *platform = get_platform_data(platform_index);	
 	return PLATFORM_IS_ACTIVE(platform) ? true : false;
 }
 
@@ -449,7 +434,7 @@ short monster_can_enter_platform(
 	{
 		if (PLATFORM_IS_ACTIVE(platform) && PLATFORM_COMES_FROM_FLOOR(platform) && !PLATFORM_COMES_FROM_CEILING(platform))
 		{
-			/* if this platform doesnﾕt go floor to ceiling and it stops at the source polygon, it might be ok */
+			/* if this platform doesnﾃ付 go floor to ceiling and it stops at the source polygon, it might be ok */
 			if (platform->maximum_floor_height!=platform->minimum_ceiling_height &&
 				(platform->minimum_floor_height==source_polygon->floor_height ||
 				platform->maximum_floor_height==source_polygon->floor_height))
@@ -486,18 +471,20 @@ short monster_can_leave_platform(
 	world_distance minimum_ledge_delta,
 	world_distance maximum_ledge_delta) /* negative */
 {
-	struct polygon_data *destination_polygon= get_polygon_data(destination_polygon_index);
-	struct platform_data *platform= get_platform_data(platform_index);
-	struct polygon_data *source_polygon= get_polygon_data(platform->polygon_index);
-	world_distance source_floor_height= source_polygon->floor_height;
-	world_distance source_ceiling_height= source_polygon->ceiling_height;
+	polygon_data *destination_polygon	= get_polygon_data(destination_polygon_index);
+	platform_data *platform			= get_platform_data(platform_index);
+	polygon_data *source_polygon		= get_polygon_data(platform->polygon_index);
+	
+	auto source_floor_height	= source_polygon->floor_height;
+	auto source_ceiling_height	= source_polygon->ceiling_height;
+	
 	world_distance delta_height;
-	short result_code= _exit_is_accessable;
+	short result_code 		= _exit_is_accessable;
 
 	if (PLATFORM_IS_DOOR(platform))
 	{
-		source_floor_height= platform->minimum_floor_height;
-		source_ceiling_height= platform->maximum_ceiling_height;
+		source_floor_height	= platform->minimum_floor_height;
+		source_ceiling_height	= platform->maximum_ceiling_height;
 	}
 	else
 	{
@@ -522,18 +509,16 @@ short monster_can_leave_platform(
 	return result_code;
 }
 
-void player_touch_platform_state(
-	short player_index,
-	short platform_index)
+void player_touch_platform_state(short player_index, short platform_index)
 {
 	struct platform_data *platform= get_platform_data(platform_index);
 	struct platform_definition *definition= get_platform_definition(platform->type);
 	if (!definition) return;
 	short sound_code= NONE;
 	
-	/* if we canﾕt control this platform, play the uncontrollable sound, if itﾕs inactive activate
-		it and if itﾕs active and moving reverse itﾕs direction if thatﾕs what it does when itﾕs
-		obstructed, if itﾕs active but not moving then zero the delay */
+	/* if we canﾃ付 control this platform, play the uncontrollable sound, if itﾃ不 inactive activate
+		it and if itﾃ不 active and moving reverse itﾃ不 direction if thatﾃ不 what it does when itﾃ不
+		obstructed, if itﾃ不 active but not moving then zero the delay */
 	if (PLATFORM_IS_PLAYER_CONTROLLABLE(platform))
 	{
 		if (PLATFORM_IS_ACTIVE(platform))
@@ -578,64 +563,55 @@ void player_touch_platform_state(
 		}
 	}
 	else
-	{
 		sound_code= _uncontrollable_sound;
-	}
 	
-	if (sound_code!=NONE) play_platform_sound(platform_index, sound_code);
+	if (sound_code!=NONE) 
+		play_platform_sound(platform_index, sound_code);
 }
 
 
-void platform_was_entered(
-	short platform_index,
-	bool player)
+void platform_was_entered(short platform_index, bool player)
 {
-	struct platform_data *platform= get_platform_data(platform_index);
-
-	if (!PLATFORM_IS_DOOR(platform))
-	{
-		if ((player && PLATFORM_IS_PLAYER_CONTROLLABLE(platform)) ||
-			(!player && PLATFORM_IS_MONSTER_CONTROLLABLE(platform)))
-		{
-			try_and_change_platform_state(platform_index, true);
-		}
-	}
-}
-
-bool platform_is_legal_player_target(
-	short platform_index)
-{
-	struct platform_data *platform= get_platform_data(platform_index);
-	struct platform_definition *definition= get_platform_definition(platform->type);
-	if (!definition) return false;
-	bool legal_player_target= false;
+	platform_data *platform = get_platform_data(platform_index);
 
 	if (PLATFORM_IS_DOOR(platform))
-	{
-		if ((PLATFORM_IS_PLAYER_CONTROLLABLE(platform) || definition->uncontrollable_sound!=NONE) &&
-			(!PLATFORM_ACTIVATES_ONLY_ONCE(platform) || !PLATFORM_HAS_BEEN_ACTIVATED(platform)))
-		{
-			legal_player_target= true;
-		}
-	}
+		return;
 	
+	if ((player && PLATFORM_IS_PLAYER_CONTROLLABLE(platform)) ||
+		(!player && PLATFORM_IS_MONSTER_CONTROLLABLE(platform)))
+		try_and_change_platform_state(platform_index, true);
+}
+
+bool platform_is_legal_player_target(short platform_index)
+{
+	platform_data *platform 		= get_platform_data(platform_index);
+	platform_definition *definition 	= get_platform_definition(platform->type);
+	
+	if (!definition) 
+		return false;
+		
+	bool legal_player_target = false;
+
+	if (!PLATFORM_IS_DOOR(platform))
+		return false;
+	
+	if ((PLATFORM_IS_PLAYER_CONTROLLABLE(platform) || definition->uncontrollable_sound!=NONE) &&
+		(!PLATFORM_ACTIVATES_ONLY_ONCE(platform) || !PLATFORM_HAS_BEEN_ACTIVATED(platform)))
+		legal_player_target = true;
 	return legal_player_target;
 }
 
-bool platform_is_at_initial_state(
-	short platform_index)
+bool platform_is_at_initial_state(short platform_index)
 {
-	struct platform_data *platform= get_platform_data(platform_index);
+	platform_data *platform = get_platform_data(platform_index);
 	
 	return (PLATFORM_HAS_BEEN_ACTIVATED(platform) && (!PLATFORM_IS_ACTIVE(platform) || PLATFORM_CANNOT_BE_EXTERNALLY_DEACTIVATED(platform))) ? false : true;
 }
 
-bool try_and_change_platform_state(
-	short platform_index,
-	bool state)
+bool try_and_change_platform_state(short platform_index, bool state)
 {
-	struct platform_data *platform= get_platform_data(platform_index);
-	bool changed= false;
+	platform_data *platform= get_platform_data(platform_index);
+	bool changed = false;
 	
 	if (state || !PLATFORM_IS_ACTIVE(platform) || !PLATFORM_CANNOT_BE_EXTERNALLY_DEACTIVATED(platform))
 	{
@@ -647,37 +623,31 @@ bool try_and_change_platform_state(
 	return changed;
 }
 
-bool try_and_change_tagged_platform_states(
-	short tag,
-	bool state)
+bool try_and_change_tagged_platform_states(short tag, bool state)
 {
-	struct platform_data *platform;
-	bool changed= false;
+	platform_data *platform;
+	bool changed = false;
 	short platform_index;
 	
-	if (tag)
-	{
-		for (platform_index= 0, platform= platforms; platform_index<dynamic_world->platform_count; ++platform_index, ++platform)
-		{
-			if (platform->tag==tag)
-			{
-				if (try_and_change_platform_state(platform_index, state))
-				{
-					changed= true;
-				}
-			}
-		}
-	}
+	if (!tag)
+		return false;
 	
+	for (platform_index= 0, platform= platforms; platform_index<dynamic_world->platform_count; ++platform_index, ++platform)
+	{
+		if (platform->tag != tag || !try_and_change_platform_state(platform_index, state))
+			continue;
+		changed = true;
+	}
 	return changed;
 }
 
-short get_platform_moving_sound(
-	short platform_index)
+short get_platform_moving_sound(short platform_index)
 {
-	struct platform_data *platform= get_platform_data(platform_index);
-	struct platform_definition *definition= get_platform_definition(platform->type);
-	if (!definition) return NONE;
+	platform_data *platform 	= get_platform_data(platform_index);
+	platform_definition *definition = get_platform_definition(platform->type);
+	
+	if (!definition) 
+		return NONE;
 	
 	return definition->moving_sound;
 }
@@ -685,11 +655,10 @@ short get_platform_moving_sound(
 /* ---------- private code */
 
 
-static short polygon_index_to_platform_index(
-	short polygon_index)
+static short polygon_index_to_platform_index(short polygon_index)
 {
 	short platform_index;
-	struct platform_data *platform;
+	platform_data *platform;
 	
 	for (platform_index= 0, platform= platforms; platform_index<dynamic_world->platform_count; ++platform_index, ++platform)
 	{
@@ -700,177 +669,177 @@ static short polygon_index_to_platform_index(
 	return platform_index;
 }
 
-bool set_platform_state(
-	short platform_index,
-	bool state,
-	short parent_platform_index)
+bool set_platform_state(short platform_index, bool state, short parent_platform_index)
 {
-	struct platform_data *platform= get_platform_data(platform_index);
-	bool new_state= PLATFORM_IS_ACTIVE(platform) ? true : false;
-	short sound_code= NONE;
+	platform_data *platform = get_platform_data(platform_index);
+	bool new_state = PLATFORM_IS_ACTIVE(platform) ? true : false;
+	short sound_code = NONE;
 	
-	if (!PLATFORM_WAS_JUST_ACTIVATED_OR_DEACTIVATED(platform))
-	{
-		if (!state || !PLATFORM_ACTIVATES_ONLY_ONCE(platform) || !PLATFORM_HAS_BEEN_ACTIVATED(platform))
-		{
-			if ((state && !PLATFORM_IS_ACTIVE(platform)) || (!state && PLATFORM_IS_ACTIVE(platform)))
-			{
-				struct polygon_data *polygon= get_polygon_data(platform->polygon_index);
-				
-				/* the state of this platform cannot be changed again this tick */
-				SET_PLATFORM_WAS_JUST_ACTIVATED_OR_DEACTIVATED(platform);
-				
-				if (state)
-				{
-					SET_PLATFORM_HAS_BEEN_ACTIVATED(platform);
-					SET_PLATFORM_IS_MOVING(platform, false);
-					platform->ticks_until_restart= PLATFORM_DELAYS_BEFORE_ACTIVATION(platform) ?
-						platform->delay : 0;
+	if (PLATFORM_WAS_JUST_ACTIVATED_OR_DEACTIVATED(platform))
+		return new_state;
+	
 
-					if (PLATFORM_ACTIVATES_LIGHT(platform))
-					{
-						set_light_status(polygon->floor_lightsource_index, true);
-						set_light_status(polygon->ceiling_lightsource_index, true);
-					}
-	
-					platform->parent_platform_index= parent_platform_index;
-	
-					if (PLATFORM_ACTIVATES_ADJACENT_PLATFORMS_WHEN_ACTIVATING(platform)) set_adjacent_platform_states(platform_index, true);
-					if (PLATFORM_DEACTIVATES_ADJACENT_PLATFORMS_WHEN_ACTIVATING(platform)) set_adjacent_platform_states(platform_index, false);
-				}
-				else
-				{
-					if (PLATFORM_DEACTIVATES_LIGHT(platform))
-					{
-						set_light_status(polygon->floor_lightsource_index, false);
-						set_light_status(polygon->ceiling_lightsource_index, false);
-					}
-					
-					if (PLATFORM_ACTIVATES_ADJACENT_PLATFORMS_WHEN_DEACTIVATING(platform)) set_adjacent_platform_states(platform_index, true);
-					if (PLATFORM_DEACTIVATES_ADJACENT_PLATFORMS_WHEN_DEACTIVATING(platform)) set_adjacent_platform_states(platform_index, false);
-					
-					if (PLATFORM_IS_MOVING(platform)) sound_code= _obstructed_sound;
-				}
-				
-				/* assume the correct state, and correctly update all switches referencing this platform */
-				SET_PLATFORM_IS_ACTIVE(platform, state);
-                                //MH: Lua script hook
-                                L_Call_Platform_Activated(platform->polygon_index);
-				assume_correct_switch_position(_panel_is_platform_switch, platform->polygon_index, state);
-				
-				new_state= state;
-			}
-		}
-	
-		if (sound_code!=NONE) play_platform_sound(platform_index, sound_code);
+	if(state && PLATFORM_ACTIVATES_ONLY_ONCE(platform) && PLATFORM_HAS_BEEN_ACTIVATED(platform) )
+	{
+		if (sound_code != NONE) 
+			play_platform_sound(platform_index, sound_code);
+		return new_state;	
 	}
 	
+	
+	if ((state && !PLATFORM_IS_ACTIVE(platform)) || (!state && PLATFORM_IS_ACTIVE(platform)))
+	{
+		polygon_data *polygon = get_polygon_data(platform->polygon_index);
+		
+		/* the state of this platform cannot be changed again this tick */
+		SET_PLATFORM_WAS_JUST_ACTIVATED_OR_DEACTIVATED(platform);
+		
+		if (state)
+		{
+			SET_PLATFORM_HAS_BEEN_ACTIVATED(platform);
+			SET_PLATFORM_IS_MOVING(platform, false);
+			platform->ticks_until_restart= PLATFORM_DELAYS_BEFORE_ACTIVATION(platform) ?
+				platform->delay : 0;
+
+			if (PLATFORM_ACTIVATES_LIGHT(platform))
+			{
+				set_light_status(polygon->floor_lightsource_index, true);
+				set_light_status(polygon->ceiling_lightsource_index, true);
+			}
+
+			platform->parent_platform_index= parent_platform_index;
+
+			if (PLATFORM_ACTIVATES_ADJACENT_PLATFORMS_WHEN_ACTIVATING(platform)) 
+				set_adjacent_platform_states(platform_index, true);
+			if (PLATFORM_DEACTIVATES_ADJACENT_PLATFORMS_WHEN_ACTIVATING(platform)) 
+				set_adjacent_platform_states(platform_index, false);
+		}
+		else
+		{
+			if (PLATFORM_DEACTIVATES_LIGHT(platform))
+			{
+				set_light_status(polygon->floor_lightsource_index, false);
+				set_light_status(polygon->ceiling_lightsource_index, false);
+			}
+			
+			if (PLATFORM_ACTIVATES_ADJACENT_PLATFORMS_WHEN_DEACTIVATING(platform)) 
+				set_adjacent_platform_states(platform_index, true);
+			if (PLATFORM_DEACTIVATES_ADJACENT_PLATFORMS_WHEN_DEACTIVATING(platform)) 
+				set_adjacent_platform_states(platform_index, false);
+			
+			if (PLATFORM_IS_MOVING(platform)) 
+				sound_code = _obstructed_sound;
+		}
+		
+		/* assume the correct state, and correctly update all switches referencing this platform */
+		SET_PLATFORM_IS_ACTIVE(platform, state);
+                //MH: Lua script hook
+                L_Call_Platform_Activated(platform->polygon_index);
+		assume_correct_switch_position(_panel_is_platform_switch, platform->polygon_index, state);
+		
+		new_state = state;
+	}
+	if (sound_code != NONE) 
+		play_platform_sound(platform_index, sound_code);
 	return new_state;
 }
 
-static void set_adjacent_platform_states(
-	short platform_index,
-	bool state)
+static void set_adjacent_platform_states(short platform_index, bool state)
 {
-	struct platform_data *platform= get_platform_data(platform_index);
-	struct polygon_data *polygon= get_polygon_data(platform->polygon_index);
-	short i;
+	platform_data *platform = get_platform_data(platform_index);
+	polygon_data *polygon 	= get_polygon_data(platform->polygon_index);
 	
-	for (i= 0; i<polygon->vertex_count; ++i)
+	for( ix i = 0; i < polygon->vertex_count; ++i )
 	{
-		short adjacent_polygon_index= polygon->adjacent_polygon_indexes[i];
-		short adjacent_platform_index= polygon_index_to_platform_index(adjacent_polygon_index);
+		auto adjacent_polygon_index 	= polygon->adjacent_polygon_indexes[i];
+		auto adjacent_platform_index 	= polygon_index_to_platform_index(adjacent_polygon_index);
 
-		if (adjacent_platform_index!=NONE)
-		{
-			struct polygon_data *adjacent_polygon= get_polygon_data(adjacent_polygon_index);
-			
-			if (!PLATFORM_DOES_NOT_ACTIVATE_PARENT(platform) || platform->parent_platform_index!=adjacent_platform_index)
-			{
-				set_platform_state(adjacent_polygon->permutation, state, platform_index);
-			}
-		}
+		if (adjacent_platform_index == NONE)
+			continue;
+		
+		polygon_data *adjacent_polygon 	= get_polygon_data(adjacent_polygon_index);
+		
+		if (!PLATFORM_DOES_NOT_ACTIVATE_PARENT(platform) || platform->parent_platform_index != adjacent_platform_index)
+			set_platform_state(adjacent_polygon->permutation, state, platform_index);
+	
 	}
 }
 
 /* remove all garbage objects in the platform */
-static void take_out_the_garbage(
-	short platform_index)
+static void take_out_the_garbage(short platform_index)
 {
-	struct platform_data *platform= get_platform_data(platform_index);
-	struct polygon_data *polygon= get_polygon_data(platform->polygon_index);
-	short object_index= polygon->first_object;
+	platform_data *platform 	= get_platform_data(platform_index);
+	polygon_data *polygon 		= get_polygon_data(platform->polygon_index);
 	
-	while (object_index!=NONE)
+	auto object_index 		= polygon->first_object;
+	
+	while (object_index != NONE)
 	{
-		struct object_data *object= get_object_data(object_index);
+		object_data *object = get_object_data(object_index);
 		
-		if (GET_OBJECT_OWNER(object)==_object_is_garbage) remove_map_object(object_index);
-		object_index= object->next_object; /* relies on remove_map_object() not changing this */
+		if (GET_OBJECT_OWNER(object) == _object_is_garbage) 
+			remove_map_object(object_index);
+		object_index = object->next_object; /* relies on remove_map_object() not changing this */
 	}
 }
 
-void adjust_platform_for_media(
-	short platform_index,
-	bool initialize)
+void adjust_platform_for_media(short platform_index, bool initialize)
 {
-	struct platform_data *platform= get_platform_data(platform_index);
-	struct polygon_data *polygon= get_polygon_data(platform->polygon_index);
+	platform_data *platform	= get_platform_data(	platform_index);
+	polygon_data *polygon	= get_polygon_data(	platform->polygon_index);
 	
-	if (polygon->media_index!=NONE)
+	if (polygon->media_index == NONE)
+		return;
+	
+	// LP change: idiot-proofing
+	media_data *media 	= get_media_data(polygon->media_index);
+	if (!media)
+		return;
+	
+	bool floor_below_media = platform->floor_height	<	media->height;
+	
+	bool ceiling_below_media = platform->ceiling_height <	media->height;
+	
+	if (initialize)
 	{
-		// LP change: idiot-proofing
-		struct media_data *media= get_media_data(polygon->media_index);
-		if (media)
-		{
-		bool floor_below_media= platform->floor_height<media->height;
-		bool ceiling_below_media= platform->ceiling_height<media->height;
-		
-		if (!initialize)
-		{
-			short sound_code= NONE;
-			
-			if ((PLATFORM_FLOOR_BELOW_MEDIA(platform) && !floor_below_media) ||
-				(PLATFORM_CEILING_BELOW_MEDIA(platform) && !ceiling_below_media))
-			{
-				sound_code= _media_snd_platform_leaving;
-			}
-			if ((!PLATFORM_FLOOR_BELOW_MEDIA(platform) && floor_below_media) ||
-				(!PLATFORM_CEILING_BELOW_MEDIA(platform) && ceiling_below_media))
-			{
-				sound_code= _media_snd_platform_entering;
-			}
-			
-			if (sound_code!=NONE)
-			{
-				play_polygon_sound(platform->polygon_index, get_media_sound(polygon->media_index, sound_code));
-			}
-		}
-		
-		SET_PLATFORM_FLOOR_BELOW_MEDIA(platform, floor_below_media);
+		SET_PLATFORM_FLOOR_BELOW_MEDIA(	platform, floor_below_media);
 		SET_PLATFORM_CEILING_BELOW_MEDIA(platform, ceiling_below_media);
-		}
+		return;
 	}
+	
+	short sound_code = NONE;
+	
+	if ((PLATFORM_FLOOR_BELOW_MEDIA(platform) && !floor_below_media) ||
+		(PLATFORM_CEILING_BELOW_MEDIA(platform) && !ceiling_below_media))
+		sound_code = _media_snd_platform_leaving;
+	if ((!PLATFORM_FLOOR_BELOW_MEDIA(platform) && floor_below_media) ||
+		(!PLATFORM_CEILING_BELOW_MEDIA(platform) && ceiling_below_media))
+		sound_code = _media_snd_platform_entering;
+	
+	if (sound_code!=NONE)
+		play_polygon_sound(platform->polygon_index, get_media_sound(polygon->media_index, sound_code));
+
+	
+	SET_PLATFORM_FLOOR_BELOW_MEDIA(platform, floor_below_media);
+	SET_PLATFORM_CEILING_BELOW_MEDIA(platform, ceiling_below_media);
 }
 
-void adjust_platform_endpoint_and_line_heights(
-	short platform_index)
+void adjust_platform_endpoint_and_line_heights(short platform_index)
 {
-	struct platform_data *platform= get_platform_data(platform_index);
-	struct polygon_data *polygon= get_polygon_data(platform->polygon_index);
-	short i;
-	
-	for (i= 0; i<polygon->vertex_count; ++i)
+	platform_data *platform = get_platform_data(platform_index);
+	polygon_data *polygon = get_polygon_data(platform->polygon_index);
+
+	for (ix i = 0; i < polygon->vertex_count; ++i)
 	{
-		struct endpoint_data *endpoint= get_endpoint_data(polygon->endpoint_indexes[i]);
-		struct line_data *line= get_line_data(polygon->line_indexes[i]);
-		short polygon_count= platform->endpoint_owners[i].polygon_index_count;
+		endpoint_data *endpoint = get_endpoint_data(polygon->endpoint_indexes[i]);
+		line_data *line = get_line_data(polygon->line_indexes[i]);
+		auto polygon_count= platform->endpoint_owners[i].polygon_index_count;
 		short *polygon_indexes= get_map_indexes(platform->endpoint_owners[i].first_polygon_index, polygon_count);
-		short line_count= platform->endpoint_owners[i].line_index_count;
-		short *line_indexes= get_map_indexes(platform->endpoint_owners[i].first_line_index, line_count);
+		auto line_count = platform->endpoint_owners[i].line_index_count;
+		short *line_indexes = get_map_indexes(platform->endpoint_owners[i].first_line_index, line_count);
 		short lowest_adjacent_ceiling= 0, highest_adjacent_floor= 0, supporting_polygon_index = NONE;
-		struct polygon_data *adjacent_polygon;
-		short j;
+		polygon_data *adjacent_polygon;
+		ix j;
 		
 		/* adjust line heights and set proper line transparency and solidity */
 		// Skip this step if line indexes were not found
@@ -880,7 +849,7 @@ void adjust_platform_endpoint_and_line_heights(
 			line->highest_adjacent_floor= MAX(polygon->floor_height, adjacent_polygon->floor_height);
 			line->lowest_adjacent_ceiling= MIN(polygon->ceiling_height, adjacent_polygon->ceiling_height);
 
-			/* only worry about transparency and solidity if thereﾕs a polygon on the other side */
+			/* only worry about transparency and solidity if thereﾃ不 a polygon on the other side */
 			if (LINE_IS_VARIABLE_ELEVATION(line))
 			{
 				SET_LINE_TRANSPARENCY(line, line->highest_adjacent_floor<line->lowest_adjacent_ceiling);
@@ -918,158 +887,142 @@ void adjust_platform_endpoint_and_line_heights(
 	}
 }
 
-static void play_platform_sound(
-	short platform_index,
-	short type)
+static void play_platform_sound(short platform_index, short type)
 {
-	struct platform_data *platform= get_platform_data(platform_index);
-	struct platform_definition *definition= get_platform_definition(platform->type);
-	if (!definition) return;
+	platform_data *platform 	= get_platform_data(platform_index);
+	platform_definition *definition = get_platform_definition(platform->type);
+	
+	if (!definition)
+		return;
+		
 	short sound_code;
 	
 	switch (type)
 	{
 		case _obstructed_sound:
-			sound_code= definition->obstructed_sound;
+			sound_code = definition->obstructed_sound;
 			break;
-		
 		case _uncontrollable_sound:
-			sound_code= definition->uncontrollable_sound;
+			sound_code = definition->uncontrollable_sound;
 			break;
-		
 		case _starting_sound:
-			sound_code= PLATFORM_IS_EXTENDING(platform) ? definition->starting_extension : definition->starting_contraction;
+			sound_code = PLATFORM_IS_EXTENDING(platform) ? definition->starting_extension : definition->starting_contraction;
 			break;
 		case _stopping_sound:
-			sound_code= PLATFORM_IS_FULLY_CONTRACTED(platform) ? definition->stopping_contraction : definition->stopping_extension;
+			sound_code = PLATFORM_IS_FULLY_CONTRACTED(platform) ? definition->stopping_contraction : definition->stopping_extension;
 			break;
-		
 		default:
 			assert(false);
 			break;
 	}
-	
 	play_polygon_sound(platform->polygon_index, sound_code);
 	SoundManager::instance()->CauseAmbientSoundSourceUpdate();
 }
 
-/* rules for using native polygon heights: a) if this is a floor platform, then take the polygonﾕs
+/* rules for using native polygon heights: a) if this is a floor platform, then take the polygonﾃ不
 	native floor height to be the maximum height if it is greater than the minimum height, otherwise
-	use it as the minimum height; b) if this is a ceiling platform, then take the polygonﾕs native
+	use it as the minimum height; b) if this is a ceiling platform, then take the polygonﾃ不 native
 	ceiling height to be the minimum height if it is less than the maximum height, otherwise use it
 	as the maximum height; c) native polygon height is not used for floor/ceiling platforms */
-static void calculate_platform_extrema(
-	short platform_index,
-	world_distance lowest_level,
-	world_distance highest_level)
+static void calculate_platform_extrema(short platform_index, world_distance lowest_level, world_distance highest_level)
 {
-	short i;
-	struct platform_data *platform= get_platform_data(platform_index);
-	struct polygon_data *polygon= get_polygon_data(platform->polygon_index);
+	platform_data *platform = 	get_platform_data(platform_index);
+	polygon_data *polygon =		get_polygon_data(platform->polygon_index);
+	
 	world_distance lowest_adjacent_floor, highest_adjacent_ceiling;
 	world_distance highest_adjacent_floor, lowest_adjacent_ceiling;
 	
-	// LP change: no need for this test
-	// assert(lowest_level==NONE||highest_level==NONE||lowest_level<highest_level);
-	
 	/* calculate lowest and highest adjacent floors and ceilings */
-	lowest_adjacent_floor= highest_adjacent_floor= polygon->floor_height;
-	lowest_adjacent_ceiling= highest_adjacent_ceiling= polygon->ceiling_height;
-	for (i= 0; i<polygon->vertex_count; ++i)
+	lowest_adjacent_floor = highest_adjacent_floor = polygon->floor_height;
+	lowest_adjacent_ceiling = highest_adjacent_ceiling = polygon->ceiling_height;
+	
+	for (ix i = 0; i < polygon->vertex_count; ++i)
 	{
-		if (polygon->adjacent_polygon_indexes[i]!=NONE)
-		{
-			struct polygon_data *adjacent_polygon= get_polygon_data(polygon->adjacent_polygon_indexes[i]);
-			
-			if (adjacent_polygon->floor_height<lowest_adjacent_floor) lowest_adjacent_floor= adjacent_polygon->floor_height;
-			if (adjacent_polygon->floor_height>highest_adjacent_floor) highest_adjacent_floor= adjacent_polygon->floor_height;
-			if (adjacent_polygon->ceiling_height<lowest_adjacent_ceiling) lowest_adjacent_ceiling= adjacent_polygon->ceiling_height;
-			if (adjacent_polygon->ceiling_height>highest_adjacent_ceiling) highest_adjacent_ceiling= adjacent_polygon->ceiling_height;
-		}
+		if (polygon->adjacent_polygon_indexes[i] == NONE)
+			continue;
+		
+		polygon_data *adjacent_polygon = get_polygon_data( polygon->adjacent_polygon_indexes[i] );
+		
+		if (adjacent_polygon->floor_height<lowest_adjacent_floor) 
+			lowest_adjacent_floor = adjacent_polygon->floor_height;
+		if (adjacent_polygon->floor_height>highest_adjacent_floor) 
+			highest_adjacent_floor = adjacent_polygon->floor_height;
+		if (adjacent_polygon->ceiling_height<lowest_adjacent_ceiling) 
+			lowest_adjacent_ceiling = adjacent_polygon->ceiling_height;
+		if (adjacent_polygon->ceiling_height>highest_adjacent_ceiling) 
+			highest_adjacent_ceiling = adjacent_polygon->ceiling_height;
+	
 	}
 
 	/* take into account the EXTENDS_FLOOR_TO_CEILING flag */
 	if (PLATFORM_EXTENDS_FLOOR_TO_CEILING(platform))
 	{
-		if (polygon->ceiling_height>highest_adjacent_floor) highest_adjacent_floor= polygon->ceiling_height;
-		if (polygon->floor_height<lowest_adjacent_ceiling) lowest_adjacent_ceiling= polygon->floor_height;
+		if (polygon->ceiling_height > highest_adjacent_floor) 
+			highest_adjacent_floor = polygon->ceiling_height;
+		if (polygon->floor_height < lowest_adjacent_ceiling) 
+			lowest_adjacent_ceiling = polygon->floor_height;
 	}
 	
 	/* calculate floor and ceiling min, max values as appropriate for the platform direction */
 	if (PLATFORM_GOES_BOTH_WAYS(platform))
 	{
 		/* split platforms always meet in the center */
-		platform->minimum_floor_height= lowest_level==NONE ? lowest_adjacent_floor : lowest_level;
-		platform->maximum_ceiling_height= highest_level==NONE ? highest_adjacent_ceiling : highest_level;
-		platform->maximum_floor_height= platform->minimum_ceiling_height=
-			(platform->minimum_floor_height+platform->maximum_ceiling_height)/2;
+		platform->minimum_floor_height = lowest_level == NONE ? lowest_adjacent_floor : lowest_level;
+		platform->maximum_ceiling_height = highest_level == NONE ? highest_adjacent_ceiling : highest_level;
+		platform->maximum_floor_height = platform->minimum_ceiling_height=
+			( platform->minimum_floor_height + platform->maximum_ceiling_height ) / 2;
+		return;
 	}
-	else
+	if (PLATFORM_COMES_FROM_FLOOR(platform))
 	{
-		if (PLATFORM_COMES_FROM_FLOOR(platform))
+		if (PLATFORM_USES_NATIVE_POLYGON_HEIGHTS(platform))
 		{
-			if (PLATFORM_USES_NATIVE_POLYGON_HEIGHTS(platform))
-			{
-				if (polygon->floor_height<lowest_adjacent_floor || PLATFORM_EXTENDS_FLOOR_TO_CEILING(platform))
-				{
-					lowest_adjacent_floor= polygon->floor_height;
-				}
-				else
-				{
-					highest_adjacent_floor= polygon->floor_height;
-				}
-			}
-			
-			platform->minimum_floor_height= lowest_level==NONE ? lowest_adjacent_floor : lowest_level;
-			platform->maximum_floor_height= highest_level==NONE ? highest_adjacent_floor : highest_level;
-			platform->minimum_ceiling_height= platform->maximum_ceiling_height= polygon->ceiling_height;
+			if (polygon->floor_height < lowest_adjacent_floor || PLATFORM_EXTENDS_FLOOR_TO_CEILING(platform))
+				lowest_adjacent_floor = polygon->floor_height;
+			else
+				highest_adjacent_floor = polygon->floor_height;
 		}
-		else if (PLATFORM_COMES_FROM_CEILING(platform))
-		{
-
-			if (PLATFORM_USES_NATIVE_POLYGON_HEIGHTS(platform))
-			{
-				if (polygon->ceiling_height>highest_adjacent_ceiling || PLATFORM_EXTENDS_FLOOR_TO_CEILING(platform))
-				{
-					highest_adjacent_ceiling= polygon->ceiling_height;
-				}
-				else
-				{
-					lowest_adjacent_ceiling= polygon->ceiling_height;
-				}
-			}
-			
-			platform->minimum_ceiling_height= lowest_level==NONE ? lowest_adjacent_ceiling : lowest_level;
-			platform->maximum_ceiling_height= highest_level==NONE ? highest_adjacent_ceiling : highest_level;
-			platform->minimum_floor_height= platform->maximum_floor_height= polygon->floor_height;
-		}
+		
+		platform->minimum_floor_height = lowest_level == NONE ? lowest_adjacent_floor : lowest_level;
+		platform->maximum_floor_height = highest_level == NONE ? highest_adjacent_floor : highest_level;
+		platform->minimum_ceiling_height = platform->maximum_ceiling_height = polygon->ceiling_height;
+		return;
 	}
+	if (!PLATFORM_COMES_FROM_CEILING(platform))
+		return;
+	if (PLATFORM_USES_NATIVE_POLYGON_HEIGHTS(platform))
+	{
+		if (polygon->ceiling_height > highest_adjacent_ceiling || PLATFORM_EXTENDS_FLOOR_TO_CEILING(platform))
+			highest_adjacent_ceiling = polygon->ceiling_height;
+		else
+			lowest_adjacent_ceiling = polygon->ceiling_height;
+	}
+	
+	platform->minimum_ceiling_height = lowest_level == NONE ? lowest_adjacent_ceiling : lowest_level;
+	platform->maximum_ceiling_height = highest_level == NONE ? highest_adjacent_ceiling : highest_level;
+	platform->minimum_floor_height = platform->maximum_floor_height = polygon->floor_height;
 }
 
-static void adjust_platform_sides(
-	short platform_index, 
-	world_distance old_ceiling_height,
-	world_distance new_ceiling_height)
+static void adjust_platform_sides(short platform_index, world_distance old_ceiling_height, world_distance new_ceiling_height)
 {
-	struct platform_data *platform= get_platform_data(platform_index);
-	struct polygon_data *polygon= get_polygon_data(platform->polygon_index);
-	world_distance delta_height= new_ceiling_height-old_ceiling_height;
-	short i;
-	
-	for (i= 0; i<polygon->vertex_count; ++i)
+	platform_data *platform = get_platform_data(platform_index);
+	polygon_data *polygon = get_polygon_data(platform->polygon_index);
+	auto delta_height = new_ceiling_height - old_ceiling_height;
+
+	for( ix i = 0; i < polygon->vertex_count; ++i )
 	{
 		short side_index;
-		struct side_data *side;
-		struct line_data *line= get_line_data(polygon->line_indexes[i]);
-		short adjacent_polygon_index= polygon->adjacent_polygon_indexes[i];
+		side_data *side;
+		line_data *line = get_line_data( polygon->line_indexes[ i ] );
+		auto adjacent_polygon_index = polygon->adjacent_polygon_indexes[ i ];
 		
 		/* adjust the platform side (i.e., the texture on the side of the platform) */
 		if (adjacent_polygon_index!=NONE)
 		{
 			side_index= adjacent_polygon_index==line->clockwise_polygon_owner ? line->clockwise_polygon_side_index : line->counterclockwise_polygon_side_index;
-			if (side_index!=NONE)
+			if (side_index != NONE)
 			{
-				side= get_side_data(side_index);
+				side = get_side_data(side_index);
 				switch (side->type)
 				{
 					case _full_side:
@@ -1082,41 +1035,36 @@ static void adjust_platform_sides(
 		}
 
 		/* adjust the shaft side (i.e., the texture the platform slides against) */		
-		side_index= polygon->side_indexes[i];
-		if (side_index!=NONE)
+		side_index = polygon->side_indexes[ i ];
+		if (side_index == NONE)
+			continue;
+	
+	
+		world_distance top_of_side_height;
+		
+		side = get_side_data(side_index);
+		switch (side->type)
 		{
-			world_distance top_of_side_height;
-			
-			side= get_side_data(side_index);
-			switch (side->type)
-			{
-				case _split_side: /* secondary */
-					top_of_side_height= MIN(line->highest_adjacent_floor,  polygon->ceiling_height);
-					side->primary_texture.y0-= (old_ceiling_height<top_of_side_height && new_ceiling_height<top_of_side_height) ?
-						delta_height : new_ceiling_height-top_of_side_height;
-					break;
-				case _high_side: /* primary */
-//					top_of_side_height= polygon->ceiling_height;
-					side->primary_texture.y0-= delta_height; //(old_ceiling_height<top_of_side_height && new_ceiling_height<top_of_side_height) ?
-//						delta_height : new_ceiling_height-top_of_side_height;
-					break;
-				case _full_side: /* primary */
-					side->primary_texture.y0-= delta_height;
-					break;
-				case _low_side: /* primary */
-					// ghs: the following doesn't appear to be necessary at all!
-/*
-					top_of_side_height= MIN(line->highest_adjacent_floor, polygon->ceiling_height);
-					side->primary_texture.y0-= (old_ceiling_height<top_of_side_height && new_ceiling_height<top_of_side_height) ?
-						delta_height : new_ceiling_height-top_of_side_height;
-*/
-					break;
-			
-				default:
-					vhalt(csprintf(temporary, "wasnﾕt expecting side #%d to have type #%d", side_index, side->type));
-					break;
-			}
+			case _split_side: /* secondary */
+				top_of_side_height = MIN(line->highest_adjacent_floor,  polygon->ceiling_height);
+				side->primary_texture.y0 -= (old_ceiling_height<top_of_side_height && new_ceiling_height<top_of_side_height) ?
+					delta_height : new_ceiling_height-top_of_side_height;
+				break;
+			case _high_side: /* primary */
+
+				side->primary_texture.y0 -= delta_height; //(old_ceiling_height<top_of_side_height && new_ceiling_height<top_of_side_height) ?
+				break;
+			case _full_side: /* primary */
+				side->primary_texture.y0 -= delta_height;
+				break;
+			case _low_side: /* primary */
+				break;
+		
+			default:
+				assert(false);
+				break;
 		}
+	
 	}
 }
 
