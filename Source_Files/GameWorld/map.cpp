@@ -123,15 +123,6 @@ find_line_crossed leaving polygon could be sped up considerable by reversing the
 
 #include <list>
 
-/* ---------- structures */
-
-/*
-struct environment_definition
-{
-	short *shape_collections; *//* NONE terminated *//*
-};
-*/
-
 /* ---------- constants */
 
 #define DEFAULT_MAP_MEMORY_SIZE (128 * KILO)
@@ -157,36 +148,35 @@ static short Environments[NUMBER_OF_ENVIRONMENTS][NUMBER_OF_ENV_COLLECTIONS] =
 // Turned some of these lists into variable arrays;
 // took over their maximum numbers as how many of them
 
-struct static_data *static_world = nullptr;
-struct dynamic_data *dynamic_world = nullptr;
+static_data	*static_world = nullptr;
+dynamic_data	*dynamic_world = nullptr;
 
 // These are allocated here because the numbers of these objects vary as a game progresses.
-vector<effect_data> EffectList(MAXIMUM_EFFECTS_PER_MAP);
-vector<object_data> ObjectList(MAXIMUM_OBJECTS_PER_MAP);
-vector<monster_data> MonsterList(MAXIMUM_MONSTERS_PER_MAP);
-vector<projectile_data> ProjectileList(MAXIMUM_PROJECTILES_PER_MAP);
+vector<effect_data>	EffectList(MAXIMUM_EFFECTS_PER_MAP);
+vector<object_data>	ObjectList(MAXIMUM_OBJECTS_PER_MAP);
+vector<monster_data>	MonsterList(MAXIMUM_MONSTERS_PER_MAP);
+vector<projectile_data>	ProjectileList(MAXIMUM_PROJECTILES_PER_MAP);
 
-vector<endpoint_data> EndpointList;
-vector<line_data> LineList;
-vector<side_data> SideList;
-vector<polygon_data> PolygonList;
-vector<platform_data> PlatformList;
+vector<endpoint_data>	EndpointList;
+vector<line_data>	LineList;
+vector<side_data>	SideList;
+vector<polygon_data>	PolygonList;
+vector<platform_data>	PlatformList;
 
-vector<ambient_sound_image_data> AmbientSoundImageList;
-vector<random_sound_image_data> RandomSoundImageList;
-vector<int16> MapIndexList;
+vector<ambient_sound_image_data>	AmbientSoundImageList;
+vector<random_sound_image_data>		RandomSoundImageList;
 
-vector<uint8> AutomapLineList;
-vector<uint8> AutomapPolygonList;
+vector<int16>	MapIndexList;
 
-vector<map_annotation> MapAnnotationList;
+vector<uint8>	AutomapLineList;
+vector<uint8>	AutomapPolygonList;
 
+vector<map_annotation>	MapAnnotationList;
+vector<map_object>	SavedObjectList;
 
-vector<map_object> SavedObjectList;
+item_placement_data	*placement_information = nullptr;
 
-struct item_placement_data *placement_information = nullptr;
-
-bool game_is_networked = false;
+bool	game_is_networked = false;
 
 // This could be a handle
 struct map_memory_data {
@@ -369,7 +359,7 @@ static bool media_effects[NUMBER_OF_EFFECT_TYPES];
 
 void mark_map_collections(bool loading)
 {
-	if (not loading)
+	if (!loading)
 	{
 		for (ix collection = 0; collection < NUMBER_OF_COLLECTIONS; collection++)
 			if (map_collections[collection])
@@ -433,39 +423,39 @@ void mark_map_collections(bool loading)
 	}
 
 	// media textures and effects
-	for (ix media_effect = 0; media_effect < NUMBER_OF_EFFECT_TYPES; media_effect++)
+	for( ix media_effect = 0; media_effect < NUMBER_OF_EFFECT_TYPES; media_effect++)
 		media_effects[media_effect] = false;
 
-	for (ix media_index = 0; media_index < MAXIMUM_MEDIAS_PER_MAP; ++media_index)
+	for( ix media_index = 0; media_index < MAXIMUM_MEDIAS_PER_MAP; ++media_index)
 	{
-		if (get_media_data(media_index))
-		{
-			short collection;
-			if (get_media_collection(media_index, collection))
-				map_collections[collection] = true;
+		if (!get_media_data(media_index))
+			continue;
+	
+		short collection;
+		if (get_media_collection(media_index, collection))
+			map_collections[collection] = true;
 
-			for (ix detonation_type = 0; detonation_type < NUMBER_OF_MEDIA_DETONATION_TYPES; detonation_type++)
-			{
-				short detonation_effect;
-				get_media_detonation_effect(media_index, detonation_type, &detonation_effect);
-				if (detonation_effect >= 0 && detonation_effect < NUMBER_OF_EFFECT_TYPES)
-					media_effects[detonation_effect] = true;
-			}
+		for (ix detonation_type = 0; detonation_type < NUMBER_OF_MEDIA_DETONATION_TYPES; detonation_type++)
+		{
+			short detonation_effect;
+			get_media_detonation_effect(media_index, detonation_type, &detonation_effect);
+			if (detonation_effect >= 0 && detonation_effect < NUMBER_OF_EFFECT_TYPES)
+				media_effects[detonation_effect] = true;
 		}
+	
 	}
 
 	// scenery
 	for(ix object_index = 0; object_index < dynamic_world->initial_objects_count; object_index++)
 	{
-		if (saved_objects[object_index].type == _saved_object)
-		{
-			short collection;
-			if (get_scenery_collection(saved_objects[object_index].index, collection))
-				map_collections[collection] = true;
+		if (saved_objects[object_index].type != _saved_object)
+			continue;
+		short collection;
+		if (get_scenery_collection(saved_objects[object_index].index, collection))
+			map_collections[collection] = true;
 
-			if (get_damaged_scenery_collection(saved_objects[object_index].index, collection))
-				map_collections[collection] = true;
-		}
+		if (get_damaged_scenery_collection(saved_objects[object_index].index, collection))
+			map_collections[collection] = true;
 	}
 
 
@@ -507,7 +497,6 @@ bool collection_in_environment(short collection_code, short environment_code)
 	unloading */
 void mark_environment_collections(short environment_code, bool loading)
 {
-	short i;
 	short collection;
 	
 	if (!(environment_code >= 0 && environment_code < NUMBER_OF_ENVIRONMENTS)) 
@@ -517,14 +506,18 @@ void mark_environment_collections(short environment_code, bool loading)
 	// be sure to set "loaded wall texture" to the first one loaded
 	LoadedWallTexture = NONE;
 	
-	for(i = 0; i < NUMBER_OF_ENV_COLLECTIONS; ++i)
+	for(ix i = 0; i < NUMBER_OF_ENV_COLLECTIONS; ++i)
 	{
 		collection = Environments[environment_code][i];
-		if (collection != NONE)
-		{
-			if (LoadedWallTexture == NONE) LoadedWallTexture = collection;
-			loading ? mark_collection_for_loading(collection) : mark_collection_for_unloading(collection);
-		}
+		
+		if (collection == NONE)
+			continue;
+		
+		if (LoadedWallTexture == NONE) 
+			LoadedWallTexture = collection;
+			
+		loading ? mark_collection_for_loading(collection) : mark_collection_for_unloading(collection);
+	
 	}
 	if (LoadedWallTexture == NONE) 
 		LoadedWallTexture = 0;
@@ -544,33 +537,35 @@ void reconnect_map_object_list()
 
 	/* wipe first_object links from polygon structures */
 	for (polygon=map_polygons,i=0;i<dynamic_world->polygon_count;--i,++polygon)
-	{
 		polygon->first_object= NONE;
-	}
 	
 	/* connect objects to their polygons */
 	for (object=objects,i=0;i<MAXIMUM_OBJECTS_PER_MAP;++i,++object)
 	{
-		if (SLOT_IS_USED(object))
-		{
-			polygon= get_polygon_data(object->polygon);
-			
-			object->next_object= polygon->first_object;
-			polygon->first_object= i;
-		}
+		if( !SLOT_IS_USED(object) )
+			continue;
+		polygon = get_polygon_data(object->polygon);
+		
+		object->next_object= polygon->first_object;
+		polygon->first_object= i;
+	
 	}
 }
-
+/*	return false if no polygon contains point p */
 bool valid_point2d(world_point2d *p)
 {
-	return world_point_to_polygon_index(p)==NONE ? false : true;
+	return !isNONE( world_point_to_polygon_index( p ) );
 }
 
+/*	
+	same as valid_point2d but this time we check the height
+	of the polygon ceiling and floor against the z coord of the point
+*/
 bool valid_point3d(world_point3d *p)
 {
 	auto polygon_index = world_point_to_polygon_index( (world_point2d *)p );
 	
-	if(polygon_index == NONE)
+	if( isNONE(polygon_index) )
 		return false;
 	
 	polygon_data *polygon = get_polygon_data(polygon_index);
@@ -580,20 +575,21 @@ bool valid_point3d(world_point3d *p)
 
 short new_map_object(struct object_location *location, shape_descriptor shape)
 {
-	polygon_data *polygon= get_polygon_data(location->polygon_index);
-	world_point3d p= location->p;
-	short object_index;
+	const polygon_data &polygon = polygon_data::Get(location->polygon_index);
+	world_point3d p = location->p;
 	
-	p.z= ((location->flags&_map_object_hanging_from_ceiling) ? polygon->ceiling_height : polygon->floor_height) + p.z;
+	p.z += location->flags & _map_object_hanging_from_ceiling ? polygon.ceiling_height : polygon.floor_height;
 	
-	object_index= new_map_object3d(&p, location->polygon_index, shape, location->yaw);
-	if (object_index!=NONE)
-	{
-		object_data *object= get_object_data(object_index);
-		
-		if (location->flags&_map_object_is_invisible)
-			SET_OBJECT_INVISIBILITY(object, true);
-	}
+	auto object_index = new_map_object3d(&p, location->polygon_index, shape, location->yaw);
+	
+	if( isNONE( object_index ) )
+		return NONE;	/*	couldn't create the map object	*/
+	
+	object_data *object= get_object_data(object_index);
+	
+	if (location->flags & _map_object_is_invisible)
+		SET_OBJECT_INVISIBILITY(object, true);
+
 	
 	return object_index;
 }
@@ -601,31 +597,34 @@ short new_map_object(struct object_location *location, shape_descriptor shape)
 short new_map_object2d(world_point2d *location, short polygon_index, shape_descriptor shape, angle facing)
 {
 	world_point3d location3d;
-	polygon_data *polygon;
 
-	polygon= get_polygon_data(polygon_index);
-	location3d.x= location->x, location3d.y= location->y, location3d.z= polygon->floor_height;
+	const polygon_data &polygon = polygon_data::Get(polygon_index);
+	
+	location3d.x = location->x;
+	location3d.y = location->y;
+	location3d.z = polygon.floor_height;
 	
 	return new_map_object3d(&location3d, polygon_index, shape, facing);
 }
 
 short new_map_object3d(world_point3d *location, short polygon_index, shape_descriptor shape, angle facing)
 {
-	auto object_index= _new_map_object(shape, facing);
-	if (object_index!=NONE)
-	{
-		struct polygon_data *polygon= get_polygon_data(polygon_index);
-		struct object_data *object= get_object_data(object_index);
+	auto object_index = _new_map_object(shape, facing);
 	
-		/* initialize object polygon and location */	
-		object->polygon= polygon_index;
-		object->location= *location;
+	if (isNONE(object_index))
+		return NONE;
+	
+	polygon_data &polygon= polygon_data::Get(polygon_index);
+	object_data *object= get_object_data(object_index);
 
-		/* insert at head of linked list */
-		object->next_object= polygon->first_object;
-		polygon->first_object= object_index;
-	}
-	
+	/* initialize object polygon and location */	
+	object->polygon = polygon_index;
+	object->location = *location;
+
+	/* insert at head of linked list */
+	object->next_object = polygon.first_object;
+	polygon.first_object = object_index;
+
 	return object_index;
 }
 
@@ -633,40 +632,39 @@ short new_map_object3d(world_point3d *location, short polygon_index, shape_descr
 	polygon */
 short find_new_object_polygon(world_point2d *parent_location, world_point2d *child_location, short parent_polygon_index)
 {
-	auto child_polygon_index= parent_polygon_index;
+	auto child_polygon_index = parent_polygon_index;
 	
-	if (child_polygon_index!=NONE)
+	if(child_polygon_index == NONE)
+		return NONE;
+	
+	short line_index;
+	
+	do
 	{
-		short line_index;
-		
-		do
-		{
-			line_index= find_line_crossed_leaving_polygon(child_polygon_index, parent_location, child_location);
-			if (line_index!=NONE)
-				child_polygon_index= find_adjacent_polygon(child_polygon_index, line_index);
-		}
-		while (line_index!=NONE&&child_polygon_index!=NONE);
+		line_index = find_line_crossed_leaving_polygon(child_polygon_index, parent_location, child_location);
+		if (line_index != NONE)
+			child_polygon_index = find_adjacent_polygon(child_polygon_index, line_index);
 	}
-	
+	while (line_index != NONE && child_polygon_index != NONE);
+
 	return child_polygon_index;
 }
 
 short attach_parasitic_object(short host_index, shape_descriptor shape, angle facing)
 {
 	object_data *host_object, *parasite_object;
-	short parasite_index;
 
-	/* walk this objectﾕs parasite list until we find the last parasite and then attach there */
+	/* walk this objectﾃ不 parasite list until we find the last parasite and then attach there */
 	for (host_object= get_object_data(host_index);
 			host_object->parasitic_object!=NONE;
 			host_index= host_object->parasitic_object, host_object= get_object_data(host_index))
 		;
-	parasite_index= _new_map_object(shape, facing);
-	assert(parasite_index!=NONE);
+	auto parasite_index = _new_map_object(shape, facing);
+	assert(parasite_index != NONE);
 	
-	parasite_object= get_object_data(parasite_index);
-	parasite_object->location= host_object->location;
-	host_object->parasitic_object= parasite_index;
+	parasite_object = get_object_data(parasite_index);
+	parasite_object->location = host_object->location;
+	host_object->parasitic_object = parasite_index;
 	
 	// So that it will have the same size scaling as its host object
 	SET_FLAG(parasite_object->flags, _object_is_enlarged, TEST_FLAG(host_object->flags, _object_is_enlarged));
@@ -710,7 +708,7 @@ void remove_map_object(short object_index)
 
 
 
-/* remove the object from the old_polygonﾕs object list*/
+/* remove the object from the old_polygonﾃ不 object list*/
 void remove_object_from_polygon_object_list(short object_index, short polygon_index)
 {
 	object_data* object = get_object_data(object_index);
@@ -738,7 +736,7 @@ void remove_object_from_polygon_object_list(short object_index)
 
 
 
-/* add the object to the new_polygonﾕs object list */
+/* add the object to the new_polygonﾃ不 object list */
 void add_object_to_polygon_object_list(short object_index, short polygon_index)
 {
 	object_data* object = get_object_data(object_index);
@@ -823,12 +821,9 @@ void perform_deferred_polygon_object_list_manipulations()
 
 
 
-/* if a new polygon index is supplied, it will be used, otherwise weﾕll try to find the new
+/* if a new polygon index is supplied, it will be used, otherwise weﾃ浜l try to find the new
 	polygon index ourselves */
-bool translate_map_object(
-	short object_index,
-	world_point3d *new_location,
-	short new_polygon_index)
+bool translate_map_object(short object_index, world_point3d *new_location, short new_polygon_index)
 {
 	short line_index;
 	struct object_data *object= get_object_data(object_index);
@@ -852,14 +847,14 @@ bool translate_map_object(
 			{
 				*(world_point2d *)new_location= get_polygon_data(old_polygon_index)->center;
 				new_polygon_index= old_polygon_index;
-				changed_polygons= true; /* tell the caller we switched polygons, even though we didnﾕt */
+				changed_polygons= true; /* tell the caller we switched polygons, even though we didnﾃ付 */
 				break;
 			}
 		}
 		while (line_index!=NONE);
 	}
 	
-	/* if we changed polygons, update the old and new polygonﾕs linked lists of objects */
+	/* if we changed polygons, update the old and new polygonﾃ不 linked lists of objects */
 	if (old_polygon_index!=new_polygon_index)
 	{
 		remove_object_from_polygon_object_list(object_index, old_polygon_index);
@@ -886,8 +881,8 @@ void get_object_shape_and_transfer_mode(
 	short object_index,
 	struct shape_and_transfer_mode *data)
 {
-	struct object_data *object= get_object_data(object_index);
-	register struct shape_animation_data *animation;
+	object_data *object= get_object_data(object_index);
+	shape_animation_data *animation;
 	angle theta;
 	short view;
 	
@@ -919,10 +914,10 @@ void get_object_shape_and_transfer_mode(
 		case _animated4:
 			switch (FACING4(theta))
 			{
-				case 0: view= 3; break; /* 90｡ (facing left) */
-				case 1: view= 0; break; /* 0｡ (facing forward) */
-				case 2: view= 1; break; /* -90｡ (facing right) */
-				case 3: view= 2; break; /* ｱ180｡ (facing away) */
+				case 0: view= 3; break; /* 90ﾂ｡ (facing left) */
+				case 1: view= 0; break; /* 0ﾂ｡ (facing forward) */
+				case 2: view= 1; break; /* -90ﾂ｡ (facing right) */
+				case 3: view= 2; break; /* ﾂｱ180ﾂ｡ (facing away) */
 				default:
 					data->collection_code = NONE; // Deliberate bad value
 					return;
@@ -950,14 +945,14 @@ void get_object_shape_and_transfer_mode(
 		case _animated8:
 			switch (FACING8(theta))
 			{
-				case 0: view= 3; break; /* 135｡ (facing left) */
-				case 1: view= 2; break; /* 90｡ (facing left) */
-				case 2: view= 1; break; /* 45｡ (facing left) */
-				case 3: view= 0; break; /* 0｡ (facing forward) */
-				case 4: view= 7; break; /* -45｡ (facing right) */
-				case 5: view= 6; break; /* -90｡ (facing right) */
-				case 6: view= 5; break; /* -135｡ (facing right) */
-				case 7: view= 4; break; /* ｱ180｡ (facing away) */
+				case 0: view= 3; break; /* 135ﾂ｡ (facing left) */
+				case 1: view= 2; break; /* 90ﾂ｡ (facing left) */
+				case 2: view= 1; break; /* 45ﾂ｡ (facing left) */
+				case 3: view= 0; break; /* 0ﾂ｡ (facing forward) */
+				case 4: view= 7; break; /* -45ﾂ｡ (facing right) */
+				case 5: view= 6; break; /* -90ﾂ｡ (facing right) */
+				case 6: view= 5; break; /* -135ﾂ｡ (facing right) */
+				case 7: view= 4; break; /* ﾂｱ180ﾂ｡ (facing away) */
 				default:
 					data->collection_code = NONE; // Deliberate bad value
 					return;
@@ -993,8 +988,6 @@ void get_object_shape_and_transfer_mode(
 	{
 		data->transfer_mode= object->transfer_mode;
 		data->transfer_phase= object->transfer_period ? INTEGER_TO_FIXED(object->transfer_phase)/object->transfer_period : 0;
-
-//		if (object->transfer_mode==_xfer_fold_out) dprintf("#%d/#%d==%x", object->transfer_phase, object->transfer_period, data->transfer_phase);
 	}
 	else
 	{
@@ -1005,9 +998,7 @@ void get_object_shape_and_transfer_mode(
 
 extern bool shapes_file_is_m1();
 
-bool randomize_object_sequence(
-	short object_index,
-	shape_descriptor shape)
+bool randomize_object_sequence(	short object_index, shape_descriptor shape)
 {
 	struct object_data *object= get_object_data(object_index);
 	register struct shape_animation_data *animation;
@@ -1028,51 +1019,45 @@ bool randomize_object_sequence(
 	return randomized;
 }
 
-void set_object_shape_and_transfer_mode(
-	short object_index,
-	shape_descriptor shape,
-	short transfer_mode)
+void set_object_shape_and_transfer_mode(short object_index, shape_descriptor shape, short transfer_mode)
 {
-	struct object_data *object= get_object_data(object_index);
+	object_data *object = get_object_data(object_index);
 
-	if (object->shape!=shape)
+	if (object->shape != shape)
 	{
-		struct shape_animation_data *animation= get_shape_animation_data(shape);
+		shape_animation_data *animation= get_shape_animation_data(shape);
 		// Quit if a nonexistent animation
-		// assert(animation);
-		if (!animation) return;
+		if (!animation) 
+			return;
 		
-		object->shape= shape;
-		if (animation->transfer_mode!=_xfer_normal || object->transfer_mode==NONE) object->transfer_phase= 0;
-		object->sequence= BUILD_SEQUENCE(0, 1);
+		object->shape = shape;
+		if (animation->transfer_mode != _xfer_normal || object->transfer_mode == NONE) 
+			object->transfer_phase = 0;
+		object->sequence = BUILD_SEQUENCE(0, 1);
 		SET_OBJECT_ANIMATION_FLAGS(object, _obj_not_animated);
 		
 		play_object_sound(object_index, animation->first_frame_sound);
 	}
 	
-	if (transfer_mode!=NONE)
-	{
-		if (object->transfer_mode!=transfer_mode)
-		{
-			object->transfer_mode= transfer_mode;
-			object->transfer_phase= 0;
-		}
-	}
+	if (transfer_mode == NONE || object->transfer_mode != transfer_mode)
+		return;
+	object->transfer_mode = transfer_mode;
+	object->transfer_phase = 0;
 }
 
 /* no longer called by RENDER.C; must be called by monster, projectile or effect controller;
-	now assumes ｶt==1 tick */
-void animate_object(
-	short object_index)
+	now assumes ﾂｶt==1 tick */
+void animate_object(short object_index)
 {
-	struct object_data *object= get_object_data(object_index);
-	struct shape_animation_data *animation;
-	short animation_type= _obj_not_animated;
+	object_data *object = get_object_data(object_index);
+	shape_animation_data *animation;
+	short animation_type = _obj_not_animated;
 
-	if (!OBJECT_IS_INVISIBLE(object)) /* invisible objects donﾕt have valid .shape fields */
+	if (!OBJECT_IS_INVISIBLE(object)) /* invisible objects donﾃ付 have valid .shape fields */
 	{
-		animation= get_shape_animation_data(object->shape);
-		if (!animation) return;
+		animation = get_shape_animation_data(object->shape);
+		if (!animation) 
+			return;
 	
 		/* if this animation has frames, animate it */		
 		if (animation->frames_per_view>=1 && animation->number_of_views!=_unanimated)
@@ -1159,106 +1144,87 @@ void animate_object(
 	if (object->parasitic_object!=NONE) animate_object(object->parasitic_object);
 }
 
-void calculate_line_midpoint(
-	short line_index,
-	world_point3d *midpoint)
+void calculate_line_midpoint(short line_index, world_point3d *midpoint)
 {
-	struct line_data *line= get_line_data(line_index);
-	struct world_point2d *e0= &get_endpoint_data(line->endpoint_indexes[0])->vertex;
-	struct world_point2d *e1= &get_endpoint_data(line->endpoint_indexes[1])->vertex;
+	const line_data *line = get_line_data(line_index);
 	
-	midpoint->x= (e0->x+e1->x)>>1;
-	midpoint->y= (e0->y+e1->y)>>1;
-	midpoint->z= (line->lowest_adjacent_ceiling+line->highest_adjacent_floor)>>1;
+	const world_point2d *e0 = &get_endpoint_data(line->endpoint_indexes[0])->vertex;
+	const world_point2d *e1 = &get_endpoint_data(line->endpoint_indexes[1])->vertex;
+	
+	midpoint->x = (e0->x + e1->x) / 2;
+	midpoint->y = (e0->y + e1->y) / 2;
+	midpoint->z = (line->lowest_adjacent_ceiling + line->highest_adjacent_floor) / 2;
 }
 
-bool point_in_polygon(
-	short polygon_index,
-	world_point2d *p)
+bool point_in_polygon(short polygon_index, world_point2d *p)
 {
-	struct polygon_data *polygon= get_polygon_data(polygon_index);
-	bool point_inside= true;
-	short i;
+	const polygon_data &polygon = polygon_data::Get(polygon_index);
 	
-	for (i=0;i<polygon->vertex_count;++i)
+	for( ix i = 0; i < polygon.vertex_count; ++i )
 	{
-		struct line_data *line= get_line_data(polygon->line_indexes[i]);
-		bool clockwise= line->endpoint_indexes[0]==polygon->endpoint_indexes[i];
-		world_point2d *e0= &get_endpoint_data(line->endpoint_indexes[0])->vertex;
-		world_point2d *e1= &get_endpoint_data(line->endpoint_indexes[1])->vertex;
-		int32 cross_product= (p->x-e0->x)*(e1->y-e0->y) - (p->y-e0->y)*(e1->x-e0->x);
+		const line_data *line = get_line_data( polygon.line_indexes[i] );
+		bool clockwise = line->endpoint_indexes[ 0 ] == polygon.endpoint_indexes[ i ];
 		
-		if ((clockwise && cross_product>0) || (!clockwise && cross_product<0))
-		{
-			point_inside= false;
-			break;
-		}
+		const world_point2d *e0 = &get_endpoint_data( line->endpoint_indexes[ 0 ] )->vertex;
+		const world_point2d *e1 = &get_endpoint_data( line->endpoint_indexes[ 1 ] )->vertex;
+		
+		auto cross_product = (p->x - e0->x) * (e1->y - e0->y) - (p->y - e0->y) * (e1->x - e0->x);
+		
+		if ((clockwise && cross_product > 0) || (!clockwise && cross_product < 0))
+			return false;
 	}
-	
-	return point_inside;
+	return true;
 }
 
-short clockwise_endpoint_in_line(
-	short polygon_index,
-	short line_index,
-	short index)
+short clockwise_endpoint_in_line(short polygon_index, short line_index, short index)
 {
-	struct line_data *line= get_line_data(line_index);
-	bool line_is_clockwise= true;
+	line_data *line = get_line_data(line_index);
+	bool line_is_clockwise = true;
 
-	if (line->clockwise_polygon_owner!=polygon_index)
-	{
-		// LP change: get around some Pfhorte bugs
-		line_is_clockwise= false;
-	}
+	if (line->clockwise_polygon_owner != polygon_index)
+		line_is_clockwise = false; // LP change: get around some Pfhorte bugs
+		
+	assert(!index || index == 1);
 	
 	switch (index)
 	{
 		case 0:
-			index= line_is_clockwise ? 0 : 1;
+			index = line_is_clockwise ? 0 : 1;
 			break;
 		case 1:
-			index= line_is_clockwise ? 1 : 0;
-			break;
-		default:
-			assert(false);
+			index = line_is_clockwise ? 1 : 0;
 			break;
 	}
 
 	return line->endpoint_indexes[index];
 }
 
-short world_point_to_polygon_index(
-	world_point2d *location)
+short world_point_to_polygon_index(world_point2d *location)
 {
-	short polygon_index;
-	struct polygon_data *polygon;
+	ix polygon_index;
+	polygon_data *polygon;
 	
-	for (polygon_index=0,polygon=map_polygons;polygon_index<dynamic_world->polygon_count;++polygon_index,++polygon)
+	for(polygon_index = 0,polygon = map_polygons; polygon_index < dynamic_world->polygon_count; ++polygon_index, ++polygon)
 	{
-		if (!POLYGON_IS_DETACHED(polygon))
-		{
-			if (point_in_polygon(polygon_index, location)) break;
-		}
+		if( !POLYGON_IS_DETACHED( polygon ) && point_in_polygon( polygon_index, location ) )
+			break;
+		
 	}
-	if (polygon_index==dynamic_world->polygon_count) polygon_index= NONE;
+	if( polygon_index == dynamic_world->polygon_count ) 
+		return NONE;
 
 	return polygon_index;
 }
 
 /* return the polygon on the other side of the given line from the given polygon (i.e., return
-	the polygon adjacent to line_index which isnﾕt polygon_index).  can return NONE. */
-short find_adjacent_polygon(
-	short polygon_index,
-	short line_index)
+	the polygon adjacent to line_index which isnﾃ付 polygon_index).  can return NONE. */
+short find_adjacent_polygon(short polygon_index, short line_index)
 {
-	struct line_data *line= get_line_data(line_index);
+	line_data *line= get_line_data(line_index);
 	short new_polygon_index;
 	
 	if (polygon_index==line->clockwise_polygon_owner)
-	{
 		new_polygon_index= line->counterclockwise_polygon_owner;
-	}
 	else
 	{
 		// LP change: get around some Pfhorte bugs
@@ -1357,7 +1323,7 @@ bool line_is_landscaped(
 	return landscaped;
 }
 
-/* return the line_index where the two polygons meet (or NONE if they donﾕt meet) */
+/* return the line_index where the two polygons meet (or NONE if they donﾃ付 meet) */
 short find_shared_line(
 	short polygon_index1,
 	short polygon_index2)
@@ -1443,9 +1409,9 @@ _fixed find_line_intersection(
 	
 	/* calculate the numerator and denominator to compute t; our basic strategy here is to
 		shift the numerator up by eight bits and the denominator down by eight bits, yeilding
-		a fixed number in [0,FIXED_ONE] for t.  this wonﾕt work if the numerator is greater
-		than or equal to 2^24, or the numerator is less than 2^8.  the first case canﾕt be
-		fixed in any decent way and shouldnﾕt happen if we have small deltas.  the second case
+		a fixed number in [0,FIXED_ONE] for t.  this wonﾃ付 work if the numerator is greater
+		than or equal to 2^24, or the numerator is less than 2^8.  the first case canﾃ付 be
+		fixed in any decent way and shouldnﾃ付 happen if we have small deltas.  the second case
 		is approximated with a denominator of 1 or -1 (depending on the sign of the old
 		denominator, although notice here that numbers in [1,2^8) will get downshifted to
 		zero and then set to one, while numbers in (-2^8,-1] will get downshifted to -1 and
@@ -1465,7 +1431,7 @@ _fixed find_line_intersection(
 	return t;
 }
 
-/* closest_point may be the same as p; if weﾕre within 1 of our source point in either
+/* closest_point may be the same as p; if weﾃ瓶e within 1 of our source point in either
 	direction assume that we are actually at the source point */
 _fixed closest_point_on_line(world_point2d *e0, world_point2d * e1, world_point2d *p, world_point2d *closest_point)
 {
@@ -1490,7 +1456,7 @@ _fixed closest_point_on_line(world_point2d *e0, world_point2d * e1, world_point2
 		
 	_fixed t = (numerator * 256) / ( (denominator /= 256) ? denominator : 1 );	//prevent divide by zero
 
-	/* if weﾕve only changed by ｱ1 in x and y, return the original p to avoid sliding down
+	/* if weﾃ夫e only changed by ﾂｱ1 in x and y, return the original p to avoid sliding down
 		the edge on successive calls */
 	calculated_closest_point.x = e0->x + FIXED_INTEGERAL_PART( t * line_dx );
 	calculated_closest_point.y = e0->y + FIXED_INTEGERAL_PART( t * line_dy );
@@ -1564,8 +1530,8 @@ enum /* keep out states */
 {
 	_first_line_pass,
 	_second_line_pass, /* if _first_line_pass yeilded more than one collision we have to go back
-		and make sure we donﾕt hit anything (or only hit one thing which we hit the first time) */
-	_second_line_pass_made_contact, /* weﾕve already hit one thing we hit last time, if we hit
+		and make sure we donﾃ付 hit anything (or only hit one thing which we hit the first time) */
+	_second_line_pass_made_contact, /* weﾃ夫e already hit one thing we hit last time, if we hit
 		anything else then we abort */
 	_aborted, /* if we hit two lines on the second pass, we give up */
 	_point_pass /* checking against all points (and hit as many as we can) */
@@ -1639,7 +1605,7 @@ bool keep_line_segment_out_of_walls(
 
 					/* if a) this line is solid, b) the new polygon is farther than maximum_delta height
 						above our feet, or c) the new polygon is lower than the top of our head then
-						we canﾕt move into the new polygon */
+						we canﾃ付 move into the new polygon */
 					if (LINE_IS_SOLID(line) || adjacent_polygon == nullptr ||
 						adjacent_polygon->floor_height-p1->z>maximum_delta_height ||
 						adjacent_polygon->ceiling_height-p1->z<height ||
@@ -1663,7 +1629,7 @@ bool keep_line_segment_out_of_walls(
 								}
 								else
 								{
-									/* forget it; we hit something we didnﾕt hit the first time */
+									/* forget it; we hit something we didnﾃ付 hit the first time */
 									state= _aborted;
 								}
 								break;
@@ -1702,7 +1668,7 @@ bool keep_line_segment_out_of_walls(
 	}
 	while (state==_second_line_pass);
 
-	/* if we didnﾕt abort while clipping lines, try clipping against points... */
+	/* if we didnﾃ付 abort while clipping lines, try clipping against points... */
 	if (state!=_aborted)
 	{
 		for (i=0;i<polygon->point_exclusion_zone_count;++i)
@@ -1799,7 +1765,7 @@ int32 point_to_line_segment_distance_squared(
 	else
 	{
 		/* if BA dot AP is greather than or equal to zero, d is the distance between A and P
-			(we donﾕt calculate BA and use -AB instead */
+			(we donﾃ付 calculate BA and use -AB instead */
 		if (abx*apx+aby*apy<=0)
 			distance= apx*apx + apy*apy;
 		else
@@ -1939,7 +1905,7 @@ bool change_polygon_height(short polygon_index, world_distance new_floor_height,
 		polygon->ceiling_height= new_ceiling_height;
 		
 		/* the highest_adjacent_floor, lowest_adjacent_ceiling and supporting_polygon_index fields
-			of all of this polygonﾕs endpoints and lines are potentially invalid now.  to assure
+			of all of this polygonﾃ不 endpoints and lines are potentially invalid now.  to assure
 			that they are correct, recalculate them using the appropriate redundant functions.
 			to do things quickly, slam them yourself.  only these three fields of are invalid,
 			nothing else is effected by the height change. */
@@ -1948,7 +1914,7 @@ bool change_polygon_height(short polygon_index, world_distance new_floor_height,
 	return legal_change;
 }
 
-/* we used to check to see that the point in question was within the playerﾕs view
+/* we used to check to see that the point in question was within the playerﾃ不 view
 	cone, but that was queer because stuff would appear behind him all the time
 	(which was completely inconvient when this happened to monsters) */
 /*
@@ -2047,7 +2013,7 @@ bool line_is_obstructed(short polygon_index1, world_point2d *p1, short polygon_i
 		{
 			/* the polygon we ended up in is different than the polygon the caller thinks the
 				destination point is in; this probably means that the source is on a different
-				level than the caller, but it could also easily mean that weﾕre dealing with
+				level than the caller, but it could also easily mean that weﾃ瓶e dealing with
 				weird boundary conditions of find_line_crossed_leaving_polygon() */
 			if (polygon_index != polygon_index2) 
 			{
@@ -2118,7 +2084,7 @@ void turn_object_to_shit(short garbage_object_index)
 			could be really obvious... but who pays attention to dead bodies anyway?) */
 	  if (dynamic_world->garbage_object_count>= (graphics_preferences->double_corpse_limit? MAXIMUM_GARBAGE_OBJECTS_PER_MAP * 2 : MAXIMUM_GARBAGE_OBJECTS_PER_MAP))
 	    {
-			/* find a garbage object to remove, and do so (weﾕre certain that many exist) */
+			/* find a garbage object to remove, and do so (weﾃ瓶e certain that many exist) */
 			for (object_index= garbage_object_index, object= garbage_object;
 					SLOT_IS_FREE(object) || GET_OBJECT_OWNER(object)!=_object_is_garbage;
 					object_index= (object_index==MAXIMUM_OBJECTS_PER_MAP-1) ? 0 : (object_index+1), object= objects+object_index)
@@ -2372,7 +2338,7 @@ void _sound_add_ambient_sources_proc(void *data, add_ambient_sound_source_proc_p
 	// add ambient sound image
 	if (media && listener->point.z<media->height)
 	{
-		// if weﾕre under media donﾕt play the ambient sound image
+		// if weﾃ瓶e under media donﾃ付 play the ambient sound image
 		add_one_ambient_sound_source((ambient_sound_data *)data, nullptr, listener,
 			get_media_sound(listener_polygon->media_index, _media_snd_ambient_under), MAXIMUM_SOUND_VOLUME);
 		under_media= true;
@@ -2391,7 +2357,7 @@ void _sound_add_ambient_sources_proc(void *data, add_ambient_sound_source_proc_p
 				listener_polygon->ambient_sound_image_index = NONE;
 		}
 
-		// if weﾕre over media, play that ambient sound image
+		// if weﾃ瓶e over media, play that ambient sound image
 		if (media && (media->height>=listener_polygon->floor_height || !MEDIA_SOUND_OBSTRUCTED_BY_FLOOR(media)))
 		{
 			source = *listener, source.point.z= media->height;
