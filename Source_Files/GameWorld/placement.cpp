@@ -158,35 +158,27 @@ void place_initial_objects()
  *           are loaded.
  *
  *************************************************************************************************/
-void mark_all_monster_collections(
-	bool loading)
+void mark_all_monster_collections(bool loading)
 {
-	short index;
-	struct object_frequency_definition *placement_info= monster_placement_info+1;
+	object_frequency_definition *placement_info= monster_placement_info+1;
 	
-	for (index= 1; index<NUMBER_OF_MONSTER_TYPES; index++)
+	for( ix index = 1; index < NUMBER_OF_MONSTER_TYPES; index++)
 	{
 		if (placement_info->initial_count > 0 || placement_info->minimum_count > 0 ||
 			((placement_info->random_count > 0 || placement_info->random_count == NONE) && placement_info->random_chance > 1))
-		{
 			mark_monster_collections(index, loading);
-		}
 		placement_info++;
 	}
 }
 
-void load_all_monster_sounds(
-	void)
+void load_all_monster_sounds()
 {
-	short index;
-	struct object_frequency_definition *placement_info= monster_placement_info+1;
+	object_frequency_definition *placement_info = monster_placement_info + 1;
 	
-	for (index= 1; index<NUMBER_OF_MONSTER_TYPES; index++)
+	for(ix index = 1; index < NUMBER_OF_MONSTER_TYPES; index++)
 	{
 		if (placement_info->initial_count > 0 || placement_info->minimum_count > 0 || ((placement_info->random_count > 0 || placement_info->random_count == NONE) && placement_info->random_chance > 1))
-		{
 			load_monster_sounds(index);
-		}
 		placement_info++;
 	}
 }
@@ -199,28 +191,27 @@ void load_all_monster_sounds(
  *           need to be recreated.
  *
  *************************************************************************************************/
-void recreate_objects(
-	void)
+void recreate_objects()
 {
 	static int32 delay = 0;
 
 	/* If time goes backwards, it means that they started a new game.  Therefore we must */
 	/*  reset our delay. */
-	if (dynamic_world->tick_count < delay) delay = 0;
+	if (dynamic_world->tick_count < delay) 
+		delay = 0;
 	
-	if (dynamic_world->tick_count - delay > NUMBER_OF_TICKS_BETWEEN_RECREATION)
-	{
-		delay= dynamic_world->tick_count;
+	if (dynamic_world->tick_count - delay <= NUMBER_OF_TICKS_BETWEEN_RECREATION)
+		return;
+	
+	delay = dynamic_world->tick_count;
 
-		if (GET_GAME_OPTIONS()&_monsters_replenish)
-		{
-			_recreate_objects(_object_is_monster, NUMBER_OF_MONSTER_TYPES, monster_placement_info+1, 
-				dynamic_world->current_monster_count, dynamic_world->random_monsters_left);
-		}
-		
-		_recreate_objects(_object_is_item, NUMBER_OF_DEFINED_ITEMS, item_placement_info, 
-			dynamic_world->current_item_count, dynamic_world->random_items_left);
-	}
+	if( GET_GAME_OPTIONS() & _monsters_replenish )
+		_recreate_objects(_object_is_monster, NUMBER_OF_MONSTER_TYPES, monster_placement_info + 1, 
+			dynamic_world->current_monster_count, dynamic_world->random_monsters_left);
+	
+	_recreate_objects(_object_is_item, NUMBER_OF_DEFINED_ITEMS, item_placement_info, 
+		dynamic_world->current_item_count, dynamic_world->random_items_left);
+
 }
 
 /*************************************************************************************************
@@ -231,25 +222,16 @@ void recreate_objects(
  *           there are.
  *
  *************************************************************************************************/
-void object_was_just_added(
-	short object_class, 
-	short object_type)
+void object_was_just_added(short object_class, short object_type)
 {
 	assert(object_type >= 0 && object_type < MAXIMUM_OBJECT_TYPES);
-	switch(object_class)
-	{
-		case _object_is_monster:
-			dynamic_world->current_monster_count[object_type]++;
-			break;
-			
-		case _object_is_item:
-			dynamic_world->current_item_count[object_type]++;
-			break;
-			
-		default:
-			assert(false);
-			break;
-	}
+	
+	if(object_class == _object_is_monster)
+		dynamic_world->current_monster_count[object_type]++;
+	else if(object_class == _object_is_item)
+		dynamic_world->current_item_count[object_type]++;
+	else
+		assert(false);
 }
 
 /*************************************************************************************************
@@ -260,9 +242,7 @@ void object_was_just_added(
  *           a new item if that is necessary.
  *
  *************************************************************************************************/
-void object_was_just_destroyed(
-	short object_class, 
-	short object_type)
+void object_was_just_destroyed(short object_class, short object_type)
 {
 	short diff;
 	
@@ -289,9 +269,7 @@ void object_was_just_destroyed(
 	}
 	
 	if (diff>0)
-	{
 		add_objects(object_class, object_type, 1, false);
-	}
 }
 
 /*************************************************************************************************
@@ -300,15 +278,12 @@ void object_was_just_destroyed(
  * Purpose:  returns a good place for the player to start.
  *
  *************************************************************************************************/
-short get_random_player_starting_location_and_facing(
-	short max_player_index,
-	short team, 
-	struct object_location *location)
+short get_random_player_starting_location_and_facing(short max_player_index, short team, struct object_location *location)
 {
 	int32 monster_distance, player_distance;
 	uint32 best_distance;
 	short starting_location_index, maximum_starting_locations, offset, index = NONE, best_index = NONE;
-	struct object_location current_location;
+	object_location current_location;
 	
 	maximum_starting_locations= get_player_starting_location_and_facing(team, 0, NULL);
 	
@@ -330,17 +305,18 @@ short get_random_player_starting_location_and_facing(
 		point_is_player_visible(max_player_index, current_location.polygon_index, (world_point2d *)&current_location.p, &player_distance);
 		point_is_monster_visible(current_location.polygon_index, (world_point2d *)&current_location.p, &monster_distance);
 		
-		if (monster_distance != 0 && player_distance != 0)
-		{
-			uint32 combined_distance = player_distance + (monster_distance>>1); // weight player distance more heavily.
+		if (!monster_distance || !player_distance)
+			continue;
+		
+		uint32 combined_distance = player_distance + (monster_distance / 2); // weight player distance more heavily.
 
-			if (combined_distance > best_distance)
-			{
-				best_index = index;
-				best_distance = combined_distance;
-				*location= current_location;
-			}
+		if (combined_distance > best_distance)
+		{
+			best_index = index;
+			best_distance = combined_distance;
+			*location= current_location;
 		}
+	
 	}
 	
 	/* in the extremely unlikely event that there is a player or monster exactly on every location, punt */
@@ -385,7 +361,8 @@ static void _recreate_objects(
 	{
 		/* Make sure that we are at the minimum */
 		objects_to_add = indexed_placement_info->minimum_count - object_counts[index];
-		if (objects_to_add < 0) objects_to_add = 0;
+		if (objects_to_add < 0) 
+			objects_to_add = 0;
 
 		/* Should we add a random one? */
 		if ((indexed_placement_info->random_count == NONE || random_counts[index] > 0)
@@ -394,21 +371,25 @@ static void _recreate_objects(
 		{
 			add_random = true;
 			objects_to_add++;
-		} else {
-			add_random= false;
-		}
+		} 
+		else 
+			add_random = false;
+		
 
 		/* If we need to add any.. */		
-		if (objects_to_add)
+		if (!objects_to_add)
 		{
-			add_objects(object_type, index, objects_to_add, false);
-			
-			/* If we added a random, and the random_count is not NONE (which means infinite.) */
-			if (add_random && indexed_placement_info->random_count != NONE) 
-			{
-				random_counts[index]--;
-			}
+			indexed_placement_info++;
+			continue;
 		}
+		
+		
+		add_objects(object_type, index, objects_to_add, false);
+		
+		/* If we added a random, and the random_count is not NONE (which means infinite.) */
+		if( add_random && !isNONE(indexed_placement_info->random_count) )
+			random_counts[index]--;
+		
 
 		indexed_placement_info++;
 	}
@@ -420,49 +401,44 @@ static void _recreate_objects(
  * Purpose:  This adds an object (monster or items) as many times as specified.
  *
  *************************************************************************************************/
-static void add_objects(
-	short object_class, 
-	short object_type, 
-	short count, 
-	bool is_initial_drop)
+static void add_objects(short object_class, short object_type, short count, bool is_initial_drop)
 {
-	short i;
 	short saved_type;
 	short flags;
 	bool need_random_location;
-	struct object_location location;
+	object_location location;
 	
 	assert(object_class==_object_is_item || object_class==_object_is_monster);
 	
 	saved_type = (object_class == _object_is_item) ? _saved_item : _saved_monster;
-	flags = (object_class == _object_is_monster) ? (monster_placement_info+object_type)->flags : (item_placement_info+object_type)->flags;
-	for (i = 0; i < count; i++)
+	flags = object_class == _object_is_monster ? 
+	(monster_placement_info + object_type)->flags 
+	: (item_placement_info + object_type)->flags;
+	for(ix i = 0; i < count; i++)
 	{
 		obj_clear(location);
-		location.polygon_index= NONE; /* This is unnecessary, but for psychological benefits.. */
+		location.polygon_index = NONE; /* This is unnecessary, but for psychological benefits.. */
 		
-		need_random_location= false;
+		need_random_location = false;
 		if (is_initial_drop || !(flags & _reappears_in_random_location))
 		{
 			if (!pick_random_initial_location_of_type(saved_type, object_type, &location))
 			{
-				if (is_initial_drop && (flags & _reappears_in_random_location)) need_random_location = true;
-				else continue;
+				if ( is_initial_drop && flags & _reappears_in_random_location ) 
+					need_random_location = true;
+				else 
+					continue;
 			}
 		}
 		else 
-		{
-			need_random_location= true;
-		}
+			need_random_location = true;
 		
 		if (need_random_location)
 		{
 			if (choose_invisible_random_point(&location.polygon_index, (world_point2d *)&location.p, object_class, is_initial_drop))
 			{
 				if (object_class == _object_is_monster) 
-				{
 					location.yaw= pick_random_facing(location.polygon_index, (world_point2d *)&location.p);
-				}
 			}
 			else
 			{
@@ -471,14 +447,12 @@ static void add_objects(
 		}
 		
 		if (object_class == _object_is_item)
-		{
 			new_item(&location, object_type);
-		}
 		else
 		{
-			short monster_index= new_monster(&location, object_type);
+			auto monster_index = new_monster(&location, object_type);
 			
-			if (monster_index!=NONE && !is_initial_drop) 
+			if (monster_index != NONE && !is_initial_drop) 
 			{
 				activate_monster(monster_index);
 				find_closest_appropriate_target(monster_index, true);
@@ -540,17 +514,14 @@ static bool pick_random_initial_location_of_type(
  *           end up pointing at a wall, when pointing out into the open is a better idea.
  *
  *************************************************************************************************/
-static short pick_random_facing(
-	short polygon_index, 
-	world_point2d *location)
+static short pick_random_facing(short polygon_index, world_point2d *location)
 {
-	short          i;
 	short          facing;
 	short          new_polygon_index;
 	world_point2d  end_point;
 	
-	facing= global_random() % NUMBER_OF_ANGLES;
-	for (i= 0; i<(FULL_CIRCLE/QUARTER_CIRCLE); i++)
+	facing = global_random() % NUMBER_OF_ANGLES;
+	for (ix i = 0; i < (FULL_CIRCLE / QUARTER_CIRCLE); i++)
 	{
 		end_point = *location;
 		translate_point2d(&end_point, WORLD_ONE, facing);
@@ -634,9 +605,9 @@ static bool polygon_is_valid_for_object_drop(
 			{
 				if (!point_is_player_visible(dynamic_world->player_count, polygon_index, location, &distance) || initial_drop)
 				{
-					short object_index= polygon->first_object;
+					auto object_index = polygon->first_object;
 					
-					valid= true;
+					valid = true;
 					while (object_index!=NONE && valid)
 					{
 						struct object_data *object = get_object_data(object_index);
