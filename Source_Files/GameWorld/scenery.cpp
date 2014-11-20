@@ -23,7 +23,7 @@ Thursday, December 1, 1994 11:56:43 AM  (Jason)
 Friday, June 16, 1995 11:48:23 AM  (Jason)
 	animated scenery; audible scenery.
 Tuesday, October 10, 1995 10:30:58 AM  (Jason)
-	destroyable scenery; new_scenery doesn’t bail on out-of-range scenery.
+	destroyable scenery; new_scenery doesn√ït bail on out-of-range scenery.
 
 Jan 30, 2000 (Loren Petrich):
 	Added some typecasts
@@ -65,9 +65,6 @@ Oct 13, 2000 (Loren Petrich):
 #include "platforms.h"
 #include "scenery.h"
 
-#ifdef env68k
-#pragma segment objects
-#endif
 
 /* ---------- constants */
 
