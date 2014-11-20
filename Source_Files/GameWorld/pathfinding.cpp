@@ -45,23 +45,14 @@ Feb 10, 2000 (Loren Petrich):
 #include "flood_map.h"
 #include "dynamic_limits.h"
 
-#ifdef env68k
-#pragma segment marathon
-#endif
-
-#ifdef DEBUG
-//#define VALIDATE_PATH_SPACE
-//#define VERIFY_PATH_SYNC
-#endif
-
 /*
 we should cut corners instead of blindly following map geometry (i.e., separate pathfinding as
 	much as possible from the underlying polygon structure of the map), especially the final leg.
 
 //calculate_midpoint_of_shared_line should have some randomness (bad idea?)
-//it ocurrs to me that connecting midpoints of shared lines wonﾕt always work (monsters will run through walls)
+//it ocurrs to me that connecting midpoints of shared lines wonﾃ付 always work (monsters will run through walls)
 //shadow polygons screw us up (a specific case of the general "weird polygon geometry" problem)
-//random paths arenﾕt really random, and (even worse) tend to be symmetric
+//random paths arenﾃ付 really random, and (even worse) tend to be symmetric
 */
 
 /* ---------- constants */
@@ -85,10 +76,10 @@ struct path_definition /* 256 bytes */
 
 /* ---------- globals */
 
-static struct path_definition *paths = NULL;
+static struct path_definition *paths = nullptr;
 
 #ifdef VERIFY_PATH_SYNC
-static byte *path_validation_area = NULL;
+static byte *path_validation_area = nullptr;
 static int32 path_validation_area_index;
 static short path_run_count;
 #endif
@@ -116,7 +107,7 @@ void allocate_pathfinding_memory()
 
 void reset_paths()
 {
-	for (ix path_index = 0;path_index < MAXIMUM_PATHS; ++path_index) 
+	for (ix path_index = 0; path_index < MAXIMUM_PATHS; ++path_index) 
 		paths[path_index].step_count = NONE;
 
 #ifdef VERIFY_PATH_SYNC
@@ -158,7 +149,7 @@ short new_path(
 		if (paths[path_index].step_count==NONE) 
 			break;
 	
-	if (path_index==MAXIMUM_PATHS) 
+	if (path_index == MAXIMUM_PATHS) 
 		path_index = NONE;
 	
 	if (path_index!=NONE)
@@ -189,7 +180,7 @@ short new_path(
 				out from the source polygon until we run out of stack space or we reach a cost
 				of RANDOM_PATH_AREA, whichever comes first.  in fact, our destination_point, if
 				not NULL, is a 2d vector specifying a bias in the direction we want to travel
-				(usually this will be away from somewhere we donﾕt want to be) */
+				(usually this will be away from somewhere we donﾃ付 want to be) */
 			polygon_index= flood_map(source_polygon_index, INT32_MAX, cost, _breadth_first, data);
 			while (polygon_index!=NONE)
 			{
@@ -197,7 +188,7 @@ short new_path(
 			}
 			
 			choose_random_flood_node((world_vector2d *)destination_point); /* choose a random destination */
-			reached_destination= false; /* we didnﾕt even have one */
+			reached_destination= false; /* we didnﾃ付 even have one */
 		}
 
 		depth= flood_depth();
@@ -225,7 +216,7 @@ short new_path(
 			assert(path->step_count!=NONE); /* this would be bad */
 			path->current_step= 0;
 
-			/* if we reached our destination (and itﾕs not out-of-range), add it */
+			/* if we reached our destination (and itﾃ不 not out-of-range), add it */
 			if (reached_destination && --step_count<MAXIMUM_POINTS_PER_PATH) path->points[step_count]= *destination_point;
 			
 			/* add all the points up to but not including the source (if we have room) */
@@ -249,7 +240,7 @@ short new_path(
 			{
 				if (memcmp(path_validation_area+path_validation_area_index, path->points, sizeof(world_point2d)*path->step_count))
 				{
-					dprintf("path #%d at %p didnﾕt match point list at %p", path_index, path, path_validation_area+path_validation_area_index);
+					dprintf("path #%d at %p didnﾃ付 match point list at %p", path_index, path, path_validation_area+path_validation_area_index);
 				}
 				path_validation_area_index+= sizeof(world_point2d*)*path->step_count;
 			}
@@ -282,10 +273,10 @@ bool move_along_path(short path_index, world_point2d *p)
 	path_definition *path;
 	bool end_of_path = false;
 	
-	assert(path_index>=0&&path_index<MAXIMUM_PATHS);
+	assert(path_index >= 0 && path_index < MAXIMUM_PATHS);
 	path = paths+path_index;
 
-	assert(path->step_count!=NONE);
+	assert(path->step_count != NONE);
 	vassert(path->current_step>=0&&path->current_step<=path->step_count, csprintf(temporary, "invalid current path step: #%d/#%d", path->current_step, path->step_count));
 	
 	if ( (end_of_path = path->current_step==path->step_count))
@@ -300,9 +291,9 @@ void delete_path(short path_index)
 {
 	assert(path_index>=0&&path_index < MAXIMUM_PATHS);
 	assert(paths[path_index].step_count!=NONE);
-	vassert(paths[path_index].current_step>=0&&paths[path_index].current_step<=paths[path_index].step_count, csprintf(temporary, "invalid current path step: #%d/#%d", paths[path_index].current_step, paths[path_index].step_count));
+	vassert(paths[path_index].current_step >= 0 && paths[path_index].current_step<=paths[path_index].step_count, csprintf(temporary, "invalid current path step: #%d/#%d", paths[path_index].current_step, paths[path_index].step_count));
 	
-	paths[path_index].step_count= NONE;
+	paths[path_index].step_count = NONE;
 }
 
 /* ---------- private code */
@@ -311,8 +302,8 @@ static void calculate_midpoint_of_shared_line(short polygon1, short polygon2, wo
 {
 	short shared_line_index;
 	world_distance range, origin;
-	struct line_data *shared_line;
-	struct endpoint_data *endpoint0, *endpoint1;
+	line_data *shared_line;
+	endpoint_data *endpoint0, *endpoint1;
 	
 	shared_line_index= find_shared_line(polygon1, polygon2);
 	assert(shared_line_index!=NONE);
@@ -323,8 +314,10 @@ static void calculate_midpoint_of_shared_line(short polygon1, short polygon2, wo
 
 	origin= 0;
 	range= shared_line->length;
-	if (ENDPOINT_IS_ELEVATION(endpoint0)) origin+= minimum_separation, range-= minimum_separation;
-	if (ENDPOINT_IS_ELEVATION(endpoint1)) range-= minimum_separation;
+	if (ENDPOINT_IS_ELEVATION(endpoint0)) 
+		origin+= minimum_separation, range-= minimum_separation;
+	if (ENDPOINT_IS_ELEVATION(endpoint1)) 
+		range-= minimum_separation;
 	if (range<=0)
 	{
 		/* uhh... this line is really too small for us to pass through */
@@ -347,7 +340,7 @@ static void calculate_midpoint_of_shared_line(short polygon1, short polygon2, wo
 world_point2d *path_peek(short path_index, short *step_count)
 {
 	path_definition *path;
-	world_point2d *points= 0;
+	world_point2d *points = nullptr;
 	
 	path = paths + path_index;
 	if (path->step_count != NONE)
