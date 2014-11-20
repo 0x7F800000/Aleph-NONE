@@ -1,0 +1,7 @@
+libnat.o: libnat.c /usr/include/stdc-predef.h libnat.h error.h
+
+/usr/include/stdc-predef.h:
+
+libnat.h:
+
+error.h:
