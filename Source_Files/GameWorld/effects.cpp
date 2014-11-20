@@ -44,10 +44,6 @@ Aug 30, 2000 (Loren Petrich):
 
 #include "Packing.h"
 
-#ifdef env68k
-#pragma segment objects
-#endif
-
 /*
 ryan reports get_object_data() failing on effect->data after a teleport effect terminates
 */
@@ -152,7 +148,7 @@ short new_effect(
 	return effect_index;
 }
 
-/* assumes ∂t==1 tick */
+/* assumes ¬∂t==1 tick */
 void update_effects(
 	void)
 {
@@ -179,16 +175,16 @@ void update_effects(
 			}
 			else
 			{
-				/* update our object’s animation */
+				/* update our object√ïs animation */
 				animate_object(effect->object_index);
 				
-				/* if the effect’s animation has terminated and we’re supposed to deactive it, do so */
+				/* if the effect√ïs animation has terminated and we√ïre supposed to deactive it, do so */
 				if (((GET_OBJECT_ANIMATION_FLAGS(object)&_obj_last_frame_animated)&&(definition->flags&_end_when_animation_loops)) ||
 					((GET_OBJECT_ANIMATION_FLAGS(object)&_obj_transfer_mode_finished)&&(definition->flags&_end_when_transfer_animation_loops)))
 				{
 					remove_effect(effect_index);
 					
-					/* if we’re supposed to make another item visible, do so */
+					/* if we√ïre supposed to make another item visible, do so */
 					if (definition->flags&_make_twin_visible)
 					{
 						struct object_data *object= get_object_data(effect->data);
@@ -279,7 +275,7 @@ void teleport_object_out(
 	}
 }
 
-// if the given object isn’t already teleporting in, do so
+// if the given object isn√ït already teleporting in, do so
 void teleport_object_in(
 	short object_index)
 {
