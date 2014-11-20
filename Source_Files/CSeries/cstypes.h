@@ -29,7 +29,8 @@
 
 // IR note: consts in headers are slow and eat TOC space.
 //const int NONE = -1;
-enum {
+enum : int
+{
 	NONE = -1,
 	UNONE = 65535
 };
@@ -95,7 +96,7 @@ typedef time_t TimeType;
 	#endif
 #endif
 
-
+static_assert(sizeof(ix) == sizeof(void*), "sizeof(ix) must be pointer size.");
 
 // Minimum and maximum values for these types
 #ifndef INT16_MAX
