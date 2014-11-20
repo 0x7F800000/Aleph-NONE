@@ -1025,8 +1025,8 @@ void activate_monster(short monster_index)
 	monster_definition *definition = monster->getDefinition();
 
 
-	assert( not monster->isActive() );
-	assert( not monster->isPlayer() );
+	assert( !monster->isActive() );
+	assert( !monster->isPlayer() );
 
 	if( object->isInvisible() )
 	{
@@ -1107,7 +1107,7 @@ void deactivate_monster(short monster_index)
 {
 	monster_data *monster = get_monster_data(monster_index);
 
-	assert(monster->isActive() );
+	assert( monster->isActive() );
 
 	if( monster->teleportsOutWhenDeactivated() ) 
 		monster->vertical_velocity = monster->external_velocity = 0;
@@ -1115,19 +1115,20 @@ void deactivate_monster(short monster_index)
 	if( monster->vertical_velocity || monster->external_velocity )
 		return;
 	
-	if( monster->teleportsOutWhenDeactivated() && not monster->isTeleportingOut() )
-		set_monster_action(monster_index, _monster_is_teleporting_out);
-	else
+	if( monster->teleportsOutWhenDeactivated() && !monster->isTeleportingOut() )
 	{
-		/* assume stationary shape before deactivation */
-		set_monster_action(monster_index, _monster_is_stationary);
-		
-		/* get rid of this monsterÕs path if he has one */
-		if( not isNONE( monster->getPath()) )
-			delete_path(monster->path);
-		SET_MONSTER_ACTIVE_STATUS(monster, false);
+		set_monster_action(monster_index, _monster_is_teleporting_out);
+		return;
 	}
+
+	/* assume stationary shape before deactivation */
+	set_monster_action(monster_index, _monster_is_stationary);
 	
+	/* get rid of this monsterÕs path if he has one */
+	if( !isNONE( monster->getPath()) )
+		delete_path(monster->path);
+		
+	SET_MONSTER_ACTIVE_STATUS(monster, false);
 }
 
 /* returns a list of object indexes of all monsters in or adjacent to the given polygon,
@@ -1143,60 +1144,62 @@ bool possible_intersecting_monsters(vector<short> *IntersectedObjectsPtr, unsign
 	if (!neighbor_indexes) 
 		return found_solid_object;
 
-	for (ix i = 0;i<polygon->neighbor_count;++i)
+	for (ix i = 0;i < polygon->neighbor_count; ++i)
 	{
 		polygon_data *neighboring_polygon= get_polygon_data(*neighbor_indexes++);
 		
-		if (!POLYGON_IS_DETACHED(neighboring_polygon))
+		if (POLYGON_IS_DETACHED(neighboring_polygon))
+			continue;
+	
+		auto object_index = neighboring_polygon->first_object;
+		
+		while(object_index!=NONE)
 		{
-			short object_index= neighboring_polygon->first_object;
+			object_data *object = get_object_data(object_index);
+			bool solid_object = false;
 			
-			while (object_index!=NONE)
+			if (!OBJECT_IS_INVISIBLE(object))
 			{
-				object_data *object= get_object_data(object_index);
-				bool solid_object= false;
-				
-				if (!OBJECT_IS_INVISIBLE(object))
+				switch (GET_OBJECT_OWNER(object))
 				{
-					switch (GET_OBJECT_OWNER(object))
+					case _object_is_monster:
 					{
-						case _object_is_monster:
-						{
-							monster_data *monster= get_monster_data(object->permutation);
+						monster_data *monster= get_monster_data(object->permutation);
+					
+						if (!MONSTER_IS_DYING(monster) && !MONSTER_IS_TELEPORTING(monster))
+							solid_object = true;
 						
-							if (!MONSTER_IS_DYING(monster) && !MONSTER_IS_TELEPORTING(monster))
-								solid_object= true;
-							
-							break;
-						}
-						
-						case _object_is_scenery:
-							if (include_scenery && OBJECT_IS_SOLID(object)) solid_object= true;
-							break;
+						break;
 					}
 					
-					if (solid_object)
-					{
-						found_solid_object = true;
-						
-						// LP change:
-						if (IntersectedObjectsPtr && IntersectedObjectsPtr->size()<maximum_object_count) /* do we have enough space to add it? */
-						{
-							unsigned j;
-							
-							/* only add this object_index if it's not already in the list */
-							vector<short>& IntersectedObjects = *IntersectedObjectsPtr;
-							for (j=0; j<IntersectedObjects.size() && IntersectedObjects[j]!=object_index; ++j)
-								;
-							if (j==IntersectedObjects.size())
-								IntersectedObjects.push_back(object_index);
-						}
-					}
+					case _object_is_scenery:
+						if (include_scenery && OBJECT_IS_SOLID(object)) 
+							solid_object = true;
+						break;
 				}
 				
-				object_index= object->next_object;
+				if (solid_object)
+				{
+					found_solid_object = true;
+					
+					// LP change:
+					if (IntersectedObjectsPtr && IntersectedObjectsPtr->size()<maximum_object_count) /* do we have enough space to add it? */
+					{
+						unsigned j;
+						
+						/* only add this object_index if it's not already in the list */
+						vector<short>& IntersectedObjects = *IntersectedObjectsPtr;
+						for (j=0; j<IntersectedObjects.size() && IntersectedObjects[j]!=object_index; ++j)
+							;
+						if (j==IntersectedObjects.size())
+							IntersectedObjects.push_back(object_index);
+					}
+				}
 			}
+			
+			object_index= object->next_object;
 		}
+	
 	}
 
 	return found_solid_object;
@@ -1223,43 +1226,55 @@ void monster_moved(short target_index, short old_polygon_index)
 	for (monster_index=0,monster=monsters;monster_index<MAXIMUM_MONSTERS_PER_MAP;++monster_index,++monster)
 	{
 		/* look for active monsters locked (or losing lock) on the given target_index */
-		if (monster->slotIsUsed() && monster->hasValidTarget() && monster->isTarget(target_index))
+		if (!monster->slotIsUsed() || !monster->hasValidTarget() || !monster->isTarget(target_index))
+			continue;
+		
+		if (clear_line_of_sight(monster_index, target_index, true))
 		{
-			if (clear_line_of_sight(monster_index, target_index, true))
+			if( monster->isLosingLock() ) 
+				set_monster_mode(monster_index, _monster_locked, monster->target_index);
+		}
+		else
+		{
+			monster_definition *definition = monster->getDefinition();//monster->getDefinition();
+			auto intelligence = definition->intelligence;
+			
+			switch (dynamic_world->game_information.difficulty_level)
 			{
-				if( monster->isLosingLock() ) 
-					set_monster_mode(monster_index, _monster_locked, monster->target_index);
-			}
-			else
-			{
-				monster_definition *definition = monster->getDefinition();//monster->getDefinition();
-				auto intelligence = definition->intelligence;
-				
-				switch (dynamic_world->game_information.difficulty_level)
-				{
-					case _wuss_level: 
-						intelligence = intelligence >> 2; break;
-					case _easy_level: intelligence= intelligence>>1; break;
-					case _major_damage_level: intelligence= 2*intelligence; break;
-					case _total_carnage_level: intelligence= 4*intelligence; break;
-				}
-				
-				/* we canÕt see our target: if this is first time, change from _monster_locked
-					to _monster_losing_lock, if this isnÕt the first time and our target has
-					switched polygons more times out of our sight than we have intelligence points,
-					go to _lost_lock (which means we wonÕt get any more new paths when our target
-					switches polygons, but we wonÕt clear our last one until we reach the end). */
-				if (monster->mode==_monster_locked) monster->changes_until_lock_lost= 0;
-				if (monster->mode==_monster_losing_lock) monster->changes_until_lock_lost+= 1;
-				set_monster_mode(monster_index, (monster->changes_until_lock_lost>=definition->intelligence) ?
-					_monster_lost_lock : _monster_losing_lock, NONE);
+				case _wuss_level: 
+					intelligence /= 4; 
+					break;
+				case _easy_level: 
+					intelligence /= 2; 
+					break;
+				case _major_damage_level: 
+					intelligence *= 2; 
+					break;
+				case _total_carnage_level: 
+					intelligence *= 4 
+					break;
 			}
 			
-			/* if weÕre losing lock, donÕt recalculate our path (weÕre headed towards the targetÕs
-				last-known location) */
-			if (monster->mode!=_monster_losing_lock) 
-				monster_needs_path(monster_index, false);
+			/* we canÕt see our target: if this is first time, change from _monster_locked
+				to _monster_losing_lock, if this isnÕt the first time and our target has
+				switched polygons more times out of our sight than we have intelligence points,
+				go to _lost_lock (which means we wonÕt get any more new paths when our target
+				switches polygons, but we wonÕt clear our last one until we reach the end). */
+			if ( monster->isLocked() ) 
+				monster->changes_until_lock_lost = 0;
+				
+			if (monster->isLosingLock() ) 
+				monster->changes_until_lock_lost++;
+				
+			set_monster_mode(monster_index, (monster->changes_until_lock_lost >= definition->intelligence) ?
+				_monster_lost_lock : _monster_losing_lock, NONE);
 		}
+		
+		/* if weÕre losing lock, donÕt recalculate our path (weÕre headed towards the targetÕs
+			last-known location) */
+		if( !monster->isLosingLock() ) 
+			monster_needs_path(monster_index, false);
+	
 	}
 }
 
@@ -1437,13 +1452,15 @@ void damage_monsters_in_radius(
 
 	for (size_t i=0;i<object_count;++i)
 	{
-		struct object_data *object= get_object_data(IntersectedObjects[i]);
+		object_data *object= get_object_data(IntersectedObjects[i]);
                 if (film_profile.damage_aggressor_last_in_tag && 
 		    GET_GAME_TYPE() == _game_of_tag && 
 		    object->permutation == aggressor_index) {
                         // damage the aggressor last, so tag suicides are handled correctly
                         aggressor = object;
-                } else {
+                } 
+                else 
+                {
                         world_distance distance= distance2d((world_point2d*)epicenter, (world_point2d*)&object->location);
                         world_distance monster_radius, monster_height;
                         
@@ -1506,7 +1523,7 @@ void damage_monster(short target_index, short aggressor_index, short aggressor_t
 {
 	monster_data *monster = get_monster_data(target_index);
 	monster_definition *definition = monster->getDefinition();
-	monster_data *aggressor_monster = aggressor_index != NONE ? monster_data::Get(aggressor_index) : nullptr;//(monster_data *) NULL;
+	monster_data *aggressor_monster = aggressor_index != NONE ? monster_data::Get(aggressor_index) : nullptr;
 
 	auto delta_vitality = calculate_damage(damage);
 
@@ -1516,28 +1533,25 @@ void damage_monster(short target_index, short aggressor_index, short aggressor_t
 	if (!(definition->immunities & FLAG(damage->type)))
 	{
 		// double damage for weaknesses
-		if (definition->weaknesses&FLAG(damage->type)) 
-			delta_vitality <<= 1;
+		if(definition->weaknesses & FLAG(damage->type)) 
+			delta_vitality *= 2;
 		
 		// if this player was shot by a friendly, make him apologise
 		if (aggressor_index!=NONE && get_monster_attitude(aggressor_index, target_index)==_friendly)
-		{
-			play_object_sound(aggressor_monster->object_index, aggressor_monster-> getDefinition()->apology_sound);
-			//get_monster_definition(aggressor_monster->type)->apology_sound);
-		}
+			play_object_sound(aggressor_monster->object_index, aggressor_monster->getDefinition()->apology_sound);
 		
-		if(monster->isPlayer() )
+		if( monster->isPlayer() )
 			damage_player(target_index, aggressor_index, aggressor_type, damage, projectile_index);
 		else
 		{
 			player_data *aggressor_player = nullptr;
 			
 			/* only active monsters can take damage */
-			if( not monster->isActive() ) 
+			if( !monster->isActive() ) 
 				activate_monster(target_index);
 			
 			/* convert aggressor monster index to a player index, if possible, to record damage */
-			if( not isNONE(aggressor_index) && aggressor_monster->isPlayer() )
+			if( !isNONE(aggressor_index) && aggressor_monster->isPlayer() )
 			{
 				aggressor_player = get_player_data(monster_index_to_player_index(aggressor_index));
 				aggressor_player->monster_damage_given.damage += MAX(monster->vitality, delta_vitality);
@@ -1552,9 +1566,12 @@ void damage_monster(short target_index, short aggressor_index, short aggressor_t
 			if (monster->vitality > 0)
 			{
 				set_monster_action(target_index, _monster_is_being_hit);
-				if ((definition->flags&_monster_is_berserker) && monster->vitality<(definition->vitality>>2))
+				
+				if(definition->testFlags(_monster_is_berserker) && monster->vitality < definition->vitality / 4 )
 					SET_MONSTER_BERSERK_STATUS(monster, true);
-				if (aggressor_index!=NONE) switch_target_check(target_index, aggressor_index, delta_vitality);
+					
+				if( !isNONE(aggressor_index) )
+					switch_target_check(target_index, aggressor_index, delta_vitality);
 				
 				// if a player shoots a monster who thinks the player is friendly; ask him what the fuck is up
 				if (aggressor_player && get_monster_attitude(target_index, aggressor_index)==_friendly) 
@@ -1567,24 +1584,20 @@ void damage_monster(short target_index, short aggressor_index, short aggressor_t
 					short action;
 					
 					if ((damage_kick_definitions[damage->type].death_action == _monster_is_dying_flaming) && (definition->flags&_monster_can_die_in_flames))
- 					{
-						action= _monster_is_dying_flaming;
-					}
+						action = _monster_is_dying_flaming;
 					else
 					{
 						if ((damage_kick_definitions[damage->type].death_action == _monster_is_dying_hard || ((FLAG(damage->type)&definition->weaknesses) && !(definition->flags & _monster_weaknesses_cause_soft_death)) ||
 							definition->soft_dying_shape==UNONE) && definition->hard_dying_shape!=UNONE && !(definition->flags&_monster_has_delayed_hard_death))
-						{
-							action= _monster_is_dying_hard;
-						}
+							action = _monster_is_dying_hard;
 						else
-						{
 							action= _monster_is_dying_soft;
-						}
-						if (definition->flags&_monster_has_delayed_hard_death) monster->vertical_velocity= -1;
+						if (definition->flags&_monster_has_delayed_hard_death) 
+							monster->vertical_velocity = -1;
 					}
 					
-					if (action==_monster_is_dying_flaming || (damage->type == _damage_crushing && (definition->flags & _monster_screams_when_crushed))) play_object_sound(monster->object_index, definition->flaming_sound);
+					if (action==_monster_is_dying_flaming || (damage->type == _damage_crushing && (definition->flags & _monster_screams_when_crushed))) 
+						play_object_sound(monster->object_index, definition->flaming_sound);
 					set_monster_action(target_index, action);
 					monster_died(target_index); /* orphan projectile, recalculate aggressor paths */
 					
@@ -1593,7 +1606,7 @@ void damage_monster(short target_index, short aggressor_index, short aggressor_t
 						aggressor_player->monster_damage_given.kills++;
 						team_monster_damage_given[aggressor_player->team].kills++;
 						
-						if (definition->_class&_class_human_civilian) 
+						if(definition->_class & _class_human_civilian) 
 							dynamic_world->civilians_killed_by_players++;
 					}
 
@@ -1611,26 +1624,22 @@ void damage_monster(short target_index, short aggressor_index, short aggressor_t
 		}
 		
 
-		if (damage->type >= 0 && damage->type < NUMBER_OF_DAMAGE_TYPES)
+		if(damage->type >= 0 && damage->type < NUMBER_OF_DAMAGE_TYPES)
 		{
 			damage_kick_definition& kick_def = damage_kick_definitions[damage->type];
 			
 			external_velocity = (world_distance)(kick_def.base_value + kick_def.delta_vitality_multiplier*delta_vitality);
 			vertical_component = kick_def.is_also_vertical;
-			if (film_profile.use_vertical_kick_threshold
-			    && kick_def.vertical_threshold
-			    && delta_vitality > kick_def.vertical_threshold)
-			{
+			if (film_profile.use_vertical_kick_threshold && kick_def.vertical_threshold && delta_vitality > kick_def.vertical_threshold)
 				vertical_component = true;
-			}
 		}
 	
-		if (monster->isDying() && external_velocity < MINIMUM_DYING_EXTERNAL_VELOCITY) 
+		if(monster->isDying() && external_velocity < MINIMUM_DYING_EXTERNAL_VELOCITY) 
 			external_velocity = MINIMUM_DYING_EXTERNAL_VELOCITY;
 			
 		external_velocity = (external_velocity * definition->external_velocity_scale) >> FIXED_FRACTIONAL_BITS;
 		
-		if(external_velocity and epicenter)
+		if(external_velocity && epicenter)
 		{
 			object_data *object = get_object_data(monster->object_index);
 			auto dx = object->location.x - epicenter->x;
@@ -1638,7 +1647,7 @@ void damage_monster(short target_index, short aggressor_index, short aggressor_t
 			auto dz = object->location.z + (definition->height / 2) - epicenter->z;
 			auto direction = arctangent(dx, dy);
 			auto radius = isqrt( SQUARE(dx) + SQUARE(dy) + SQUARE(dz) );
-			auto vertical_velocity= (vertical_component&&radius) ? ((external_velocity*dz)/radius) : 0;
+			auto vertical_velocity = (vertical_component && radius) ? ( (external_velocity * dz) / radius ) : 0;
 	
 			accelerate_monster(target_index, vertical_velocity, direction, external_velocity);
 		}
@@ -1655,12 +1664,12 @@ bool legal_polygon_height_change(short polygon_index, world_distance new_floor_h
 	struct damage_definition *damage)
 {
 	auto new_polygon_height = new_ceiling_height - new_floor_height;
-	polygon_data *polygon= get_polygon_data(polygon_index);
+	polygon_data *polygon = get_polygon_data(polygon_index);
 	auto object_index = polygon->first_object;
 	auto minimum_height = dead_player_minimum_polygon_height(polygon_index);
 	bool legal_change = true;
 	
-	while (object_index!=NONE)
+	while (object_index != NONE)
 	{
 		object_data *object = get_object_data(object_index);
 		
@@ -1673,7 +1682,7 @@ bool legal_polygon_height_change(short polygon_index, world_distance new_floor_h
 			{
 				if (damage)
 				{
-					damage_monster(object->permutation, NONE, NONE, (world_point3d *) NULL, damage, NONE);
+					damage_monster(object->permutation, NONE, NONE, nullptr, damage, NONE);
 					play_object_sound(object_index, Sound_Crunched());
 				}
 				legal_change = false;
@@ -1707,10 +1716,7 @@ void adjust_monster_for_polygon_height_change(short monster_index, short polygon
 	}
 }
 
-void accelerate_monster(short monster_index,
-	world_distance vertical_velocity,
-	angle direction,
-	world_distance velocity)
+void accelerate_monster(short monster_index, world_distance vertical_velocity, angle direction, world_distance velocity)
 {
 	monster_data *monster = get_monster_data(monster_index);
 	
@@ -1788,12 +1794,13 @@ static void update_monster_vertical_physics_model(short monster_index)
 	if (media)
 	{
 		// flying and floating monsters treat media as the floor
-		if (moving_flags && media->height>floor_height) floor_height= media->height + WORLD_ONE/16;
+		if (moving_flags && media->height>floor_height) 
+			floor_height = media->height + WORLD_ONE/16;
 		
 		// take damage if necessary
 		if (media->height>object->location.z)
 		{
-			damage_definition *damage= get_media_damage(polygon->media_index, FIXED_ONE);
+			damage_definition *damage = get_media_damage(polygon->media_index, FIXED_ONE);
 			
 			if (damage) 
 				damage_monster(monster_index, NONE, NONE, nullptr, damage, NONE);
@@ -1850,14 +1857,14 @@ static void update_monster_vertical_physics_model(short monster_index)
 	}
 
 	/* reset desired height (flying and floating monsters often change this later) */
-	if (moving_flags&_monster_flys)
+	if(moving_flags & _monster_flys)
 	{
 		/* weÕre flying!: if we have no target, take the middle ground; if we have a target aim
 			for his midsection */
-		if (monster->hasValidTarget())
+		if ( monster->hasValidTarget() )
 		{
 			monster_data *target = get_monster_data(monster->target_index);
-			monster_definition *target_definition = target->getDefinition();//get_monster_definition(target->type);
+			monster_definition *target_definition = target->getDefinition();
 			
 			monster->desired_height= get_object_data(target->object_index)->location.z + ((target_definition->height-definition->height)>>1) + definition->preferred_hover_height;
 			monster->desired_height= PIN(monster->desired_height, floor_height+(definition->height>>2), polygon->ceiling_height-definition->height);
@@ -1868,44 +1875,41 @@ static void update_monster_vertical_physics_model(short monster_index)
 			{
 				auto delta = polygon->ceiling_height - floor_height-definition->height;
 				
-				monster->random_desired_height= floor_height + ((delta>0) ? (global_random() % delta) : 0);
+				monster->random_desired_height= floor_height + ( delta > 0  ? global_random() % delta : 0);
 			}
 			
 			monster->desired_height = MONSTER_IS_DYING(monster) ? polygon->floor_height : monster->random_desired_height;
 		}
 	}
 	else
+		monster->desired_height = floor_height;
+
+	monster->sound_location = object->location;
+	monster->sound_polygon_index = object->polygon;
+	monster->sound_location.z += definition->height - ( definition->height / 2 );
+
+	if (!media)
+		return;
+
+	world_point3d location = object->location;
+	short media_effect_type = NONE;
+	
+	location.z = media->height;
+	
+	if(old_height >= media->height && object->location.z < media->height)
+		media_effect_type = _large_media_detonation_effect;
+
+	if(old_height < media->height && object->location.z >= media->height)
+		media_effect_type = _large_media_emergence_effect;
+	
+	if(media_effect_type != NONE)
 	{
-		monster->desired_height= floor_height;
+		short effect_type = NONE;
+		
+		get_media_detonation_effect(polygon->media_index, media_effect_type, &effect_type);
+		new_effect(&location, object->polygon, effect_type, object->facing);
 	}
 
-	monster->sound_location= object->location;
-	monster->sound_polygon_index= object->polygon;
-	monster->sound_location.z+= definition->height - (definition->height>>1);
-
-	if (media)
-	{
-		world_point3d location= object->location;
-		short media_effect_type = NONE;
-		
-		location.z= media->height;
-		if (old_height>=media->height && object->location.z<media->height)
-		{
-			media_effect_type= _large_media_detonation_effect;
-		}
-		if (old_height<media->height && object->location.z>=media->height)
-		{
-			media_effect_type= _large_media_emergence_effect;
-		}
-		
-		if (media_effect_type!=NONE)
-		{
-			short effect_type = NONE;
-			
-			get_media_detonation_effect(polygon->media_index, media_effect_type, &effect_type);
-			new_effect(&location, object->polygon, effect_type, object->facing);
-		}
-	}
 }
 
 static void update_monster_physics_model(short monster_index)
@@ -1914,34 +1918,39 @@ static void update_monster_physics_model(short monster_index)
 	monster_definition *definition = monster->getDefinition();
 	object_data *object = get_object_data(monster->object_index);
 	
-	if (monster->external_velocity)
-	{
-		world_point3d new_location= object->location;
-		world_distance adjusted_floor_height, adjusted_ceiling_height;
-		auto negative_facing = NORMALIZE_ANGLE(HALF_CIRCLE+object->facing);
-		polygon_data *polygon;
-		short supporting_polygon_index;
+	if(!monster->external_velocity)
+		return;
+	
+	world_point3d new_location = object->location;
+	
+	world_distance adjusted_floor_height, adjusted_ceiling_height;
+	
+	auto negative_facing = NORMALIZE_ANGLE(HALF_CIRCLE + object->facing);
+	short supporting_polygon_index;
 
-		/* move the monster */		
-		translate_point2d((world_point2d*)&new_location, monster->external_velocity, negative_facing);
-		keep_line_segment_out_of_walls(object->polygon, &object->location, &new_location,
-			0, definition->height, &adjusted_floor_height, &adjusted_ceiling_height, &supporting_polygon_index);
-		if (legal_monster_move(monster_index, negative_facing, &new_location)==NONE)
-		{
-			auto old_polygon_index = object->polygon;
-			
-			if (translate_map_object(monster->object_index, &new_location, NONE)) 
-				monster_moved(monster_index, old_polygon_index);
-		}
+	/* move the monster */		
+	translate_point2d((world_point2d*)&new_location, monster->external_velocity, negative_facing);
+	
+	keep_line_segment_out_of_walls(object->polygon, &object->location, &new_location,
+		0, definition->height, &adjusted_floor_height, &adjusted_ceiling_height, &supporting_polygon_index);
 		
-		/* slow him down if heÕs touching the ground or flying */
-		polygon = get_polygon_data(object->polygon);
-		if (object->location.z<=polygon->floor_height || (definition->flags&(_monster_flys|_monster_floats)))
-		{
-			if ((monster->external_velocity-= MONSTER_EXTERNAL_DECELERATION)<MONSTER_MINIMUM_EXTERNAL_VELOCITY)
-				monster->external_velocity = 0;
-		}
+	if (legal_monster_move(monster_index, negative_facing, &new_location)==NONE)
+	{
+		auto old_polygon_index = object->polygon;
+		
+		if (translate_map_object(monster->object_index, &new_location, NONE)) 
+			monster_moved(monster_index, old_polygon_index);
 	}
+	
+	/* slow him down if heÕs touching the ground or flying */
+	polygon_data *polygon = get_polygon_data( object->polygon );
+	
+	if( object->location.z <= polygon->floor_height || definition->testFlags(_monster_flys|_monster_floats) )
+	{
+		if( (monster->external_velocity -= MONSTER_EXTERNAL_DECELERATION) < MONSTER_MINIMUM_EXTERNAL_VELOCITY)
+			monster->external_velocity = 0;
+	}
+
 }
 
 static void monster_needs_path(short monster_index, bool immediately)
@@ -1949,8 +1958,10 @@ static void monster_needs_path(short monster_index, bool immediately)
 	monster_data *monster = get_monster_data(monster_index);
 	
 	if (!monster->isPath(NONE) && immediately) 
-		delete_path(monster->path), monster->path= NONE;
-		
+	{
+		delete_path(monster->path);
+		monster->setPath(NONE);
+	}
 	if (monster->isMoving() && immediately) 
 		set_monster_action(monster_index, _monster_is_stationary);
 		
@@ -1981,7 +1992,7 @@ void set_monster_mode(short monster_index, short new_mode, short target_index)
 			break;
 		
 		case _monster_unlocked:
-			monster->target_index= NONE;
+			monster->target_index = NONE;
 			break;
 		
 		default:
@@ -2066,9 +2077,9 @@ static void generate_new_path_for_monster(short monster_index)
 	}
 
 
-	data.definition= definition;
-	data.monster= monster;
-	data.cross_zone_boundaries= destination_polygon_index==NONE ? false : true;
+	data.definition = definition;
+	data.monster = monster;
+	data.cross_zone_boundaries = destination_polygon_index==NONE ? false : true;
 
 	monster->path= new_path((world_point2d *)&object->location, object->polygon, destination,
 		destination_polygon_index, 3*definition->radius, monster_pathfinding_cost_function, &data);
@@ -2079,9 +2090,7 @@ static void generate_new_path_for_monster(short monster_index)
 		set_monster_mode(monster_index, _monster_unlocked, NONE);
 	}
 	else
-	{
 		advance_monster_path(monster_index);
-	}
 }
 
 
@@ -2089,72 +2098,70 @@ static void generate_new_path_for_monster(short monster_index)
 	monsters always switch targets.  this is where we check to see if we go berserk, right?
 	monster->vitality has already been changed (a monster who just bumped into another monster
 	also calls this, with a delta_vitality of zero).  returns true if an attack was started. */
-static bool switch_target_check(
-	short monster_index,
-	short attacker_index,
-	short delta_vitality)
+static bool switch_target_check(short monster_index, short attacker_index, short delta_vitality)
 {
-	monster_data *monster= get_monster_data(monster_index);
+	monster_data *monster = get_monster_data(monster_index);
 	bool switched_target = false;
-
-	if (!MONSTER_IS_PLAYER(monster) && !MONSTER_IS_DYING(monster)) /* donÕt mess with players or dying monsters */
+	
+	/* don't mess with players or dying monsters */
+	if (monster->isPlayer() || monster->isDying()) 
+		return false;
+		
+	
+	if( monster->hasValidTarget() && monster->isTarget( attacker_index ) )
 	{
-		if (monster->hasValidTarget() && monster->target_index==attacker_index)
+		/* 
+			if we didn't know where our target was and he just shot us, we sort of like, know
+			where he is now 
+		*/
+		if( monster->isLosingLock() )
 		{
-			/* if we didnÕt know where our target was and he just shot us, we sort of like, know
-				where he is now */
-			if (monster->mode==_monster_losing_lock)
-			{
-				set_monster_mode(monster_index, _monster_locked, attacker_index);
-				monster_needs_path(monster_index, false);
-			}
-
-			/* if weÕre already after this guy and he just did damage to us, remember that */
-			if (delta_vitality)
-				SET_TARGET_DAMAGE_FLAG(monster);
-			
-			switched_target= true;
+			set_monster_mode(monster_index, _monster_locked, attacker_index);
+			monster_needs_path(monster_index, false);
 		}
-		else
-		{
-			monster_definition *definition= monster->getDefinition();
-			short target_index= monster->hasValidTarget() ? monster->target_index : NONE;
-			monster_data *attacker= get_monster_data(attacker_index);
-			short attacker_attitude, target_attitude;
-			
-			CLEAR_TARGET_DAMAGE_FLAG(monster);
 
-			if (!MONSTER_IS_DYING(attacker) && !(definition->flags&_monster_cannot_attack))
-			{
-				/* if our attacker is an enemy (or a neutral doing non-zero damage or we are berserk) and
-						a) weÕre inactive, or,
-						b) idle, or,
-						c) unlocked, or,
-						d) our current target has not done any damage, or,
-//						e) attacker is an enemy and our current target is neutral or friendly, or,
-//						f) attacker is a neutral and our current target is friendly, or,
-						g) we canÕt attack and somebody just did damage to us
-					then go kick his ass. */
-				attacker_attitude= get_monster_attitude(monster_index, attacker_index);
-				if (target_index!=NONE) target_attitude= get_monster_attitude(monster_index, target_index);
-				if (mTYPE_IS_ENEMY(definition, attacker->type) ||
-					(TYPE_IS_NEUTRAL(definition, attacker->type)&&delta_vitality) ||
-					MONSTER_IS_BERSERK(monster))
-				{
-					if (!MONSTER_IS_ACTIVE(monster) ||
-						MONSTER_IS_IDLE(monster) ||
-						monster->mode!=_monster_locked ||
-						!TARGET_HAS_DONE_DAMAGE(monster))
-					{
-						change_monster_target(monster_index, attacker_index);
-						if (delta_vitality) SET_TARGET_DAMAGE_FLAG(monster);
-						switched_target= true;
-					}
-				}
-			}
+		/* if we're already after this guy and he just did damage to us, remember that */
+		if (delta_vitality)
+			SET_TARGET_DAMAGE_FLAG(monster);
+		
+		return true;
+	}
+
+	monster_definition *definition = monster->getDefinition();
+	short target_index = monster->hasValidTarget() ? monster->getTarget() : NONE;
+	monster_data *attacker = get_monster_data(attacker_index);
+	short attacker_attitude, target_attitude;
+	
+	CLEAR_TARGET_DAMAGE_FLAG(monster);
+
+	if ( attacker->isDying() || definition->testFlags(_monster_cannot_attack) )
+		return switched_target;
+	
+	/* if our attacker is an enemy (or a neutral doing non-zero damage or we are berserk) and
+			a) we're inactive, or,
+			b) idle, or,
+			c) unlocked, or,
+			d) our current target has not done any damage, or,
+					e) attacker is an enemy and our current target is neutral or friendly, or,
+					f) attacker is a neutral and our current target is friendly, or,
+			g) we can't attack and somebody just did damage to us
+		then go kick his ass. */
+	attacker_attitude = get_monster_attitude(monster_index, attacker_index);
+	
+	if( !isNONE(target_index) )
+		target_attitude = get_monster_attitude(monster_index, target_index);
+		
+	if(mTYPE_IS_ENEMY(definition, attacker->type) || (TYPE_IS_NEUTRAL(definition, attacker->type) && delta_vitality) || monster->isBerserk() )
+	{
+		if( !monster->isActive() || monster->isIdle() || !monster->isLocked() || !monster->hasTargetDoneDamage() )
+		{
+			change_monster_target(monster_index, attacker_index);
+			if (delta_vitality) 
+				SET_TARGET_DAMAGE_FLAG(monster);
+			switched_target = true;
 		}
 	}
-	
+
 	return switched_target;
 }
 
@@ -2163,19 +2170,20 @@ static short get_monster_attitude(short monster_index, short target_index)
 	monster_data *monster = get_monster_data(monster_index);
 	monster_definition *definition = monster->getDefinition();
 	monster_data *target = get_monster_data(target_index);
-	auto target_type= target->type;
+	auto target_type = target->type;
 	short attitude;
 
 	/* berserk monsters are hostile toward everything */
-	if (mTYPE_IS_ENEMY(definition, target_type) || MONSTER_IS_BERSERK(monster) ||
-		(monster->hasValidTarget() && monster->target_index==target_index) ||
-		((definition->_class&_class_human_civilian) && MONSTER_IS_PLAYER(target) && dynamic_world->civilians_killed_by_players>=CIVILIANS_KILLED_BY_PLAYER_THRESHHOLD))
+	if (mTYPE_IS_ENEMY(definition, target_type) || monster->isBerserk() ||
+		(monster->hasValidTarget() && monster->isTarget(target_index)) ||
+		((definition->_class&_class_human_civilian) && target->isPlayer() && 
+		dynamic_world->civilians_killed_by_players >= CIVILIANS_KILLED_BY_PLAYER_THRESHHOLD))
 	{
 		attitude= _hostile;
 	}
 	else
 	{
-		attitude= (TYPE_IS_FRIEND(definition, target_type)) ? _friendly : _neutral;
+		attitude = (TYPE_IS_FRIEND(definition, target_type)) ? _friendly : _neutral;
 	}
 
 	return attitude;
@@ -2241,9 +2249,9 @@ short find_closest_appropriate_target(short aggressor_index, bool full_circle)
 		
 		/* if this monster is deactivated, only seeing a player will activate him */
 		
-		for (player_index= 0; player_index<dynamic_world->player_count; ++player_index)
+		for (player_index = 0; player_index<dynamic_world->player_count; ++player_index)
 		{
-			player_data *player= get_player_data(player_index);
+			player_data *player = get_player_data(player_index);
 			
 			if (get_monster_attitude(aggressor_index, player->monster_index)==_hostile &&
 				clear_line_of_sight(aggressor_index, player->monster_index, full_circle))
@@ -2370,18 +2378,18 @@ void change_monster_target(short monster_index, short target_index)
 	}
 	
 	/* only active monsters can have lock, so activate inactive monsters */
-	if( not monster->isActive() ) 
+	if( !monster->isActive() ) 
 		activate_monster(monster_index);
 
 	/* play activation sounds (including activating on a friendly) */
-	if (monster->target_index != target_index and TYPE_IS_FRIEND(monster->getDefinition(), get_monster_data(target_index)->type))
+	if (monster->target_index != target_index && TYPE_IS_FRIEND(monster->getDefinition(), get_monster_data(target_index)->type))
 		play_object_sound(monster->object_index, monster->getDefinition()->friendly_activation_sound);
 		
-	else if(not monster->testDefinitionFlags(_monster_makes_sound_when_activated) and monster->isUnlocked() ) 
+	else if(!monster->testDefinitionFlags(_monster_makes_sound_when_activated) && monster->isUnlocked() ) 
 		play_object_sound(monster->object_index, monster->getDefinition()->activation_sound);
 		
 	/* instantiate the new target and ask for a new path */
-	if (monster->hasValidTarget() and target_index != monster->getTarget()) 
+	if (monster->hasValidTarget() && target_index != monster->getTarget()) 
 		CLEAR_TARGET_DAMAGE_FLAG(monster);
 		
 	monster_needs_path(monster_index, false);
@@ -2396,83 +2404,83 @@ static void handle_moving_or_stationary_monster(short monster_index)
 	
 	/* stationary, unlocked monsters without paths cannot move */
 	if(isNONE( monster->getPath() ) && !monster->isLocked() && monster->isStationary() )
-		monster_needs_path(monster_index, false);
-	else
 	{
-		auto distance_moved = definition->speed;
-		
-		/* base speed on difficulty level (for aliens) and berserk status */
-		if(definition->testFlags(_monster_is_alien))
+		monster_needs_path(monster_index, false);
+		return;
+	}
+
+	auto distance_moved = definition->speed;
+	
+	/* base speed on difficulty level (for aliens) and berserk status */
+	if(definition->testFlags(_monster_is_alien))
+	{
+		switch (dynamic_world->game_information.difficulty_level)
 		{
-			switch (dynamic_world->game_information.difficulty_level)
-			{
-				case _wuss_level: 
-					distance_moved -= distance_moved >> 3; 
-					break;
-				case _easy_level: 
-					distance_moved -= distance_moved >> 4; 
-					break;
-				case _major_damage_level: 
-					distance_moved += distance_moved >> 3; 
-					break;
-				case _total_carnage_level: 
-					distance_moved += distance_moved >> 2; 
-					break;
-			}
+			case _wuss_level: 
+				distance_moved -= distance_moved >> 3; 
+				break;
+			case _easy_level: 
+				distance_moved -= distance_moved >> 4; 
+				break;
+			case _major_damage_level: 
+				distance_moved += distance_moved >> 3; 
+				break;
+			case _total_carnage_level: 
+				distance_moved += distance_moved >> 2; 
+				break;
 		}
-		if (MONSTER_IS_BERSERK(monster)) 
-			distance_moved+= (distance_moved>>1);
-		
-		if (monster->action!=_monster_is_waiting_to_attack_again)
+	}
+	if ( monster->isBerserk() ) 
+		distance_moved += distance_moved / 2;
+	
+	if (monster->action!=_monster_is_waiting_to_attack_again)
+	{
+		if (translate_monster(monster_index, distance_moved))
 		{
-			if (translate_monster(monster_index, distance_moved))
-			{
-				/* we moved: _monster_is_stationary becomes _monster_is_moving */
-				if (monster->action==_monster_is_stationary) 
-					set_monster_action(monster_index, _monster_is_moving);
-			}
-			else
-			{
-				/* we couldnÕt move: _monster_is_moving becomes _monster_is_stationary */
-				if (monster->action==_monster_is_moving) set_monster_action(monster_index, _monster_is_stationary);
-				monster->ticks_since_attack+= 1; /* attacks occur twice as frequently if we canÕt move (damnit!) */
-			}
+			/* we moved: _monster_is_stationary becomes _monster_is_moving */
+			if( monster->isStationary() ) 
+				set_monster_action(monster_index, _monster_is_moving);
 		}
 		else
 		{
-			monster->ticks_since_attack+= 1;
+			/* we couldnÕt move: _monster_is_moving becomes _monster_is_stationary */
+			if ( monster->isMoving() ) 
+				set_monster_action(monster_index, _monster_is_stationary);
+			monster->ticks_since_attack++; /* attacks occur twice as frequently if we canÕt move (damnit!) */
 		}
-	
-		/* whether we moved or not, see if we can attack if we have lock */
-		monster->ticks_since_attack+= MONSTER_IS_BERSERK(monster) ? 3 : 1;
-		if (OBJECT_WAS_ANIMATED(object) && monster->mode==_monster_locked)
-		{
-			auto attack_frequency = definition->attack_frequency;
-			
-			if(definition->flags&_monster_is_alien)
-			{
-				switch (dynamic_world->game_information.difficulty_level)
-				{
-					case _wuss_level: attack_frequency= 3*attack_frequency; break;
-					case _easy_level: attack_frequency= 2*attack_frequency; break;
-					case _major_damage_level: attack_frequency= attack_frequency>>1; break;
-					case _total_carnage_level: attack_frequency= attack_frequency>>2; break;
-				}
-			}
+	}
+	else
+		monster->ticks_since_attack++;
 
-			if (monster->ticks_since_attack > attack_frequency)
-			{
-				/* activate with lock nearby monsters on our target */
-				if (try_monster_attack(monster_index))
-					activate_nearby_monsters(monster->target_index, monster_index, _pass_one_zone_border, MONSTER_ALERT_ACTIVATION_RANGE);
-				else if (monster->isWaitingToAttackAgain() )
-				{
-					set_monster_action(monster_index, _monster_is_stationary);
-					monster_needs_path(monster_index, true);
-				}
-				
-			}
+	/* whether we moved or not, see if we can attack if we have lock */
+	monster->ticks_since_attack += MONSTER_IS_BERSERK(monster) ? 3 : 1;
+	if(!OBJECT_WAS_ANIMATED(object) && !monster->isLocked())
+		return;
+	
+	auto attack_frequency = definition->attack_frequency;
+	
+	if(definition->flags&_monster_is_alien)
+	{
+		switch (dynamic_world->game_information.difficulty_level)
+		{
+			case _wuss_level: attack_frequency= 3*attack_frequency; break;
+			case _easy_level: attack_frequency= 2*attack_frequency; break;
+			case _major_damage_level: attack_frequency= attack_frequency>>1; break;
+			case _total_carnage_level: attack_frequency= attack_frequency>>2; break;
 		}
+	}
+
+	if (monster->ticks_since_attack > attack_frequency)
+	{
+		/* activate with lock nearby monsters on our target */
+		if (try_monster_attack(monster_index))
+			activate_nearby_monsters(monster->target_index, monster_index, _pass_one_zone_border, MONSTER_ALERT_ACTIVATION_RANGE);
+		else if (monster->isWaitingToAttackAgain() )
+		{
+			set_monster_action(monster_index, _monster_is_stationary);
+			monster_needs_path(monster_index, true);
+		}
+		
 	}
 }
 
@@ -2852,7 +2860,7 @@ static bool attempt_evasive_manouvers(short monster_index)
 	}
 	while (	!isNONE(polygon_index)	);
 	
-	if (successful)
+	if(successful)
 	{
 		object->facing = new_facing;
 		if(!monster->isPath(NONE)) 
@@ -3055,27 +3063,29 @@ static void execute_monster_attack(short monster_index)
 	
 	/* we used to assert that the attacking monster was locked, but monsters can be deactivated
 		or lose lock during an attack (!) so we just abort if we no longer have a valid target */
-	if (monster->hasValidTarget())
+	if (!monster->hasValidTarget())
+		return;
+	
+	monster_definition *definition = monster->getDefinition();
+	object_data *object = get_object_data(monster->object_index);
+	attack_definition *attack = monster->isAttackingClose() ? &definition->melee_attack : &definition->ranged_attack;
+	short projectile_polygon_index;
+	world_point3d origin = object->location;
+	world_point3d _vector;
+	
+	projectile_polygon_index = position_monster_projectile(monster_index, monster->target_index, attack, &origin, nullptrL, &_vector, object->facing);
+	if (projectile_polygon_index != NONE)
+		new_projectile(&origin, projectile_polygon_index, &_vector, attack->error, attack->type, monster_index, monster->type, monster->target_index, FIXED_ONE);
+	
+	if (definition->flags&_monster_fires_symmetrically)
 	{
-		monster_definition *definition = monster->getDefinition();
-		object_data *object = get_object_data(monster->object_index);
-		attack_definition *attack = monster->isAttackingClose() ? &definition->melee_attack : &definition->ranged_attack;
-		short projectile_polygon_index;
-		world_point3d origin = object->location;
-		world_point3d _vector;
-		
-		projectile_polygon_index = position_monster_projectile(monster_index, monster->target_index, attack, &origin, (world_point3d *) NULL, &_vector, object->facing);
-		if (projectile_polygon_index != NONE)
+		attack->dy = -attack->dy;
+		projectile_polygon_index= position_monster_projectile(monster_index, monster->target_index, attack, &origin, nullptr, &_vector, object->facing);
+		if (projectile_polygon_index != NONE) 
 			new_projectile(&origin, projectile_polygon_index, &_vector, attack->error, attack->type, monster_index, monster->type, monster->target_index, FIXED_ONE);
-		if (definition->flags&_monster_fires_symmetrically)
-		{
-			attack->dy = -attack->dy;
-			projectile_polygon_index= position_monster_projectile(monster_index, monster->target_index, attack, &origin, (world_point3d *) NULL, &_vector, object->facing);
-			if (projectile_polygon_index != NONE) 
-				new_projectile(&origin, projectile_polygon_index, &_vector, attack->error, attack->type, monster_index, monster->type, monster->target_index, FIXED_ONE);
-			attack->dy = -attack->dy;
-		}
+		attack->dy = -attack->dy;
 	}
+
 }
 
 int32 monster_pathfinding_cost_function(short source_polygon_index, short line_index, short destination_polygon_index, void *vdata)
@@ -3179,15 +3189,13 @@ int32 monster_pathfinding_cost_function(short source_polygon_index, short line_i
 		/* if weÕre trying to move into media, pay the penalty */
 		if (destination_polygon->media_index!=NONE)
 		{
-			struct media_data *media= get_media_data(destination_polygon->media_index);
+			media_data *media= get_media_data(destination_polygon->media_index);
 			
 			// LP change: idiot-proofed this
 			if (media)
 			{
 				if (media->height>destination_polygon->floor_height)
-				{
-					cost+= 2*destination_polygon->area;
-				}
+					cost += 2 * destination_polygon->area;
 			}
 		}
 	}
@@ -3378,7 +3386,8 @@ static short position_monster_projectile(
 short nearest_goal_polygon_index(short polygon_index)
 {
 	polygon_index = flood_map(polygon_index, INT32_MAX, nearest_goal_cost_function, _breadth_first, nullptr);
-	while(not isNONE(polygon_index))
+	
+	while( !isNONE(polygon_index) )
 	{
 		polygon_data *polygon = get_polygon_data(polygon_index);
 
