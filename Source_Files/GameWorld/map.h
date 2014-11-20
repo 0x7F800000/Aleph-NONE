@@ -335,7 +335,7 @@ const int SIZEOF_random_sound_image_data = 32;
 #define CLEAR_OBJECT_RENDERED_FLAG(o) ((o)->flags&=(uint16)~0x4000)
 
 /* this field is only valid after transmogrify_object_shape is called; in terms of our pipeline, that
-	means that it’s only valid if OBJECT_WAS_RENDERED returns true *and* was cleared before
+	means that it√ïs only valid if OBJECT_WAS_RENDERED returns true *and* was cleared before
 	the last call to render_scene() ... this means that if OBJECT_WAS_RENDERED returns false,
 	the monster and projectile managers will probably call transmogrif_object_shape themselves.
 	for reasons beyond this scope of this comment to explain, the keyframe cannot be frame zero!
@@ -453,6 +453,7 @@ struct object_location
 
 struct object_data /* 32 bytes */
 {
+	static struct object_data& Get(const ix index);
 	inline bool isInvisible()
 	{
 		return OBJECT_IS_INVISIBLE(this);
@@ -497,6 +498,7 @@ const int SIZEOF_object_data = 32;
 
 struct endpoint_data /* 16 bytes */
 {
+	static struct endpoint_data& Get(const ix index);
 	uint16 flags;
 	world_distance highest_adjacent_floor_height, lowest_adjacent_ceiling_height;
 	
@@ -539,6 +541,7 @@ const int SIZEOF_world_point2d = 4;
 
 struct line_data /* 32 bytes */
 {
+	static struct line_data& Get(const ix index);
 	int16 endpoint_indexes[2];
 	uint16 flags; /* no permutation field */
 
@@ -624,6 +627,7 @@ struct side_exclusion_zone
 
 struct side_data /* size platform-dependant */
 {
+	static struct side_data& Get(const ix index);
 	int16 type;
 	uint16 flags;
 	
@@ -816,7 +820,7 @@ struct object_frequency_definition
 	
 	int16 initial_count;   // number that initially appear. can be greater than maximum_count
 	int16 minimum_count;   // this number of objects will be maintained.
-	int16 maximum_count;   // can’t exceed this, except at the beginning of the level.
+	int16 maximum_count;   // can√ït exceed this, except at the beginning of the level.
 	
 	int16 random_count;    // maximum random occurences of the object
 	uint16 random_chance;    // in (0, 65535]
@@ -1169,7 +1173,7 @@ struct shape_and_transfer_mode
 
 void get_object_shape_and_transfer_mode(world_point3d *camera_location, short object_index, struct shape_and_transfer_mode *data);
 void set_object_shape_and_transfer_mode(short object_index, shape_descriptor shape, short transfer_mode);
-void animate_object(short object_index); /* assumes ∂t==1 tick */
+void animate_object(short object_index); /* assumes ¬∂t==1 tick */
 bool randomize_object_sequence(short object_index, shape_descriptor shape);
 
 void play_object_sound(short object_index, short sound_code);
