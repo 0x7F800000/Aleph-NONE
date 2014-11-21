@@ -1,5 +1,4 @@
-#ifndef __MEDIA_DEFINITIONS_H
-#define __MEDIA_DEFINITIONS_H
+#pragma once
 
 /*
 MEDIA_DEFINITIONS.H
@@ -126,5 +125,3 @@ static struct media_definition media_definitions[NUMBER_OF_MEDIA_TYPES]=
 		_effect_under_jjaro, /* submerged fade effect */
 	},
 };
-
-#endif
