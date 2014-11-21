@@ -1,5 +1,4 @@
-#ifndef __PLATFORMS_H
-#define __PLATFORMS_H
+#pragma once
 
 /*
 PLATFORMS.H
@@ -313,5 +312,3 @@ uint8 *pack_platform_data(uint8 *Stream, platform_data *Objects, size_t Count);
 
 // LP change: added platform-parser export
 XML_ElementParser *Platforms_GetParser();
-
-#endif
