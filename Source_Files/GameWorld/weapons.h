@@ -1,6 +1,4 @@
-#ifndef __WEAPONS_H
-#define __WEAPONS_H
-
+#pragma once
 /*
 	weapons2.h
 
@@ -215,6 +213,3 @@ size_t get_number_of_weapon_types();
 
 // LP addition: XML-parser support
 XML_ElementParser *Weapons_GetParser();
-
-#endif
-
