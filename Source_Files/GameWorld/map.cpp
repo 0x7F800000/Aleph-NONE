@@ -1,5 +1,5 @@
 /*
-MAP.C
+MAP.CPP
 
 	Copyright (C) 1991-2001 and beyond by Bungie Studios, Inc.
 	and the "Aleph One" developers.
@@ -846,51 +846,51 @@ void perform_deferred_polygon_object_list_manipulations()
 bool translate_map_object(short object_index, world_point3d *new_location, short new_polygon_index)
 {
 	short line_index;
-	object_data &object = object_data::Get(object_index);
-	auto old_polygon_index = object.polygon;
+	object_data *object = get_object_data(object_index);
+	auto old_polygon_index = object->polygon;
 	bool changed_polygons = false;
 	
-	/* if new_polygon is NONE, find out what polygon the new_location is in */
-	if (new_polygon_index == NONE)
+	/* 
+		if new_polygon is NONE, find out what polygon the new_location is in 
+	*/
+	if(isNONE(new_polygon_index))
 	{
 		new_polygon_index = old_polygon_index;
 		do
 		{
 			line_index = 
-			find_line_crossed_leaving_polygon(new_polygon_index, 
-				(world_point2d *)&object.location, (world_point2d *)new_location);
-				
-			if (line_index!=NONE) 
+			find_line_crossed_leaving_polygon(new_polygon_index, (world_point2d *)&object->location, (world_point2d *)new_location);
+			
+			if( !isNONE(line_index) )
 				new_polygon_index = find_adjacent_polygon(new_polygon_index, line_index);
 
-			if (new_polygon_index != NONE)
-				continue;
-			
-			*(world_point2d *)new_location = get_polygon_data(old_polygon_index)->center;
-			new_polygon_index = old_polygon_index;
-			changed_polygons = true; /* tell the caller we switched polygons, even though we didnÕt */
-			break;
+			if( isNONE( new_polygon_index ) )
+			{
+				*(world_point2d *)new_location= get_polygon_data(old_polygon_index)->center;
+				new_polygon_index= old_polygon_index;
+				changed_polygons= true; /* tell the caller we switched polygons, even though we didn�t */
+				break;
+			}
 		}
-		while (line_index != NONE);
+		while( !isNONE( line_index ) );
 	}
-	
-	/* if we changed polygons, update the old and new polygonÕs linked lists of objects */
+	/* if we changed polygons, update the old and new polygon�s linked lists of objects */
 	if (old_polygon_index != new_polygon_index)
 	{
-		remove_object_from_polygon_object_list(object_index, old_polygon_index);
-		add_object_to_polygon_object_list(object_index, new_polygon_index);		
+		remove_object_from_polygon_object_list( object_index, old_polygon_index );
+		add_object_to_polygon_object_list( object_index, new_polygon_index );	
 		changed_polygons = true;
 	}
-	object.location = *new_location;
-
+	
+	object->location = *new_location;
 	/* move (no saving throw) all parasitic objects along with their host */
-	while (object.parasitic_object != NONE)
+	
+	while (!isNONE(object->parasitic_object))
 	{
-		object = object_data::Get(object.parasitic_object);
-		object.polygon = new_polygon_index;
-		object.location = *new_location;
+		object = get_object_data( object->parasitic_object );
+		object->polygon = new_polygon_index;
+		object->location = *new_location;
 	}
-
 	return changed_polygons;
 }
 
