@@ -37,8 +37,7 @@ Jul 1, 2000 (Loren Petrich):
 	Inlined the angle normalization; using tricky code for that
 */
 
-#ifndef _WORLD_H
-#define _WORLD_H
+#pragma once
 
 /* ---------- constants */
 
@@ -263,7 +262,3 @@ static inline void short_to_long_2d(world_vector2d&WVec, long_vector2d& LVec)
 	LVec.i = WVec.i;
 	LVec.j = WVec.j;
 }
-
-
-
-#endif
