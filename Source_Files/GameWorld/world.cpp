@@ -1,5 +1,5 @@
 /*
-WORLD.C
+WORLD.CPP
 
 	Copyright (C) 1991-2001 and beyond by Bungie Studios, Inc.
 	and the "Aleph One" developers.
@@ -27,15 +27,15 @@ Thursday, January 21, 1993 9:46:24 PM
 Saturday, January 23, 1993 9:46:34 PM
 	fixed arctangent, hopefully for the last time.  normalize_angle() is a little faster.
 Monday, January 25, 1993 3:01:47 PM
-	arctangent works (tested at 0.5¡ increments against SANEÕs tan), the only anomoly was
-	apparently arctan(0)==180¡.
+	arctangent works (tested at 0.5Â¡ increments against SANEÃ•s tan), the only anomoly was
+	apparently arctan(0)==180Â¡.
 Wednesday, January 27, 1993 3:49:04 PM
-	final fix to arctangent, we swear.  recall lim(arctan(x)) as x approaches ¹/2 or 3¹/4 is ±°,
+	final fix to arctangent, we swear.  recall lim(arctan(x)) as x approaches Â¹/2 or 3Â¹/4 is Â±Â°,
 	depending on which side we come from.  because we didn't realize this, arctan failed in the
-	case where x was very close to but slightly below ¹/2.  i think weÕve seen the last monster
-	suddenly ÔpanicÕ and bolt directly into a wall.
+	case where x was very close to but slightly below Â¹/2.  i think weÃ•ve seen the last monster
+	suddenly Ã”panicÃ• and bolt directly into a wall.
 Sunday, July 25, 1993 11:51:42 PM
-	the arctan of 0/0 is now (arbitrairly) ¹/2 because weÕre sick of assert(y) failing.
+	the arctan of 0/0 is now (arbitrairly) Â¹/2 because weÃ•re sick of assert(y) failing.
 Monday, June 20, 1994 4:15:06 PM
 	bug fix in translate_point3d().
 
@@ -53,36 +53,21 @@ Jul 1, 2000 (Loren Petrich):
 */
 
 #ifndef DEBUG_FAST_CODE
-	#undef DEBUG
-	#undef assert
-	#define assert(x) 
+#undef DEBUG
+
+#undef assert
+#define assert(x) 
 #endif
 
 #include "cseries.h"
 #include "world.h"
 #include "FilmProfile.h"
 
-#include <cstdlib>
-#include <cmath>
+#include <stdlib.h>
+#include <math.h>
 #include <limits.h>
 
-const Real AngleConvert = 360/Real(FULL_CIRCLE);
-static double two_pi;
 
-static inline Real DistanceToDouble(world_distance d)
-{
-	return Real(d) / Real(WORLD_ONE);
-}
-
-static inline Real rcos(Real r)
-{
-	return Real(TRIG_MAGNITUDE)*cos(two_pi*Real(r)/(Real)NUMBER_OF_ANGLES) + 0.5;
-}
-
-static inline Real rsin(Real r)
-{
-	return Real(TRIG_MAGNITUDE)*sin(two_pi*Real(r)/(Real)NUMBER_OF_ANGLES) + 0.5;
-}
 
 /* ---------- globals */
 
@@ -93,20 +78,19 @@ static int32 *tangent_table;
 static uint16 random_seed = 1;
 static uint16 local_random_seed = 1;
 
+/* ---------- code */
 
 /* remember this is not wholly accurate, both distance or the sine/cosine values could be
-	negative, and the shift canÕt make negative numbers zero; this is probably ok because
-	weÕll have -1/1024th instead of zero, which is basically our margin for error anyway ... */
+	negative, and the shift canÃ•t make negative numbers zero; this is probably ok because
+	weÃ•ll have -1/1024th instead of zero, which is basically our margin for error anyway ... */
 world_point2d *translate_point2d(world_point2d *point, world_distance distance, angle theta)
 {
 	// LP change: idiot-proofed this
-	Real rtheta = Real(normalize_angle(theta));
-	assert( cosine_table[0]== TRIG_MAGNITUDE );
+	theta = normalize_angle(theta);
+	assert(cosine_table[0]==TRIG_MAGNITUDE);
 	
-	Real rdistance = Real(distance);
-	
-	point->x = Real(point->x) + TRIG_DIV(rdistance * rcos(rtheta) );
-	point->y = Real(point->y) + TRIG_DIV( rdistance * rsin(rtheta) );
+	point->x += (distance*cosine_table[theta])>>TRIG_SHIFT;
+	point->y += (distance*sine_table[theta])>>TRIG_SHIFT;
 	
 	return point;
 }
@@ -114,40 +98,41 @@ world_point2d *translate_point2d(world_point2d *point, world_distance distance, 
 /* same comment as above */
 world_point3d *translate_point3d(world_point3d *point, world_distance distance, angle theta, angle phi)
 {
+	world_distance transformed_distance;
 	
 	// LP change: idiot-proofed this
-	Real rtheta	=	Real(normalize_angle(	theta	));
-	Real rphi		=	Real(normalize_angle(	phi		));
-	Real rdist = Real(distance);
+	theta = normalize_angle(theta);
+	phi = normalize_angle(phi);
 	
-	Real
-	transformed_distance =	TRIG_DIV(rdist		*	rcos(rphi));
-	
-	point->x	= 		Real(point->x) + TRIG_DIV(transformed_distance	*	rcos(rtheta));
-	point->y	=		Real(point->y) + TRIG_DIV(transformed_distance	*	rsin(rtheta));
-	point->z	=		Real(point->z) + TRIG_DIV(rdist		*	rsin(rphi));
+	transformed_distance = (distance*cosine_table[phi]) >> TRIG_SHIFT;
+	point->x += (transformed_distance*cosine_table[theta]) >> TRIG_SHIFT;
+	point->y += (transformed_distance*sine_table[theta]) >> TRIG_SHIFT;
+	point->z += (distance*sine_table[phi]) >> TRIG_SHIFT;
 	
 	return point;
 }
 
 world_point2d *rotate_point2d(world_point2d *point, world_point2d *origin, angle theta)
 {
-	real_vector2d temp;
-	Real rtheta = Real(normalize_angle(theta));
+	// LP change: lengthening the values for more precise calculations
+	long_vector2d temp;
 	
-	temp.i = Real(point->x) - Real(origin->x);
-	temp.j = Real(point->y) - Real(origin->y);
+	theta = normalize_angle(theta);
+	assert(cosine_table[0]==TRIG_MAGNITUDE);
 	
-	point->x = TRIG_DIV(temp.i * rcos(rtheta) ) + TRIG_DIV(temp.j * rsin(rtheta) ) + Real(origin->x);
-	point->y = TRIG_DIV(temp.j * rcos(rtheta) ) + TRIG_DIV(temp.i * rsin(rtheta) ) + Real(origin->y);
+	temp.i= int32(point->x)-int32(origin->x);
+	temp.j= int32(point->y)-int32(origin->y);
+	
+	point->x= ((temp.i*cosine_table[theta])>>TRIG_SHIFT) + ((temp.j*sine_table[theta])>>TRIG_SHIFT) +
+		origin->x;
+	point->y= ((temp.j*cosine_table[theta])>>TRIG_SHIFT) - ((temp.i*sine_table[theta])>>TRIG_SHIFT) +
+		origin->y;
 	
 	return point;
 }
 
-
 world_point2d *transform_point2d(world_point2d *point, world_point2d *origin, angle theta)
 {
-	/*
 	// LP change: lengthening the values for more precise calculations
 	long_vector2d temp;
 	
@@ -160,22 +145,12 @@ world_point2d *transform_point2d(world_point2d *point, world_point2d *origin, an
 	point->x= ((temp.i*cosine_table[theta])>>TRIG_SHIFT) + ((temp.j*sine_table[theta])>>TRIG_SHIFT);
 	point->y= ((temp.j*cosine_table[theta])>>TRIG_SHIFT) - ((temp.i*sine_table[theta])>>TRIG_SHIFT);
 	
-	return point;*/
-	real_vector2d temp;
-	Real rtheta = Real(normalize_angle(theta));
-	
-	temp.i = Real(point->x) - Real(origin->x);
-	temp.j = Real(point->y) - Real(origin->y);
-	point->x = TRIG_DIV(temp.i * rcos(rtheta) ) + TRIG_DIV(temp.j * rsin(rtheta) );
-	point->y = TRIG_DIV(temp.j * rcos(rtheta) ) - TRIG_DIV(temp.i * rsin(rtheta) );
 	return point;
 }
 
 world_point3d *transform_point3d(world_point3d *point, world_point3d *origin, angle theta, angle phi)
 {
-	#ifdef	USEOLD
 	// LP change: lengthening the values for more precise calculations
-	
 	long_vector3d temporary;
 	
 	temporary.i= int32(point->x)-int32(origin->x);
@@ -202,43 +177,20 @@ world_point3d *transform_point3d(world_point3d *point, world_point3d *origin, an
 	}
 	
 	return point;
-	#else
-	real_vector3d temp;
-	Real rtheta = Real(theta);
-	Real rphi = Real(phi);
-	
-	temp.i = Real(point->x) - Real(origin->x);
-	temp.j = Real(point->y) - Real(origin->y);
-	temp.k = Real(point->z) - Real(origin->z);
-	
-	point->x = TRIG_DIV(temp.i * rcos(rtheta) ) + TRIG_DIV(temp.j * rsin(rtheta) );
-	point->y = TRIG_DIV(temp.j * rcos(rtheta) ) - TRIG_DIV(temp.i * rsin(rtheta) );
-	
-	if(!phi)
-	{
-		point->z = temp.k;
-		return point;
-	}
-	
-	temp.i = Real(point->x);
-	point->x = TRIG_DIV(temp.i * rcos(phi) ) + TRIG_DIV(temp.k * rsin(phi) );
-	point->z = TRIG_DIV(temp.k * rcos(phi) ) + TRIG_DIV(temp.i * rsin(phi) );
-	return point;
-	
-	#endif
 }
 
 void build_trig_tables()
 {
-	two_pi= 8.0*atan(1.0);
+	short i;
+	double two_pi= 8.0 * atan(1.0);
 	double theta;
 
-	sine_table= (int16 *) malloc(sizeof(int16)*NUMBER_OF_ANGLES);
-	cosine_table= (int16 *) malloc(sizeof(int16)*NUMBER_OF_ANGLES);
-	tangent_table= (int32 *) malloc(sizeof(int32)*NUMBER_OF_ANGLES);
-	assert(sine_table&&cosine_table&&tangent_table);
+	sine_table = (int16 *) malloc(sizeof(int16)*NUMBER_OF_ANGLES);
+	cosine_table = (int16 *) malloc(sizeof(int16)*NUMBER_OF_ANGLES);
+	tangent_table = (int32 *) malloc(sizeof(int32)*NUMBER_OF_ANGLES);
+	assert(sine_table && cosine_table && tangent_table);
 	
-	for(int i = 0;i < NUMBER_OF_ANGLES; ++i)
+	for (i=0;i<NUMBER_OF_ANGLES;++i)
 	{
 		theta= two_pi*(double)i/(double)NUMBER_OF_ANGLES;
 		
@@ -250,7 +202,7 @@ void build_trig_tables()
 		if (i==HALF_CIRCLE) sine_table[i]= 0, cosine_table[i]= -TRIG_MAGNITUDE;
 		if (i==THREE_QUARTER_CIRCLE) sine_table[i]= -TRIG_MAGNITUDE, cosine_table[i]= 0;
 		
-		/* what we care about here is NOT accuracy, rather weÕre concerned with matching the
+		/* what we care about here is NOT accuracy, rather weÃ•re concerned with matching the
 			ratio of the existing sine and cosine tables as exactly as possible */
 		if (cosine_table[i])
 		{
@@ -258,7 +210,7 @@ void build_trig_tables()
 		}
 		else
 		{
-			/* we always take -°, even though the limit is ±°, depending on which side you
+			/* we always take -Â°, even though the limit is Â±Â°, depending on which side you
 				approach it from.  this is because of the direction we traverse the circle
 				looking for matches during arctan. */
 			tangent_table[i]= INT32_MIN;
@@ -266,9 +218,7 @@ void build_trig_tables()
 	}
 }
 
-static angle m2_arctangent(
-	int32 xx,
-	int32 yy)
+static angle m2_arctangent(int32 xx, int32 yy)
 {
 	// the original Marathon 2 function took world_distance parameters
 	world_distance x = xx;
@@ -316,11 +266,11 @@ static angle m2_arctangent(
 	}
 	else
 	{
-		/* so arctan(0,0)==¹/2 (bill me) */
+		/* so arctan(0,0)==Â¹/2 (bill me) */
 		return y<0 ? THREE_QUARTER_CIRCLE : QUARTER_CIRCLE;
 	}
 }
-/* one day weÕll come back here and actually make this run fast */
+/* one day weÃ•ll come back here and actually make this run fast */
 // LP change: made this long-distance friendly
 //
 static angle a1_arctangent(
@@ -426,73 +376,66 @@ angle arctangent(int32 x, int32 y)
 	return film_profile.long_distance_physics ? a1_arctangent(x, y) : m2_arctangent(x, y);
 }
 
-void set_random_seed(uint16 seed)	{
-	random_seed= seed ? seed : DEFAULT_RANDOM_SEED;
+void set_random_seed(uint16 seed)
+{
+	random_seed = seed ? seed : DEFAULT_RANDOM_SEED;
 }
 
-uint16 get_random_seed()	{
+uint16 get_random_seed()
+{
 	return random_seed;
 }
 
-uint16 global_random()	{
-	return random_seed = (random_seed & 1) ? (random_seed >> 1) ^ 0xB400 : random_seed >> 1; 
-}
-
-uint16 local_random()	{
-	return local_random_seed = (local_random_seed & 1) ? (local_random_seed >> 1) ^ 0xB400 : local_random_seed >> 1; 
-}
-
-world_distance guess_distance2d(world_point2d *p0, world_point2d *p1)	
+uint16 global_random()
 {
+	return random_seed = random_seed & 1 ? (random_seed >> 1) ^ 0xB400 : random_seed >> 1; 
+}
+
+uint16 local_random()
+{
+	return local_random_seed = local_random_seed & 1 ? (local_random_seed >> 1) ^ 0xB400 : local_random_seed >> 1; 
+}
+
+world_distance guess_distance2d(world_point2d *p0, world_point2d *p1)
+{
+	int32 dx= (int32)p0->x - p1->x;
+	int32 dy= (int32)p0->y - p1->y;
+	int32 distance;
 	
-	int32	dx,	dy,	distance;
+	if (dx<0) dx= -dx;
+	if (dy<0) dy= -dy;
+	distance= GUESS_HYPOTENUSE(dx, dy);
 	
-	dx	=	(int32)p0->x	-	p1->x;
-	dy	=	(int32)p0->y	-	p1->y;
+	return distance>INT16_MAX ? INT16_MAX : distance;
+}
+
+world_distance distance3d(world_point3d *p0, world_point3d *p1)
+{
+	int32 dx= (int32)p0->x - p1->x;
+	int32 dy= (int32)p0->y - p1->y;
+	int32 dz= (int32)p0->z - p1->z;
+	int32 distance = isqrt(dx*dx + dy*dy + dz*dz);
 	
-	if(	dx	<	0)
-		dx = -dx;
-	if(	dy	<	0)
-		dy = -dy;
-		
-	distance = GUESS_HYPOTENUSE(dx, dy);
 	return distance > INT16_MAX ? INT16_MAX : distance;
 }
 
-world_distance distance3d( world_point3d *p0, world_point3d *p1)	
+static world_distance m2_distance2d(world_point2d *p0, world_point2d *p1)
 {
-	Real dx = Real(p0->x) - Real(p1->x);
-	Real dy = Real(p0->y) - Real(p1->y);
-	Real dz = Real(p0->z) - Real(p1->z);
-	Real distance = sqrt(	SQUARE(dx) + SQUARE(dy) + SQUARE(dz)	);
-	
-	return distance > INT16_MAX ? INT16_MAX : distance;
+        return isqrt((p0->x-p1->x)*(p0->x-p1->x)+(p0->y-p1->y)*(p0->y-p1->y));
 }
 
-static world_distance m2_distance2d(world_point2d *p0, world_point2d *p1)	
+static world_distance a1_distance2d(world_point2d *p0, world_point2d *p1)
 {
-	real_point2d P0, P1;
-	
-	P0.x = Real(p0->x);
-	P0.y = Real(p0->y);
-	
-	P1.x = Real(p1->x);
-	P1.y = Real(p1->y);
-	
-	return sqrt(( P0.x - P1.x) * (P0.x - P1.x) + (P0.y - P1.y) * (P0.y - P1.y));
-}
-
-static world_distance a1_distance2d(world_point2d *p0, world_point2d *p1)	{
 	// LP change: lengthening the values for more precise calculations;
 	// code cribbed from the previous function
-	Real dx = Real(p0->x) - Real(p1->x);
-	Real dy = Real(p0->y) - Real(p1->y);
+	int32 dx = (int32)p0->x - p1->x;
+	int32 dy = (int32)p0->y - p1->y;
+	auto distance = isqrt(SQUARE(dx) + SQUARE(dy));
 	
-	Real distance = sqrt(	SQUARE(dx) + SQUARE(dy)	);
 	return distance > INT16_MAX ? INT16_MAX : distance;
 }
 
-world_distance distance2d(world_point2d *p0,world_point2d *p1)
+world_distance distance2d(world_point2d *p0, world_point2d *p1)
 {
 	if (film_profile.long_distance_physics)
 	{
@@ -504,13 +447,9 @@ world_distance distance2d(world_point2d *p0,world_point2d *p1)
 	}
 }
 
-/*
-	Removed the old isqrt. this seems to work. also removed huge explanation of isqrt to save space
-	it was some cool code though.
-*/
 int32 isqrt(uint32 x)
 {
-	return (int32) sqrt(x);	//this seems to work just as well
+	return int32( sqrt(x) );
 }
 
 // LP additions: stuff for handling long-distance views
@@ -553,7 +492,11 @@ void overflow_short_to_long_2d(world_point2d& WVec, uint16& flags, long_vector2d
 }
 
 
-world_point2d *transform_overflow_point2d(world_point2d *point, world_point2d *origin, angle theta, uint16 *flags)
+world_point2d *transform_overflow_point2d(
+	world_point2d *point,
+	world_point2d *origin,
+	angle theta,
+	uint16 *flags)
 {
 	// LP change: lengthening the values for more precise calculations
 	long_vector2d temp, tempr;
@@ -570,16 +513,4 @@ world_point2d *transform_overflow_point2d(world_point2d *point, world_point2d *o
 	long_to_overflow_short_2d(tempr,*point,*flags);
 	
 	return point;
-}
-
-world_point2d* world_point2d::Translate(world_distance distance, angle theta)	{
-	return translate_point2d(this, distance, theta);
-}
-
-world_point2d* world_point2d::Rotate(world_point2d *origin, angle theta)	{
-	return rotate_point2d(this, origin, theta);
-}
-
-world_point2d* world_point2d::Transform(world_point2d *origin, angle theta)	{
-	return transform_point2d(this, origin, theta);
 }
