@@ -1,3 +1,4 @@
+#pragma once
 /*
 	EDITOR.H
 
@@ -23,9 +24,6 @@
 Feb 12, 2000 (Loren Petrich):
 	Added MARATHON_INFINITY_DATA_VERSION and set EDITOR_MAP_VERSION to it
 */
-
-#ifndef __EDITOR_H_
-#define __EDITOR_H_
 
 #define MARATHON_ONE_DATA_VERSION 0
 #define MARATHON_TWO_DATA_VERSION 1
@@ -68,4 +66,3 @@ struct saved_path
 
 /* Prevent ridiculous maps.. */
 #define MAX_LINES_PER_VERTEX 15
-#endif
