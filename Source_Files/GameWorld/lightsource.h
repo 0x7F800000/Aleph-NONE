@@ -1,5 +1,4 @@
-#ifndef __LIGHTSOURCE_H
-#define __LIGHTSOURCE_H
+#pragma once
 
 /*
 LIGHTSOURCE.H
@@ -181,7 +180,7 @@ extern vector<light_data> LightList;
 short new_light(struct static_light_data *data);
 struct static_light_data *get_defaults_for_light_type(short type);
 
-void update_lights(void);
+void update_lights();
 
 bool get_light_status(size_t light_index);
 bool set_light_status(size_t light_index, bool active);
@@ -189,8 +188,7 @@ bool set_tagged_light_statuses(short tag, bool new_status);
 
 _fixed get_light_intensity(size_t light_index);
 
-light_data *get_light_data(
-	const size_t light_index);
+light_data *get_light_data(const size_t light_index);
 
 uint8 *unpack_old_light_data(uint8 *Stream, old_light_data* Objects, size_t Count);
 uint8 *pack_old_light_data(uint8 *Stream, old_light_data* Objects, size_t Count);
@@ -201,4 +199,3 @@ uint8 *pack_light_data(uint8 *Stream, light_data* Objects, size_t Count);
 
 void convert_old_light_data_to_new(static_light_data* NewLights, old_light_data* OldLights, int Count);
 
-#endif
