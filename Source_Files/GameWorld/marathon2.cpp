@@ -440,7 +440,7 @@ std::pair<bool, int16> update_world()
 {
         short theElapsedTime = 0;
         bool canUpdate = true;
-        auto theUpdateResult = kUpdateNormalCompletion;
+        int theUpdateResult = kUpdateNormalCompletion;
 
 #ifndef DISABLE_NETWORKING
 	if (game_is_networked)
