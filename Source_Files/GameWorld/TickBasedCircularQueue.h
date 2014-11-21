@@ -1,3 +1,4 @@
+#pragma once
 /*
  *  TickBasedCircularQueue.h
 
@@ -23,9 +24,6 @@
  *  A circular queue of elements (probably action_flags) keyed by game_tick.  Note Bad Things could happen
  *  if game_tick wraps around the int32 max; but that's the case in general in A1 I think.
  */
-
-#ifndef TICKBASEDCIRCULARQUEUE_H
-#define TICKBASEDCIRCULARQUEUE_H
 
 #include "cseries.h"
 
@@ -179,5 +177,3 @@ public:
         tValueType& at(int32 inTick) { return ConcreteTickBasedCircularQueue<tValueType>::elementForTick(inTick); }
         tValueType& operator [](int32 inTick) { return at(inTick); }
 };
-
-#endif // TICKBASEDCIRCULARQUEUE_H
