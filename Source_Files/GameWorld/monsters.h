@@ -298,7 +298,7 @@ public:
 	inline int16 getTarget()	{	return target_index;								}
 	inline bool isTarget(int16 chk)	{	return getTarget() == chk;						}
 	inline bool hasTarget()		{	return getTarget() != NONE;							}
-	inline void setTarget(int16 t)	{	target_index = t;								}
+	void setTarget(int16 t);	
 	
 	inline int16 getType()		{	return type;										}
 	inline bool isType(int16 t)	{	return getType() == t;								}
@@ -346,7 +346,6 @@ public:
 	int16 random_desired_height;
 	/*	AM	-	had to make this change. sorry. also changed number of unused shorts to 5 to compensate*/
 	int16 instance_definition_index;
-private:
 	int16 exflags;
 	int16 unused[5];
 };
