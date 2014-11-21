@@ -1,5 +1,5 @@
 /*
-FLOOD_MAP.C
+FLOOD_MAP.CPP
 
 	Copyright (C) 1991-2001 and beyond by Bungie Studios, Inc.
 	and the "Aleph One" developers.
@@ -61,6 +61,7 @@ on very small maps, choose_random_flood_node() may not terminate
 
 struct node_data /* 16 bytes */
 {
+	static struct node_data& Get(const ix index);
 	uint16 flags;
 	
 	int16 parent_node_index; /* node index of the node we came from to get here; only used for backtracking */
@@ -76,7 +77,7 @@ struct node_data /* 16 bytes */
 
 static short node_count = 0;
 static short last_node_index_expanded = NONE;
-static struct node_data *nodes = nullptr;
+static node_data *nodes = nullptr;
 static short *visited_polygons = nullptr;
 
 /* ---------- private prototypes */
@@ -95,6 +96,12 @@ void allocate_flood_map_memory()
 		delete [] visited_polygons;
 	visited_polygons = new short[MAXIMUM_POLYGONS_PER_MAP];
 	assert(nodes && visited_polygons);
+}
+
+struct node_data& node_data::Get(const ix index)
+{
+	assert(nodes && index < MAXIMUM_FLOOD_NODES);
+	return nodes[index];
 }
 
 /* returns next polygon index or NONE if there are no more polygons left cheaper than maximum_cost */
@@ -166,10 +173,10 @@ short flood_map(short first_polygon_index,
 			break;
 	}
 
-	/* if we found a node, mark it as expanded and add itÕs adjacent non-solid polygons to the search tree */
-	if(isNONE(lowest_cost_node_index) )
-		return NONE;
 	
+	if( isNONE(lowest_cost_node_index) )
+		return NONE;
+	/* if we found a node, mark it as expanded and add itÕs adjacent non-solid polygons to the search tree */
 	/* for flood_depth() and reverse_flood_map(), remember which node we successfully expanded last */
 	last_node_index_expanded = lowest_cost_node_index;
 
@@ -230,9 +237,9 @@ short reverse_flood_map()
 /* returns depth (in polygons) at last_node_index_expanded */
 short flood_depth()
 {
-	assert(last_node_index_expanded >=0 && last_node_index_expanded < node_count);
+	assert(last_node_index_expanded >= 0 && last_node_index_expanded < node_count);
 
-	return isNONE(last_node_index_expanded) ? 0 : nodes[last_node_index_expanded].depth;
+	return isNONE( last_node_index_expanded ) ? 0 : nodes[ last_node_index_expanded ].depth;
 }
 
 #define MAXIMUM_BIASED_RETRIES 10
@@ -281,8 +288,7 @@ void choose_random_flood_node(world_vector2d *bias)
 /* ---------- private code */
 
 /* checks to see if the given node is already in the node list */
-static void add_node(short parent_node_index,
-	short polygon_index, short depth, int32 cost, int32 user_flags)
+static void add_node(short parent_node_index, short polygon_index, short depth, int32 cost, int32 user_flags)
 {
 	if (node_count >= MAXIMUM_FLOOD_NODES)
 		return;
