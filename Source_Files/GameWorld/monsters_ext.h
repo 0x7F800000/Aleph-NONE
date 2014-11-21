@@ -1,5 +1,4 @@
-#ifndef __MONSTERS_EXT_H
-#define	__MONSTERS_EXT_H
+#pragma once
 
 
 //#define		ALLOW_CRASHES_FOR_DEBUGGING
@@ -28,4 +27,4 @@ namespace monster_instances
 	/*	AM	-	picked an arbitrary number. will change later	*/
 	const size_t	max_monster_instances	=		2048;
 };
-#endif
+
