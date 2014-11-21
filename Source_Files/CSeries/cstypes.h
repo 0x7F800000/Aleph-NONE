@@ -1,3 +1,4 @@
+#pragma once
 /* cstypes.h
 
 	Copyright (C) 1991-2001 and beyond by Bo Lindbergh
@@ -18,10 +19,6 @@
 	http://www.gnu.org/licenses/gpl.html
 
 */
-
-#ifndef _CSERIES_TYPES_
-#define _CSERIES_TYPES_
-
 #include <limits.h>
 #ifdef HAVE_CONFIG_H // pick up HAVE_OPENGL
 #include "config.h"
@@ -139,6 +136,4 @@ typedef uint8 byte;
 // Make it compile on systems without OpenGL
 #ifndef HAVE_OPENGL
 #define GLfloat float
-#endif
-
 #endif
