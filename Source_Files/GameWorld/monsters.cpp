@@ -114,11 +114,6 @@ Jan 12, 2003 (Loren Petrich)
 #include "lua_script.h"
 #include "Logging.h"
 
-
-#ifdef env68k
-#pragma segment objects
-#endif
-
 /*
 //explosive deaths should cause damage during their key frame
 */
@@ -294,7 +289,10 @@ static int32 nearest_goal_cost_function(short source_polygon_index, short line_i
 	short destination_polygon_index, void *unused);
 
 static void cause_shrapnel_damage(short monster_index);
+
 static inline int16 get_monster_drop_mask();
+static inline int16 get_major_demotion_mask();
+static inline int16 get_minor_promotion_mask();
 
 // For external use
 monster_definition *get_monster_definition_external(const short type);
@@ -306,15 +304,11 @@ static bool mTYPE_IS_ENEMY(monster_definition *definition, short type)
     if (static_world->environment_flags & _environment_rebellion_m1)
     {
         if (definition->_class & _class_client_m1)
-        {
             return (get_monster_definition(type)->_class & _class_pfhor_m1);
-        }
         else if (definition->_class & _class_pfhor_m1)
         {
             if (get_monster_definition(type)->_class & _class_client_m1)
-            {
                 return true;
-            }
         }
     }
     return TYPE_IS_ENEMY(definition, type);
@@ -326,7 +320,7 @@ monster_data *get_monster_data(const ix monster_index)
 	monster_data *monster = GetMemberWithBounds(monsters, monster_index, MAXIMUM_MONSTERS_PER_MAP);
 	
 	vassert(monster, csprintf(temporary, "monster index #%d is out of range", (int)monster_index));
-	//vassert(SLOT_IS_USED(monster), csprintf(temporary, "monster index #%d (%p) is unused", (int)monster_index, monster));
+	vassert(SLOT_IS_USED(monster), csprintf(temporary, "monster index #%d (%p) is unused", (int)monster_index, monster));
 	
 	return monster;
 }
@@ -511,10 +505,6 @@ short new_monster(struct object_location *location, short monster_type)
 	return monster_index;
 }
 
-void monster_data::markSlotAsFree()
-{
-	MARK_SLOT_AS_FREE(this);
-}
 
 /* assumes ¶t==1 tick */
 void move_monsters()
@@ -4071,4 +4061,8 @@ bool monster_data::slotIsFree()
 void monster_data::markSlotAsUsed()
 {
 	MARK_SLOT_AS_USED(this);
+}
+void monster_data::markSlotAsFree()
+{
+	MARK_SLOT_AS_FREE(this);
 }
