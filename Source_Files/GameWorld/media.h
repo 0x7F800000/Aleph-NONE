@@ -137,8 +137,6 @@ extern vector<media_data> MediaList;
 #define medias (&MediaList[0])
 #define MAXIMUM_MEDIAS_PER_MAP (MediaList.size())
 
-// extern struct media_data *medias;
-
 /* --------- prototypes/MEDIA.C */
 
 size_t new_media(struct media_data *data);
