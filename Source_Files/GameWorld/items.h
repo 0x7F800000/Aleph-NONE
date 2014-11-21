@@ -1,5 +1,4 @@
-#ifndef __ITEMS_H
-#define __ITEMS_H
+#pragma once
 
 /*
 ITEMS.H
@@ -111,7 +110,7 @@ void swipe_nearby_items(short player_index);
 void mark_item_collections(bool loading);
 short get_item_kind(short item_id);
 
-bool unretrieved_items_on_map(void);
+bool unretrieved_items_on_map();
 bool item_valid_in_current_environment(short item_type);
 
 void trigger_nearby_items(short polygon_index);
@@ -127,11 +126,8 @@ struct item_definition *get_item_definition_external(const short type);
 short find_player_ball_color(short player_index);
 
 // LP addition: initializer and animator of items
-void initialize_items(void);
-void animate_items(void);
+void initialize_items();
+void animate_items();
 
 // LP addition: XML-parser support
 XML_ElementParser *Items_GetParser();
-
-#endif
-
