@@ -1,3 +1,4 @@
+#pragma once
 /*
 WORLD.H
 
@@ -37,7 +38,7 @@ Jul 1, 2000 (Loren Petrich):
 	Inlined the angle normalization; using tricky code for that
 */
 
-#pragma once
+
 
 /* ---------- constants */
 
@@ -46,7 +47,7 @@ Jul 1, 2000 (Loren Petrich):
 
 
 #define TRIG_MAGNITUDE (1<<TRIG_SHIFT)
-#define	TRIG_DIV(x)			(Real(x) / Real(TRIG_MAGNITUDE))
+#define	TRIG_DIV(x)			( _real(x) / _real(TRIG_MAGNITUDE) )
 
 
 #define ANGULAR_BITS 9
@@ -65,12 +66,12 @@ Jul 1, 2000 (Loren Petrich):
 #define WORLD_THREE_FOURTHS ((world_distance)((WORLD_ONE*3)/4))
 
 #define DEFAULT_RANDOM_SEED ((uint16)0xfded)
-
+#define	SQUARE(x)		(x*x)
 /* ---------- types */
 
 typedef int16 angle;
 typedef int16 world_distance;
-typedef long double Real;
+typedef float _real;
 
 /* ---------- macros */
 
@@ -116,12 +117,12 @@ struct fixed_point3d
 
 struct real_point2d
 {
-	Real x, y;
+	_real x, y;
 };
 
 struct real_point3d
 {
-	Real x, y, z;
+	_real x, y, z;
 };
 
 typedef struct fixed_point3d fixed_point3d;
@@ -148,12 +149,12 @@ typedef struct fixed_vector3d fixed_vector3d;
 
 struct real_vector2d
 {
-	Real i, j;
+	_real i, j;
 };
 
 struct real_vector3d
 {
-	Real i, j, k;
+	_real i, j, k;
 };
 
 // LP addition: long-integer intermediate values for better long-distance calculation
@@ -202,7 +203,7 @@ extern short *cosine_table, *sine_table;
 
 /* ---------- prototypes: WORLD.C */
 
-void build_trig_tables(void);
+void build_trig_tables();
 
 // LP change: inlined this for speed, and used the NORMALIZE_ANGLE macro;
 // looks as if the code had been worked on by more than one programmer.
@@ -225,16 +226,16 @@ world_point3d *transform_point3d(world_point3d *point, world_point3d *origin, an
 angle arctangent(int32 x, int32 y);
 
 void set_random_seed(uint16 seed);
-uint16 get_random_seed(void);
-uint16 global_random(void);
+uint16 get_random_seed();
+uint16 global_random();
 
-uint16 local_random(void);
+uint16 local_random();
 
 world_distance guess_distance2d( world_point2d *p0,  world_point2d *p1);
 world_distance distance3d( world_point3d *p0,  world_point3d *p1);
 world_distance distance2d( world_point2d *p0,  world_point2d *p1); /* calls isqrt() */
 
-#define		SQUARE(x)		(x*x)
+
 
 
 int32 isqrt(uint32 x);
