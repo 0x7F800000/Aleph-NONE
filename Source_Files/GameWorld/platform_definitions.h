@@ -1,6 +1,4 @@
-#ifndef __PLATFORM_DEFINITIONS_H
-#define __PLATFORM_DEFINITIONS_H
-
+#pragma once
 /*
 PLATFORM_DEFINITIONS.H
 
@@ -221,6 +219,3 @@ struct platform_definition platform_definitions[NUMBER_OF_PLATFORM_TYPES]=
 		{_damage_crushing, 0, 30, 10, FIXED_ONE} /* damage, if necessary */
 	},
 };
-
-#endif
-
