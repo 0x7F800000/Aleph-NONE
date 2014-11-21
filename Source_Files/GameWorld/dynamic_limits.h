@@ -1,3 +1,4 @@
+#pragma once
 /*
 
 	Copyright (C) 1991-2001 and beyond by Bungie Studios, Inc.
@@ -27,10 +28,6 @@ Feb 10, 2000 (Loren Petrich):
 May 4, 2000
 	Replaced resource-fork initialization with XML initialization
 */
-
-#ifndef MARATHON_DYNAMIC_ENTITY_LIMITS
-#define MARATHON_DYNAMIC_ENTITY_LIMITS
-
 #include "XML_ElementParser.h"
 
 
@@ -56,5 +53,3 @@ uint16 get_dynamic_limit(int which);
 
 // call this after changing the film profile but before loading MML
 void reset_dynamic_limits();
-
-#endif
