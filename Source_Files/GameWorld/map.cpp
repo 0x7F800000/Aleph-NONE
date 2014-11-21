@@ -174,7 +174,8 @@ vector<uint8>	AutomapPolygonList;
 vector<map_annotation>	MapAnnotationList;
 vector<map_object>	SavedObjectList;
 
-item_placement_data	*placement_information = nullptr;
+/*	item_placement_data not defined yet	*/
+struct item_placement_data	*placement_information = nullptr;
 
 bool	game_is_networked = false;
 
@@ -1517,14 +1518,14 @@ _fixed find_floor_or_ceiling_intersection(
 	_fixed t;
 	world_distance dx, dy, dz;
 	
-	dx= p1->x-p0->x,;
-	dy= p1->y-p0->y;
-	dz= p1->z-p0->z;
-	t= dz ? INTEGER_TO_FIXED(h-p0->z)/dz : 0; /* if dz==0, return (p0.x,p0.y,h) */
+	dx = p1->x-p0->x;
+	dy = p1->y-p0->y;
+	dz = p1->z-p0->z;
+	t = dz ? INTEGER_TO_FIXED(h-p0->z)/dz : 0; /* if dz==0, return (p0.x,p0.y,h) */
 	
-	intersection->x= p0->x + FIXED_INTEGERAL_PART(t*dx);
-	intersection->y= p0->y + FIXED_INTEGERAL_PART(t*dy);
-	intersection->z= h;
+	intersection->x = p0->x + FIXED_INTEGERAL_PART(t*dx);
+	intersection->y = p0->y + FIXED_INTEGERAL_PART(t*dy);
+	intersection->z = h;
 	
 	return t;
 }
