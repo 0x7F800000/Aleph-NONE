@@ -1,5 +1,4 @@
-#ifndef __SCENERY_DEFINITIONS_H
-#define __SCENERY_DEFINITIONS_H
+#pragma once
 
 /*
 SCENERY_DEFINITIONS.H
@@ -90,7 +89,7 @@ struct scenery_definition scenery_definitions[]=
 	{_scenery_is_solid, BUILD_DESCRIPTOR(_collection_scenery1, 16), WORLD_ONE_FOURTH, WORLD_ONE_HALF}, // security monitor
 	{_scenery_is_solid, BUILD_DESCRIPTOR(_collection_scenery1, 17), WORLD_ONE_FOURTH, WORLD_ONE_HALF}, // alien supply can
 	{_scenery_is_animated, BUILD_DESCRIPTOR(_collection_scenery1, 18)}, // machine
-	{0, BUILD_DESCRIPTOR(_collection_scenery1, 20)}, // fighter’s staff
+	{0, BUILD_DESCRIPTOR(_collection_scenery1, 20)}, // fighter√ïs staff
 
 	// sewage
 	{_scenery_is_solid|_scenery_can_be_destroyed, BUILD_DESCRIPTOR(_collection_scenery3, 5), WORLD_ONE/6, -WORLD_ONE/8, _effect_sewage_lamp_breaking, BUILD_DESCRIPTOR(_collection_scenery3, 6)}, // stubby green light
@@ -131,7 +130,4 @@ struct scenery_definition scenery_definitions[]=
 	{0, BUILD_DESCRIPTOR(_collection_scenery4, 14)}, // floor whip antenna
 	{0, BUILD_DESCRIPTOR(_collection_scenery4, 15)}, // ceiling whip antenna
 };
-
-#endif
-
 #endif
