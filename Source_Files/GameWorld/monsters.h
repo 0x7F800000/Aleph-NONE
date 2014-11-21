@@ -290,10 +290,10 @@ public:
 	
 	bool canFlyOrFloat();
 	
-	inline int16 getPath()		{	return path;										}
-	inline bool hasPath()		{	return path != NONE;								}
-	inline void setPath(int16 p){	path = p;											}
-	inline bool isPath(int16 p)	{	return path == p;									}
+	inline int16 getPath()		{	return path;		}
+	inline bool hasPath()		{	return getPath() != NONE;								}
+	inline void setPath(int16 p)	{	path = p;		}
+	inline bool isPath(int16 p)	{	return getPath() == p;									}
 	
 	inline int16 getTarget()	{	return target_index;								}
 	inline bool isTarget(int16 chk)	{	return getTarget() == chk;						}
@@ -302,9 +302,20 @@ public:
 	
 	inline int16 getType()		{	return type;										}
 	inline bool isType(int16 t)	{	return getType() == t;								}
-	inline int16 getAction()	{	return action;										}
 	
+	inline int16 getAction()	{	return action;										}
 	inline void setAction(int16 a)	{	action = a;										}	
+	
+	inline int16 getMode()		{	return mode;	}
+	inline void setMode(int16 m)	{	mode = m;	}
+	inline bool isMode(int16 m)	{	return getMode() == m;	}
+	
+	inline int16 getVitality()	{	return vitality;}
+	inline void setVitality(int16 v){	vitality = v;	}
+	
+	inline int16 getObjectIndex()		{	return object_index;			}
+	inline void setObjectIndex(int16 o)	{	object_index = o;			}
+	inline bool isObject(int16 index)	{	return getObjectIndex() == index;	}
 	
 	void removePath();
 	
