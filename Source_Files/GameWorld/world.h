@@ -227,9 +227,12 @@ angle arctangent(int32 x, int32 y);
 
 void set_random_seed(uint16 seed);
 uint16 get_random_seed();
+
 uint16 global_random();
+uint16 global_random(uint16 max);
 
 uint16 local_random();
+uint16 local_random(uint16 max);
 
 world_distance guess_distance2d( world_point2d *p0,  world_point2d *p1);
 world_distance distance3d( world_point3d *p0,  world_point3d *p1);
