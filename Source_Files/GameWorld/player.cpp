@@ -251,7 +251,7 @@ struct player_data *local_player, *current_player;
 short local_player_index, current_player_index;
 
 // ZZZ: Let folks ask for a pointer to the main set of ActionQueues.
-static ActionQueues*   sRealActionQueues = NULL;
+static ActionQueues*   sRealActionQueues = nullptr;
 ActionQueues* GetRealActionQueues() { return sRealActionQueues; }
 
 static struct player_shape_definitions player_shapes=
@@ -403,10 +403,7 @@ void allocate_player_memory()
 }
 
 /* returns player index */
-short new_player(
-	short team,
-	short color,
-	short identifier)
+short new_player(short team, short color, short identifier)
 {
 	short player_index, loop;
 	struct player_data *player;
@@ -904,8 +901,8 @@ void damage_player(
 
 short player_identifier_to_player_index(short player_identifier)
 {
-	struct player_data *player;
-	short player_index;
+	player_data *player;
+	ix player_index;
 	
 	for (player_index=0;player_index<dynamic_world->player_count;++player_index)
 	{
@@ -1010,16 +1007,15 @@ short get_polygon_index_supporting_player(
 	return player->supporting_polygon_index;
 }
 
-bool legal_player_powerup(
-	short player_index,
-	short item_index)
+bool legal_player_powerup(short player_index, short item_index)
 {
-	struct player_data *player= get_player_data(player_index);
+	player_data *player = get_player_data(player_index);
 	bool legal = true;
 
 	if (item_index == player_powerups.Powerup_Invincibility)
 	{
-		if (player->invincibility_duration) legal= false;
+		if (player->invincibility_duration) 
+			legal = false;
 	}
 	else if (item_index == player_powerups.Powerup_Invisibility)
 	{
@@ -1035,19 +1031,20 @@ bool legal_player_powerup(
 	}
 	else if (item_index == player_powerups.Powerup_TripleEnergy)
 	{
-		if (player->suit_energy>=player_settings.TripleEnergy) legal= false;
+		if (player->suit_energy>=player_settings.TripleEnergy) legal = false;
 	}
 	else if (item_index == player_powerups.Powerup_DoubleEnergy)
 	{
-		if (player->suit_energy>=player_settings.DoubleEnergy) legal= false;
+		if (player->suit_energy>=player_settings.DoubleEnergy) legal = false;
 	}
 	else if (item_index == player_powerups.Powerup_Energy)
 	{
-		if (player->suit_energy>=player_settings.SingleEnergy) legal= false;
+		if (player->suit_energy>=player_settings.SingleEnergy) legal = false;
 	}
 	else if (item_index == player_powerups.Powerup_Oxygen)
 	{
-		if (player->suit_oxygen>=5*PLAYER_MAXIMUM_SUIT_OXYGEN/6) legal= false;
+		if (player->suit_oxygen >= 5 * PLAYER_MAXIMUM_SUIT_OXYGEN / 6) 
+			legal = false;
 	}
 
 	return legal;
@@ -1107,11 +1104,10 @@ void process_player_powerup(
 	}
 }
 
-world_distance dead_player_minimum_polygon_height(
-	short polygon_index)
+world_distance dead_player_minimum_polygon_height(short polygon_index)
 {
-	short player_index;
-	struct player_data *player;
+	ix player_index;
+	player_data *player;
 	world_distance minimum_height= 0;
 	
 	for (player_index= 0, player= players; player_index<dynamic_world->player_count; ++player_index, ++player)
@@ -1126,11 +1122,9 @@ world_distance dead_player_minimum_polygon_height(
 	return minimum_height;
 }
 
-bool try_and_subtract_player_item(
-	short player_index,
-	short item_type)
+bool try_and_subtract_player_item(short player_index, short item_type)
 {
-	struct player_data *player = get_player_data(player_index);
+	player_data *player = get_player_data(player_index);
 	bool found_one = false;
 
 	assert(item_type>=0 && item_type<NUMBER_OF_ITEMS);
