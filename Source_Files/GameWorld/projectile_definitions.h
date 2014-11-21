@@ -1,6 +1,4 @@
-#ifndef __PROJECTILE_DEFINITIONS_H
-#define __PROJECTILE_DEFINITIONS_H
-
+#pragma once
 /*
 PROJECTILE_DEFINITIONS.H
 
@@ -40,7 +38,7 @@ enum /* projectile flags */
 	_no_vertical_error= 0x0040,
 	_can_toggle_control_panels= 0x0080,
 	_positive_vertical_error= 0x0100,
-	_melee_projectile= 0x0200, /* can use a monsterﾕs custom melee detonation */
+	_melee_projectile= 0x0200, /* can use a monsterﾃ不 custom melee detonation */
 	_persistent_and_virulent= 0x0400, /* keeps moving and doing damage after a successful hit */
 	_usually_pass_transparent_side= 0x0800,
 	_sometimes_pass_transparent_side= 0x1000,
@@ -48,7 +46,7 @@ enum /* projectile flags */
 	_rebounds_from_floor= 0x4000, /* unless v.z<kvzMIN */
 	_penetrates_media= 0x8000, /* huh uh huh ... i said penetrate */
 	_becomes_item_on_detonation= 0x10000, /* item type in .permutation field of projectile */
-	_bleeding_projectile= 0x20000, /* can use a monsterﾕs custom bleeding detonation */
+	_bleeding_projectile= 0x20000, /* can use a monsterﾃ不 custom bleeding detonation */
 	_horizontal_wander= 0x40000, /* random horizontal error perpendicular to direction of movement */
 	_vertical_wander= 0x80000, /* random vertical movement perpendicular to direction of movement */
 	_affected_by_half_gravity= 0x100000,
@@ -84,7 +82,7 @@ struct projectile_definition
 static struct projectile_definition projectile_definitions[NUMBER_OF_PROJECTILE_TYPES];
 const struct projectile_definition original_projectile_definitions[NUMBER_OF_PROJECTILE_TYPES]=
 {
-	{	/* playerﾕs rocket */
+	{	/* playerﾃ不 rocket */
 		_collection_rocket, 0, /* collection number, shape number */
 		_effect_rocket_explosion, NONE, /* detonation effect, media_detonation_effect */
 		_effect_rocket_contrail, 1, NONE, /* contrail effect, ticks between contrails, maximum contrails */
@@ -103,7 +101,7 @@ const struct projectile_definition original_projectile_definitions[NUMBER_OF_PRO
 		_snd_rocket_flyby, NONE, /* flyby sound, rebound sound */
 	},
 	
-	{	/* playerﾕs grenade */
+	{	/* playerﾃ不 grenade */
 		_collection_rocket, 3, /* collection number, shape number */
 		_effect_grenade_explosion, _medium_media_detonation_effect, /* detonation effect, media_detonation_effect */
 		_effect_grenade_contrail, 1, 8, /* contrail effect, ticks between contrails, maximum contrails */
@@ -122,7 +120,7 @@ const struct projectile_definition original_projectile_definitions[NUMBER_OF_PRO
 		_snd_grenade_flyby, NONE, /* flyby sound, rebound sound */
 	},
 	
-	{	/* playerﾕs pistol bullet */
+	{	/* playerﾃ不 pistol bullet */
 		NONE, 0, /* collection number, shape number */
 		_effect_bullet_ricochet, _small_media_detonation_effect, /* detonation effect, media_detonation_effect */
 		NONE, 0, 0, /* contrail effect, ticks between contrails, maximum contrails */
@@ -141,7 +139,7 @@ const struct projectile_definition original_projectile_definitions[NUMBER_OF_PRO
 		NONE, NONE, /* flyby sound, rebound sound */
 	},
 	
-	{	/* playerﾕs rifle bullet */
+	{	/* playerﾃ不 rifle bullet */
 		NONE, 0, /* collection number, shape number */
 		_effect_bullet_ricochet, _small_media_detonation_effect, /* detonation effect, media_detonation_effect */
 		NONE, 0, 0, /* contrail effect, ticks between contrails, maximum contrails */
@@ -160,7 +158,7 @@ const struct projectile_definition original_projectile_definitions[NUMBER_OF_PRO
 		NONE, NONE, /* flyby sound, rebound sound */
 	},
 
-	{	/* playerﾕs shotgun bullet */
+	{	/* playerﾃ不 shotgun bullet */
 		NONE, 0, /* collection number, shape number */
 		_effect_bullet_ricochet, _small_media_detonation_effect, /* detonation effect, media_detonation_effect */
 		NONE, 0, 0, /* contrail effect, ticks between contrails, maximum contrails */
@@ -217,7 +215,7 @@ const struct projectile_definition original_projectile_definitions[NUMBER_OF_PRO
 		_snd_fighter_projectile_flyby, NONE, /* flyby sound, rebound sound */
 	},
 	
-	{	/* playerﾕs flame thrower burst */
+	{	/* playerﾃ不 flame thrower burst */
 		_collection_rocket, 6, /* collection number, shape number */
 		NONE, NONE, /* detonation effect, media_detonation_effect */
 		NONE, 0, 0, /* contrail effect, ticks between contrails, maximum contrails */
@@ -357,7 +355,7 @@ const struct projectile_definition original_projectile_definitions[NUMBER_OF_PRO
 
 		WORLD_ONE/4, /* radius */
 		0, /* area-of-effect */
-		{_damage_fist, 0, 50, 10}, /* damage (will be scaled by playerﾕs velocity) */
+		{_damage_fist, 0, 50, 10}, /* damage (will be scaled by playerﾃ不 velocity) */
 		
 		_usually_pass_transparent_side|_can_toggle_control_panels|_melee_projectile|_penetrates_media, /* flags */
 		
@@ -498,7 +496,7 @@ const struct projectile_definition original_projectile_definitions[NUMBER_OF_PRO
 
 		WORLD_ONE/8, /* radius */
 		0, /* area-of-effect */
-		{_damage_energy_drain, 0, 4, 0}, /* damage (will be scaled by playerﾕs velocity) */
+		{_damage_energy_drain, 0, 4, 0}, /* damage (will be scaled by playerﾃ不 velocity) */
 		
 		_melee_projectile|_penetrates_media, /* flags */
 		
@@ -517,7 +515,7 @@ const struct projectile_definition original_projectile_definitions[NUMBER_OF_PRO
 
 		WORLD_ONE/8, /* radius */
 		0, /* area-of-effect */
-		{_damage_energy_drain, 0, 8, 0}, /* damage (will be scaled by playerﾕs velocity) */
+		{_damage_energy_drain, 0, 8, 0}, /* damage (will be scaled by playerﾃ不 velocity) */
 		
 		_melee_projectile|_penetrates_media, /* flags */
 		
@@ -536,7 +534,7 @@ const struct projectile_definition original_projectile_definitions[NUMBER_OF_PRO
 
 		WORLD_ONE/8, /* radius */
 		0, /* area-of-effect */
-		{_damage_oxygen_drain, 0, 4, 0}, /* damage (will be scaled by playerﾕs velocity) */
+		{_damage_oxygen_drain, 0, 4, 0}, /* damage (will be scaled by playerﾃ不 velocity) */
 		
 		_melee_projectile|_penetrates_media, /* flags */
 		
@@ -776,7 +774,7 @@ const struct projectile_definition original_projectile_definitions[NUMBER_OF_PRO
 	},
 	
 	// LP addition: SMG bullet is a clone of the rifle one, except for entering/exiting liquids
-	{	/* playerﾕs smg bullet */
+	{	/* playerﾃ不 smg bullet */
 		NONE, 0, /* collection number, shape number */
 		_effect_bullet_ricochet, _small_media_detonation_effect, /* detonation effect, media_detonation_effect */
 		NONE, 0, 0, /* contrail effect, ticks between contrails, maximum contrails */
@@ -799,8 +797,6 @@ const struct projectile_definition original_projectile_definitions[NUMBER_OF_PRO
 // Added for the convenience of the 1-2-3 Converter
 uint8 *unpack_projectile_definition(uint8 *Stream, projectile_definition *Objects, size_t Count);
 uint8 *pack_projectile_definition(uint8 *Stream, projectile_definition *Objects, size_t Count);
-
-#endif
 
 #endif
 
