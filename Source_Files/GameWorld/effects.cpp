@@ -45,7 +45,7 @@ Aug 30, 2000 (Loren Petrich):
 #include "Packing.h"
 
 /*
-ryan reports get_object_data() failing on effect->data after a teleport effect terminates
+	ryan reports get_object_data() failing on effect->data after a teleport effect terminates
 */
 
 /* ---------- macros */
@@ -61,14 +61,11 @@ ryan reports get_object_data() failing on effect->data after a teleport effect t
 
 // Moved the definition over to map.cpp
 
-// struct effect_data *effects = NULL;
-
 static effect_definition *get_effect_definition(const short type);
 
 /* ---------- code */
 
-effect_data *get_effect_data(
-	const short effect_index)
+effect_data *get_effect_data(const short effect_index)
 {
 	struct effect_data *effect = GetMemberWithBounds(effects,effect_index,MAXIMUM_EFFECTS_PER_MAP);
 	
@@ -149,8 +146,7 @@ short new_effect(
 }
 
 /* assumes ¶t==1 tick */
-void update_effects(
-	void)
+void update_effects()
 {
 	struct effect_data *effect;
 	short effect_index;
