@@ -432,7 +432,7 @@ short new_monster(struct object_location *location, short monster_type)
 	
 	auto f = [=, &monster_index, &definition, &flags, &location, monster_type](monster_data &m)
 	{
-		if(	not m.slotIsFree()	)
+		if(	!m.slotIsFree()	)
 			return 0;
 			
 		auto object_index = new_map_object(location, BUILD_DESCRIPTOR(definition->collection, definition->stationary_shape));
@@ -459,6 +459,8 @@ short new_monster(struct object_location *location, short monster_type)
 		m.vitality = NONE; /* if a monster is activated with vitality==NONE, it will be properly initialized */
 		m.object_index = object_index;
 		m.flags = flags;
+		m.exflags = 0;
+		m.instance_definition_index = NONE;
 		m.goal_polygon_index = m.activation_bias == _activate_on_goal ?
 			nearest_goal_polygon_index(location->polygon_index) : NONE;
 		m.sound_polygon_index = obj->polygon;
@@ -500,7 +502,7 @@ short new_monster(struct object_location *location, short monster_type)
 		monster_index = NONE;
 		
 	/* keep track of how many civilians we drop on this level */
-	if(static_world->mission_flags & _mission_rescue_m1 && not isNONE(monster_index) && definition->_class & _class_human_civilian_m1) 
+	if(static_world->mission_flags & _mission_rescue_m1 && !isNONE(monster_index) && definition->_class & _class_human_civilian_m1) 
 		dynamic_world->current_civilian_count++;
 	return monster_index;
 }
@@ -554,8 +556,8 @@ void move_monsters()
 					case _monster_losing_lock:
 						/* if this monster has lost or is losing lock and we havenÕt already given a monster
 							time, check to see if his target has become visible again */
-						if (clear_line_of_sight(monster_index, monster->target_index, false))
-							change_monster_target(monster_index, monster->target_index);
+						if (clear_line_of_sight(monster_index, monster->getTarget(), false))
+							change_monster_target(monster_index, monster->getTarget());
 						monster_got_time = true;
 						break;
 				}
@@ -608,7 +610,7 @@ void move_monsters()
 									(monster->attack_repetitions<0 && monster->testDefinitionFlags(_monster_waits_with_clear_shot) && MONSTER_IS_LOCKED(monster)) ?
 									_monster_is_waiting_to_attack_again : _monster_is_moving);
 									monster_needs_path(monster_index, true);
-									monster->ticks_since_attack= 0;
+									monster->ticks_since_attack = 0;
 								}
 							}
 						break;
@@ -677,7 +679,7 @@ SkipBecauseObjectIsInvisible:
 		{
 				change_monster_target(monster_index, find_closest_appropriate_target(monster_index, false));
 				if(monster->hasValidTarget()) 
-					activate_nearby_monsters(monster->target_index, monster_index, _pass_one_zone_border, MONSTER_ALERT_ACTIVATION_RANGE);
+					activate_nearby_monsters(monster->getTarget(), monster_index, _pass_one_zone_border, MONSTER_ALERT_ACTIVATION_RANGE);
 				
 				monster_got_time = true;
 				dynamic_world->last_monster_index_to_get_time = monster_index;
@@ -750,7 +752,7 @@ void monster_died(short target_index)
 	/* anyone locked on this monster needs a clue */
 	foreach_monster(monster_index, monster)
 	{
-		if(!monster->slotIsUsed() || !monster->isActive() || monster->isTarget(target_index))
+		if(!monster->slotIsUsed() || !monster->isActive() || !monster->isTarget(target_index))
 			continue;
 		closest_target_index = find_closest_appropriate_target(monster_index, true);
 
@@ -787,12 +789,12 @@ void initialize_monsters_for_new_level()
 	/* when a level is loaded after being saved all of an active monsterÕs data is still intact,
 		but itÕs path no longer exists.  this function resets all monsters so that they recalculate
 		their paths, first thing. */
-	for (monster_index = 0,monster = monsters;monster_index < MAXIMUM_MONSTERS_PER_MAP;++monster_index,++monster)
+	foreach_monster(monster_index, monster)
 	{
 		if(!SLOT_IS_USED(monster) || !monster->isActive())
 			continue;
 		SET_MONSTER_NEEDS_PATH_STATUS(monster, true);
-		monster->path= NONE;
+		monster->setPath(NONE);
 	}
 }
 
@@ -1039,7 +1041,8 @@ void activate_monster(short monster_index)
 
 	monster->setPath(NONE);
 	/* we used to set monster->target_index here, but it is invalid when mode==_monster_unlocked */
-	monster->mode= _monster_unlocked, monster->target_index= NONE;
+	monster->mode= _monster_unlocked;
+	monster->setTarget(NONE);
 
 	if (!definition->attack_frequency) // IP: Avoid division by zero
 		definition->attack_frequency++;	 
@@ -1222,7 +1225,7 @@ void monster_moved(short target_index, short old_polygon_index)
 		if (clear_line_of_sight(monster_index, target_index, true))
 		{
 			if( monster->isLosingLock() ) 
-				set_monster_mode(monster_index, _monster_locked, monster->target_index);
+				set_monster_mode(monster_index, _monster_locked, monster->getTarget() );
 		}
 		else
 		{
@@ -1852,7 +1855,7 @@ static void update_monster_vertical_physics_model(short monster_index)
 			for his midsection */
 		if ( monster->hasValidTarget() )
 		{
-			monster_data *target = get_monster_data(monster->target_index);
+			monster_data *target = get_monster_data(monster->getTarget());
 			monster_definition *target_definition = target->getDefinition();
 			
 			monster->desired_height= get_object_data(target->object_index)->location.z + ((target_definition->height-definition->height)>>1) + definition->preferred_hover_height;
@@ -1970,18 +1973,18 @@ void set_monster_mode(short monster_index, short new_mode, short target_index)
 	{
 		case _monster_locked:
 			(void)get_monster_data(target_index); /* for bounds checking only */
-			monster->target_index = target_index;
+			monster->setTarget(target_index);
 			CLEAR_TARGET_DAMAGE_FLAG(monster);
 
 			break;
 		
 		case _monster_losing_lock: /* target_index ignored, but still valid */
 		case _monster_lost_lock:
-			(void)get_monster_data(monster->target_index); /* for bounds checking only */
+			(void)get_monster_data(monster->getTarget()); /* for bounds checking only */
 			break;
 		
 		case _monster_unlocked:
-			monster->target_index = NONE;
+			monster->setTarget(NONE);
 			break;
 		
 		default:
@@ -2016,7 +2019,7 @@ static void generate_new_path_for_monster(short monster_index)
 				of intelligence points */
 		case _monster_locked:
 		{
-			monster_data *target= get_monster_data(monster->target_index);
+			monster_data *target = get_monster_data(monster->getTarget());
 			object_data *target_object= get_object_data(target->object_index);
 
 			if (definition->random_sound_mask && !(global_random()&definition->random_sound_mask)) play_object_sound(monster->object_index, definition->random_sound);
@@ -2036,7 +2039,7 @@ static void generate_new_path_for_monster(short monster_index)
 				/* if we still have lock, just build a new path and keep charging */
 				destination= (world_point2d *) &target_object->location;
 				destination_polygon_index= MONSTER_IS_PLAYER(target) ?
-					get_polygon_index_supporting_player(monster->target_index) :
+					get_polygon_index_supporting_player( monster->getTarget() ) :
 					target_object->polygon;
 			}
 			break;
@@ -2370,7 +2373,7 @@ void change_monster_target(short monster_index, short target_index)
 		activate_monster(monster_index);
 
 	/* play activation sounds (including activating on a friendly) */
-	if (monster->target_index != target_index && TYPE_IS_FRIEND(monster->getDefinition(), get_monster_data(target_index)->type))
+	if (monster->getTarget() != target_index && TYPE_IS_FRIEND(monster->getDefinition(), get_monster_data(target_index)->type))
 		play_object_sound(monster->object_index, monster->getDefinition()->friendly_activation_sound);
 		
 	else if(!monster->testDefinitionFlags(_monster_makes_sound_when_activated) && monster->isUnlocked() ) 
@@ -2462,7 +2465,7 @@ static void handle_moving_or_stationary_monster(short monster_index)
 	{
 		/* activate with lock nearby monsters on our target */
 		if (try_monster_attack(monster_index))
-			activate_nearby_monsters(monster->target_index, monster_index, _pass_one_zone_border, MONSTER_ALERT_ACTIVATION_RANGE);
+			activate_nearby_monsters(monster->getTarget(), monster_index, _pass_one_zone_border, MONSTER_ALERT_ACTIVATION_RANGE);
 		else if (monster->isWaitingToAttackAgain() )
 		{
 			set_monster_action(monster_index, _monster_is_stationary);
@@ -2754,7 +2757,7 @@ static bool translate_monster(short monster_index, world_distance distance)
 				{
 					if (not monster->isLocked())
 					{
-						if (not obstacle_monster->hasValidTarget() || !switch_target_check(monster_index, obstacle_monster->target_index, 0))
+						if (not obstacle_monster->hasValidTarget() || !switch_target_check(monster_index, obstacle_monster->getTarget(), 0))
 						{
 							if (monster->isUnlocked() && !(global_random()&OBSTRUCTION_DEACTIVATION_MASK) &&
 								(monster->goal_polygon_index == NONE || monster->goal_polygon_index == object->polygon))
@@ -2886,7 +2889,7 @@ void advance_monster_path(short monster_index)
 		
 		if (object->polygon == target_object->polygon)
 		{
-			path_goal= *(world_point2d *)&get_object_data(get_monster_data(monster->target_index)->object_index)->location;
+			path_goal= *(world_point2d *)&get_object_data(get_monster_data(monster->getTarget())->object_index)->location;
 			done = false;
 		}
 	}
@@ -2922,9 +2925,9 @@ static bool try_monster_attack(short monster_index)
 	
 	angle theta = 0;
 
-	if(monster->hasValidTarget() && not isNONE(monster->getTarget()) )
+	if( monster->hasValidTarget() )
 	{
-		object_data *target_object = get_object_data(get_monster_data(monster->target_index)->object_index);
+		object_data *target_object = get_object_data(get_monster_data(monster->getTarget())->object_index);
 		world_point3d origin = object->location, destination = target_object->location;
 		auto range = distance2d((world_point2d *)&origin, (world_point2d *)&destination);
 		short polygon_index;
@@ -2974,7 +2977,7 @@ static bool try_monster_attack(short monster_index)
 			{
 				/* make sure this is a valid projectile, that we donÕt hit any walls and that whatever
 					we did hit is _hostile. */
-				polygon_index= position_monster_projectile(monster_index, monster->target_index, &definition->melee_attack, &origin, &destination, &_vector, theta);
+				polygon_index= position_monster_projectile(monster_index, monster->getTarget(), &definition->melee_attack, &origin, &destination, &_vector, theta);
 				if (preflight_projectile(&origin, polygon_index, &destination, definition->melee_attack.error,
 					definition->melee_attack.type, monster_index, monster->type, &obstruction_index))
 				{
@@ -2992,7 +2995,7 @@ static bool try_monster_attack(short monster_index)
 				{
 					/* make sure this is a valid projectile, that we donÕt hit any walls and that whatever
 						we did hit is _hostile. */
-					polygon_index= position_monster_projectile(monster_index, monster->target_index, &definition->ranged_attack, &origin, &destination, &_vector, theta);
+					polygon_index= position_monster_projectile(monster_index, monster->getTarget(), &definition->ranged_attack, &origin, &destination, &_vector, theta);
 					if (preflight_projectile(&origin, polygon_index, &destination, definition->ranged_attack.error,
 						definition->ranged_attack.type, monster_index, monster->type, &obstruction_index))
 					{
@@ -3064,16 +3067,16 @@ static void execute_monster_attack(short monster_index)
 	world_point3d origin = object->location;
 	world_point3d _vector;
 	
-	projectile_polygon_index = position_monster_projectile(monster_index, monster->target_index, attack, &origin, nullptr, &_vector, object->facing);
+	projectile_polygon_index = position_monster_projectile(monster_index, monster->getTarget(), attack, &origin, nullptr, &_vector, object->facing);
 	if (projectile_polygon_index != NONE)
-		new_projectile(&origin, projectile_polygon_index, &_vector, attack->error, attack->type, monster_index, monster->type, monster->target_index, FIXED_ONE);
+		new_projectile(&origin, projectile_polygon_index, &_vector, attack->error, attack->type, monster_index, monster->type, monster->getTarget(), FIXED_ONE);
 	
 	if (definition->flags&_monster_fires_symmetrically)
 	{
 		attack->dy = -attack->dy;
-		projectile_polygon_index= position_monster_projectile(monster_index, monster->target_index, attack, &origin, nullptr, &_vector, object->facing);
+		projectile_polygon_index= position_monster_projectile(monster_index, monster->getTarget(), attack, &origin, nullptr, &_vector, object->facing);
 		if (projectile_polygon_index != NONE) 
-			new_projectile(&origin, projectile_polygon_index, &_vector, attack->error, attack->type, monster_index, monster->type, monster->target_index, FIXED_ONE);
+			new_projectile(&origin, projectile_polygon_index, &_vector, attack->error, attack->type, monster_index, monster->type, monster->getTarget(), FIXED_ONE);
 		attack->dy = -attack->dy;
 	}
 
@@ -4065,4 +4068,11 @@ void monster_data::markSlotAsUsed()
 void monster_data::markSlotAsFree()
 {
 	MARK_SLOT_AS_FREE(this);
+}
+
+void monster_data::setTarget(int16 t)	
+{	
+	target_index = t;
+	if(t != NONE)
+		get_monster_data(t);
 }
