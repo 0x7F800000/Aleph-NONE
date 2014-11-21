@@ -391,9 +391,19 @@ uint16 global_random()
 	return random_seed = random_seed & 1 ? (random_seed >> 1) ^ 0xB400 : random_seed >> 1; 
 }
 
+uint16 global_random(uint16 max)
+{
+	return global_random() % max;
+}
+
 uint16 local_random()
 {
 	return local_random_seed = local_random_seed & 1 ? (local_random_seed >> 1) ^ 0xB400 : local_random_seed >> 1; 
+}
+
+uint16 local_random(uint16 max)
+{
+	return local_random() % max;
 }
 
 world_distance guess_distance2d(world_point2d *p0, world_point2d *p1)
