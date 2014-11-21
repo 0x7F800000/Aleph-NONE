@@ -125,8 +125,6 @@ Feb 8, 2003 (Woody Zenfell):
 #include <limits.h>
 
 
-/* ---------- constants */
-
 /* ---------- globals */
 
 // This is an intermediate action-flags queue for transferring action flags
@@ -194,11 +192,12 @@ void set_prediction_wanted(bool inPrediction)
 	sPredictionWanted = inPrediction;
 }
 
-static player_data sSavedPlayerData[MAXIMUM_NUMBER_OF_PLAYERS];
-static monster_data sSavedPlayerMonsterData[MAXIMUM_NUMBER_OF_PLAYERS];
-static object_data sSavedPlayerObjectData[MAXIMUM_NUMBER_OF_PLAYERS];
-static object_data sSavedPlayerParasiticObjectData[MAXIMUM_NUMBER_OF_PLAYERS];
-static short sSavedPlayerObjectNextObject[MAXIMUM_NUMBER_OF_PLAYERS];
+static player_data	sSavedPlayerData[		MAXIMUM_NUMBER_OF_PLAYERS	];
+static monster_data	sSavedPlayerMonsterData[	MAXIMUM_NUMBER_OF_PLAYERS	];
+static object_data	sSavedPlayerObjectData[		MAXIMUM_NUMBER_OF_PLAYERS	];
+static object_data	sSavedPlayerParasiticObjectData[MAXIMUM_NUMBER_OF_PLAYERS	];
+
+static short		sSavedPlayerObjectNextObject[	MAXIMUM_NUMBER_OF_PLAYERS	];
 
 // For sanity-checking...
 static int32 sSavedTickCount;
@@ -863,4 +862,4 @@ static void game_timed_out()
 
 
 // LP: suppressed this as superfluous; won't try to reassign these sounds for M1 compatibility
-static void load_all_game_sounds(short environment_code){}
+[[deprecated("Don't use this.")]] static void load_all_game_sounds(short environment_code){}
