@@ -152,14 +152,13 @@ const int SIZEOF_effect_definition = 14;
 extern vector<effect_data> EffectList;
 #define effects (&EffectList[0])
 
-// extern struct effect_data *effects;
 
 /* ---------- prototypes/EFFECTS.C */
 
 short new_effect(world_point3d *origin, short polygon_index, short type, angle facing);
-void update_effects(void); /* assumes ¶t==1 tick */
+void update_effects(); /* assumes Â¶t==1 tick */
 
-void remove_all_nonpersistent_effects(void);
+void remove_all_nonpersistent_effects();
 void remove_effect(short effect_index);
 
 void mark_effect_collections(short type, bool loading);
@@ -167,8 +166,7 @@ void mark_effect_collections(short type, bool loading);
 void teleport_object_in(short object_index);
 void teleport_object_out(short object_index);
 
-effect_data *get_effect_data(
-	const short effect_index);
+effect_data *get_effect_data(const short effect_index);
 
 // LP: to pack and unpack this data;
 // these do not make the definitions visible to the outside world
