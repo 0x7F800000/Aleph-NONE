@@ -26,7 +26,7 @@ Monday, March 6, 1995 9:41:50 PM  (Jason')
 Thursday, April 27, 1995 11:00:36 AM  (Jason')
 	functions with zero periods are skipped.
 Tuesday, June 13, 1995 6:13:29 PM  (Jason)
-	support for phases greater than a light’s initial period
+	support for phases greater than a light√ïs initial period
 Monday, July 10, 1995 5:20:26 PM  (Jason)
 	stateless (six phase) lights.
 
@@ -52,9 +52,6 @@ Jul 3, 2002 (Loren Petrich):
 //MH: Lua scripting
 #include "lua_script.h"
 
-#ifdef env68k
-#pragma segment marathon
-#endif
 
 /* ---------- globals */
 
@@ -142,102 +139,103 @@ struct light_definition light_definitions[NUMBER_OF_LIGHT_TYPES]=
 	},
 };
 
-static light_definition *get_light_definition(
-	const short type);
+static light_definition *get_light_definition(const short type);
 
 /* ---------- code */
 
 
-light_data *get_light_data(
-	const size_t light_index)
+light_data *get_light_data(const size_t light_index)
 {
 	struct light_data *light = GetMemberWithBounds(lights,light_index,MAXIMUM_LIGHTS_PER_MAP);
 	
-	if (!light) return NULL;
-	if (!SLOT_IS_USED(light)) return NULL;
+	if (!light) 
+		return nullptr;
+	if (!SLOT_IS_USED(light)) 
+		return nullptr;
 	
 	return light;
 }
 
 // LP change: moved down here because it uses light definitions
-light_definition *get_light_definition(
-	const short type)
+light_definition *get_light_definition(const short type)
 {
 	return GetMemberWithBounds(light_definitions,type,NUMBER_OF_LIGHT_TYPES);
 }
 
-short new_light(
-	struct static_light_data *data)
+short new_light(struct static_light_data *data)
 {
-	int light_index;
-	struct light_data *light;
+	ix light_index;
+	light_data *light;
 	
 	// LP change: idiot-proofing
-	if (!data) return NONE;
+	if (!data) 
+		return NONE;
 	
 	for (light_index= 0, light= lights; light_index<short(MAXIMUM_LIGHTS_PER_MAP); ++light_index, ++light)
 	{
-		if (SLOT_IS_FREE(light))
-		{
-			light->static_data= *data;
-//			light->flags= 0;
-			MARK_SLOT_AS_USED(light);
-			
-			light->intensity= 0;
-			change_light_state(light_index, LIGHT_IS_INITIALLY_ACTIVE(data) ? _light_secondary_active : _light_secondary_inactive);
-			light->intensity= light->final_intensity;
-			change_light_state(light_index, LIGHT_IS_INITIALLY_ACTIVE(data) ? _light_primary_active : _light_primary_inactive);
-					light->phase= data->phase;
-			rephase_light(light_index);		
-			
-			light->intensity= lighting_function_dispatch(get_lighting_function_specification(&light->static_data, light->state)->function,
-				light->initial_intensity, light->final_intensity, light->phase, light->period);
-			
-			break;
-		}
+		if (!SLOT_IS_FREE(light))
+			continue;
+		
+		light->static_data = *data;
+
+		MARK_SLOT_AS_USED(light);
+		
+		light->intensity = 0;
+		change_light_state(light_index, LIGHT_IS_INITIALLY_ACTIVE(data) ? _light_secondary_active : _light_secondary_inactive);
+		light->intensity= light->final_intensity;
+		change_light_state(light_index, LIGHT_IS_INITIALLY_ACTIVE(data) ? _light_primary_active : _light_primary_inactive);
+				light->phase= data->phase;
+		rephase_light(light_index);		
+		
+		light->intensity= lighting_function_dispatch(get_lighting_function_specification(&light->static_data, light->state)->function,
+			light->initial_intensity, light->final_intensity, light->phase, light->period);
+		
+		break;
+	
 	}
-	if (light_index == short(MAXIMUM_LIGHTS_PER_MAP)) light_index = NONE;
+	if ( light_index == short(MAXIMUM_LIGHTS_PER_MAP) )
+		light_index = NONE;
 	
 	return light_index;
 }
 
-struct static_light_data *get_defaults_for_light_type(
-	short type)
+struct static_light_data *get_defaults_for_light_type(short type)
 {
-	struct light_definition *definition= get_light_definition(type);
+	light_definition *definition = get_light_definition(type);
 	// LP addition: idiot-proofing
-	if (!definition) return NULL;
+	if (!definition) 
+		return nullptr;
 	
 	return &definition->defaults;
 }
 
-void update_lights(
-	void)
+void update_lights()
 {
 	int light_index;
-	struct light_data *light;
+	light_data *light;
 	
 	for (light_index= 0, light= lights; light_index<short(MAXIMUM_LIGHTS_PER_MAP); ++light_index, ++light)
 	{
-		if (SLOT_IS_USED(light))
-		{
-			/* update light phase; if we’ve overflowed our period change to the next state */
-			light->phase+= 1;
-			rephase_light(light_index);
-			
-			/* calculate and remember intensity for this ii, fi, phase, period */
-			light->intensity= lighting_function_dispatch(get_lighting_function_specification(&light->static_data, light->state)->function,
-				light->initial_intensity, light->final_intensity, light->phase, light->period);
-		}
+		if (!SLOT_IS_USED(light))
+			continue;
+	
+		/* update light phase; if we√ïve overflowed our period change to the next state */
+		light->phase++;
+		rephase_light(light_index);
+		
+		/* calculate and remember intensity for this ii, fi, phase, period */
+		light->intensity= lighting_function_dispatch(get_lighting_function_specification(&light->static_data, light->state)->function,
+			light->initial_intensity, light->final_intensity, light->phase, light->period);
+	
 	}
 }
 
-bool get_light_status(
-	size_t light_index)
+bool get_light_status(size_t light_index)
 {
-	struct light_data *light= get_light_data(light_index);
+	light_data *light = get_light_data(light_index);
 	// LP change: idiot-proofing
-	if (!light) return false;
+	if (!light)
+		return false;
 	
 	bool status;
 	
@@ -256,23 +254,21 @@ bool get_light_status(
 			break;
 
 		default:
-			vhalt(csprintf(temporary, "what is light state #%d?", light->state));
-			break;
+			assert(false);
 	}
 	
 	return status;
 }
 
-bool set_light_status(
-	size_t light_index,
-	bool new_status)
+bool set_light_status(size_t light_index, bool new_status)
 {
-	struct light_data *light= get_light_data(light_index);
+	light_data *light= get_light_data(light_index);
 	// LP change: idiot-proofing
-	if (!light) return false;
+	if (!light) 
+		return false;
 	
-	bool old_status= get_light_status(light_index);
-	bool changed= false;
+	bool old_status = get_light_status(light_index);
+	bool changed = false;
 	
 	if ((new_status&&!old_status) || (!new_status&&old_status))
 	{
@@ -290,38 +286,30 @@ bool set_light_status(
 	return changed;
 }
 
-bool set_tagged_light_statuses(
-	short tag,
-	bool new_status)
+bool set_tagged_light_statuses(short tag, bool new_status)
 {
-	bool changed= false;
+	bool changed = false;
 
-	if (tag)
-	{
-		int light_index;
-		struct light_data *light;
-		
-		for (light_index= 0, light= lights; light_index<short(MAXIMUM_LIGHTS_PER_MAP); ++light_index, ++light)
-		{
-			if (light->static_data.tag==tag)
-			{
-				if (set_light_status(light_index, new_status))
-				{
-					changed= true;
-				}
-			}
-		}
-	}
+	if (!tag)
+		return false;
 	
+	ix light_index;
+	light_data *light;
+	
+	for (light_index = 0, light= lights; light_index<short(MAXIMUM_LIGHTS_PER_MAP); ++light_index, ++light)
+	{
+		if (light->static_data.tag==tag && set_light_status(light_index, new_status))
+			changed = true;
+	}
 	return changed;
 }
 
-_fixed get_light_intensity(
-	size_t light_index)
+_fixed get_light_intensity(size_t light_index)
 {
 	// LP change: idiot-proofing / fallback
 	light_data *light = get_light_data(light_index);
-	if (!light) return 0;	// Blackness
+	if (!light) 
+		return 0;	// Blackness
 	
 	return light->intensity;
 }
@@ -329,80 +317,102 @@ _fixed get_light_intensity(
 /* ---------- private code */
 
 /* given a state, initialize .phase, .period, .initial_intensity, and .final_intensity */
-void change_light_state(
-	size_t light_index,
-	short new_state)
+void change_light_state(size_t light_index, short new_state)
 {
-	struct light_data *light= get_light_data(light_index);
+	light_data *light = get_light_data(light_index);
 	// LP change: idiot-proofing
-	if (!light) return;
-	struct lighting_function_specification *function= get_lighting_function_specification(&light->static_data, new_state);
+	if (!light) 
+		return;
+	lighting_function_specification *function = get_lighting_function_specification(&light->static_data, new_state);
 	
-	light->phase= 0;
-	light->period= function->period + global_random()%(function->delta_period+1);
+	light->phase = 0;
+	light->period = function->period + global_random() % ( function->delta_period + 1 );
 	
-	light->initial_intensity= light->intensity;
-	light->final_intensity= function->intensity + global_random()%(function->delta_intensity+1);
+	light->initial_intensity = light->intensity;
+	light->final_intensity = function->intensity + global_random() % ( function->delta_intensity + 1 );
 	
-	light->state= new_state;
+	light->state = new_state;
 }
 
-static struct lighting_function_specification *get_lighting_function_specification(
-	struct static_light_data *data,
-	short state)
+static struct lighting_function_specification *get_lighting_function_specification(struct static_light_data *data, short state)
 {
-	struct lighting_function_specification *function;
+	lighting_function_specification *function;
 	
 	switch (state)
 	{
-		case _light_becoming_active: function= &data->becoming_active; break;
-		case _light_primary_active: function= &data->primary_active; break;
-		case _light_secondary_active: function= &data->secondary_active; break;
-		case _light_becoming_inactive: function= &data->becoming_inactive; break;
-		case _light_primary_inactive: function= &data->primary_inactive; break;
-		case _light_secondary_inactive: function= &data->secondary_inactive; break;
-		default: vhalt(csprintf(temporary, "what is light state #%d?", state));
+		case _light_becoming_active: 
+			function = &data->becoming_active; 
+			break;
+		case _light_primary_active: 
+			function = &data->primary_active; 
+			break;
+		case _light_secondary_active: 
+			function = &data->secondary_active; 
+			break;
+		case _light_becoming_inactive: 
+			function = &data->becoming_inactive; 
+			break;
+		case _light_primary_inactive: 
+			function = &data->primary_inactive; 
+			break;
+		case _light_secondary_inactive: 
+			function = &data->secondary_inactive; 
+			break;
+		default: 
+			assert(false);
 	}
-	
 	return function;
 }
 
-static void rephase_light(
-	short light_index)
+static void rephase_light(short light_index)
 {
-	struct light_data *light= get_light_data(light_index);
+	light_data *light = get_light_data(light_index);
 	// LP change: idiot-proofing
-	if (!light) return;
-	short phase= light->phase;
+	if (!light) 
+		return;
+	auto phase = light->phase;
 	
-	while (phase>=light->period)
+	while (phase >= light->period)
 	{
 		short new_state;
 		
-		phase-= light->period;
+		phase -= light->period;
 		
 		switch (light->state)
 		{
-			case _light_becoming_active: new_state= _light_primary_active; break;
-			case _light_primary_active: new_state= _light_secondary_active; break;
-			case _light_secondary_active: new_state= LIGHT_IS_STATELESS(light) ? _light_becoming_inactive : _light_primary_active; break;
-			case _light_becoming_inactive: new_state= _light_primary_inactive; break;
-			case _light_primary_inactive: new_state= _light_secondary_inactive; break;
-			case _light_secondary_inactive: new_state= LIGHT_IS_STATELESS(light) ? _light_becoming_active : _light_primary_inactive; break;
-			default: vhalt(csprintf(temporary, "what is light state #%d?", light->state));
+			case _light_becoming_active: 
+				new_state = _light_primary_active; 
+				break;
+			case _light_primary_active: 
+				new_state = _light_secondary_active; 
+				break;
+			case _light_secondary_active: 
+				new_state = LIGHT_IS_STATELESS(light) ? _light_becoming_inactive : _light_primary_active; 
+				break;
+			case _light_becoming_inactive: 
+				new_state= _light_primary_inactive; 
+				break;
+			case _light_primary_inactive: 
+				new_state= _light_secondary_inactive; 
+				break;
+			case _light_secondary_inactive: 
+				new_state= LIGHT_IS_STATELESS(light) ? _light_becoming_active : _light_primary_inactive; 
+				break;
+			default: 
+				assert(false);
 		}
 		
 		change_light_state(light_index, new_state);
 	}
-	light->phase= phase;
+	light->phase = phase;
 }
 				
 /* ---------- lighting functions */
 
-static _fixed constant_lighting_proc(_fixed initial_intensity, _fixed final_intensity, short phase, short period);
-static _fixed linear_lighting_proc(_fixed initial_intensity, _fixed final_intensity, short phase, short period);
-static _fixed smooth_lighting_proc(_fixed initial_intensity, _fixed final_intensity, short phase, short period);
-static _fixed flicker_lighting_proc(_fixed initial_intensity, _fixed final_intensity, short phase, short period);
+static _fixed constant_lighting_proc(	_fixed initial_intensity, _fixed final_intensity, short phase, short period);
+static _fixed linear_lighting_proc(	_fixed initial_intensity, _fixed final_intensity, short phase, short period);
+static _fixed smooth_lighting_proc(	_fixed initial_intensity, _fixed final_intensity, short phase, short period);
+static _fixed flicker_lighting_proc(	_fixed initial_intensity, _fixed final_intensity, short phase, short period);
 static _fixed random_lighting_proc(_fixed initial_intensity, _fixed final_intensity, short phase, short period);
 static _fixed fluorescent_lighting_proc(_fixed initial_intensity, _fixed final_intensity, short phase, short period);
 
