@@ -34,7 +34,6 @@ May 18, 2000 (Loren Petrich):
 
 /* ---------- constants */
 
-// #define MAXIMUM_PLATFORMS_PER_MAP 64
 
 enum /* platform types */
 {
@@ -80,7 +79,7 @@ enum /* static platform flags */
 	_platform_comes_from_floor, /* platform rises from floor */
 	_platform_comes_from_ceiling, /* platform lowers from ceiling */
 	_platform_causes_damage, /* when obstructed by monsters, this platform causes damage */
-	_platform_does_not_activate_parent, /* does not reactive it’s parent (i.e., that platform which activated it) */
+	_platform_does_not_activate_parent, /* does not reactive it√ïs parent (i.e., that platform which activated it) */
 	_platform_activates_only_once, /* cannot be activated a second time */
 	_platform_activates_light, /* activates floor and ceiling lightsources while activating */
 	_platform_deactivates_light, /* deactivates floor and ceiling lightsources while deactivating */
@@ -241,7 +240,7 @@ struct platform_data /* 140 bytes */
 
 	uint16 dynamic_flags;
 	world_distance floor_height, ceiling_height;
-	int16 ticks_until_restart; /* if we’re not moving but are active, this is our delay until we move again */
+	int16 ticks_until_restart; /* if we√ïre not moving but are active, this is our delay until we move again */
 
 	struct endpoint_owner_data endpoint_owners[MAXIMUM_VERTICES_PER_POLYGON];
 
@@ -262,14 +261,13 @@ extern vector<platform_data> PlatformList;
 #define platforms (&PlatformList[0])
 #define MAXIMUM_PLATFORMS_PER_MAP (PlatformList.size())
 
-// extern struct platform_data *platforms;
 
 /* --------- prototypes/PLATFORMS.C */
 
 short new_platform(struct static_platform_data *data, short polygon_index, short version);
 struct static_platform_data *get_defaults_for_platform_type(short type);
 
-void update_platforms(void);
+void update_platforms();
 
 void platform_was_entered(short platform_index, bool player);
 
@@ -303,8 +301,7 @@ bool platform_is_at_initial_state(short platform_index);
 
 short get_platform_moving_sound(short platform_index);
 
-platform_data *get_platform_data(
-	short platform_index);
+platform_data *get_platform_data(short platform_index);
 
 // LP: to pack and unpack this data;
 // these do not make the definitions visible to the outside world
