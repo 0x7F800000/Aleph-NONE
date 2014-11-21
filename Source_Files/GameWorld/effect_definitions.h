@@ -1,6 +1,4 @@
-#ifndef __EFFECT_DEFINITIONS_H
-#define __EFFECT_DEFINTIIONS_H
-
+#pragma once
 /*
 EFFECT_DEFINITIONS.H
 
@@ -34,7 +32,7 @@ enum /* flags */
 {
 	_end_when_animation_loops= 0x0001,
 	_end_when_transfer_animation_loops= 0x0002,
-	_sound_only= 0x0004, /* play the animation’s initial sound and nothing else */
+	_sound_only= 0x0004, /* play the animation√ïs initial sound and nothing else */
 	_make_twin_visible= 0x0008,
 	_media_effect= 0x0010
 };
@@ -202,5 +200,3 @@ const struct effect_definition original_effect_definitions[NUMBER_OF_EFFECT_TYPE
 // Added for the convenience of the 1-2-3 Converter
 uint8 *unpack_effect_definition(uint8 *Stream, effect_definition *Objects, size_t Count);
 uint8 *pack_effect_definition(uint8 *Stream, effect_definition *Objects, size_t Count);
-
-#endif
