@@ -447,10 +447,121 @@ world_distance distance2d(world_point2d *p0, world_point2d *p1)
 	}
 }
 
+
+/*
+	* It requires more space to describe this implementation of the manual
+	* square root algorithm than it did to code it. The basic idea is that
+	* the square root is computed one bit at a time from the high end. Because
+	* the original number is 32 bits (unsigned), the root cannot exceed 16 bits
+	* in length, so we start with the 0x8000 bit.
+	*
+	* Let "x" be the value whose root we desire, "t" be the square root
+	* that we desire, and "s" be a bitmask. A simple way to compute
+	* the root is to set "s" to 0x8000, and loop doing the following:
+	*
+	* t = 0;
+	* s = 0x8000;
+	* do {
+	* if ((t + s) * (t + s) <= x)
+	* t += s;
+	* s >>= 1;
+	* while (s != 0);
+	*
+	* The primary disadvantage to this approach is the multiplication. To
+	* eliminate this, we begin simplying. First, we observe that
+	*
+	* (t + s) * (t + s) == (t * t) + (2 * t * s) + (s * s)
+	*
+	* Therefore, if we redefine "x" to be the original argument minus the
+	* current value of (t * t), we can determine if we should add "s" to
+	* the root if
+	*
+	* (2 * t * s) + (s * s) <= x
+	*
+	* If we define a new temporary "nr", we can express this as
+	*
+	* t = 0;
+	* s = 0x8000;
+	* do {
+	* nr = (2 * t * s) + (s * s);
+	* if (nr <= x) {
+	* x -= nr;
+	* t += s;
+	* }
+	* s >>= 1;
+	* while (s != 0);
+	*
+	* We can improve the performance of this by noting that "s" is always a
+	* power of two, so multiplication by "s" is just a shift. Also, because
+	* "s" changes in a predictable manner (shifted right after each iteration)
+	* we can precompute (0x8000 * t) and (0x8000 * 0x8000) and then adjust
+	* them by shifting after each step. First, we let "m" hold the value
+	* (s * s) and adjust it after each step by shifting right twice. We
+	* also introduce "r" to hold (2 * t * s) and adjust it after each step
+	* by shifting right once. When we update "t" we must also update "r",
+	* and we do so by noting that (2 * (old_t + s) * s) is the same as
+	* (2 * old_t * s) + (2 * s * s). Noting that (s * s) is "m" and that
+	* (r + 2 * m) == ((r + m) + m) == (nr + m):
+	*
+	* t = 0;
+	* s = 0x8000;
+	* m = 0x40000000;
+	* r = 0;
+	* do {
+	* nr = r + m;
+	* if (nr <= x) {
+	* x -= nr;
+	* t += s;
+	* r = nr + m;
+	* }
+	* s >>= 1;
+	* r >>= 1;
+	* m >>= 2;
+	* } while (s != 0);
+	*
+	* Finally, we note that, if we were using fractional arithmetic, after
+	* 16 iterations "s" would be a binary 0.5, so the value of "r" when
+	* the loop terminates is (2 * t * 0.5) or "t". Because the values in
+	* "t" and "r" are identical after the loop terminates, and because we
+	* do not otherwise use "t" explicitly within the loop, we can omit it.
+	* When we do so, there is no need for "s" except to terminate the loop,
+	* but we observe that "m" will become zero at the same time as "s",
+	* so we can use it instead.
+	*
+	* The result we have at this point is the floor of the square root. If
+	* we want to round to the nearest integer, we need to consider whether
+	* the remainder in "x" is greater than or equal to the difference
+	* between ((r + 0.5) * (r + 0.5)) and (r * r). Noting that the former
+	* quantity is (r * r + r + 0.25), we want to check if the remainder is
+	* greater than or equal to (r + 0.25). Because we are dealing with
+	* integers, we can't have equality, so we round up if "x" is strictly
+	* greater than "r":
+	*
+	* if (x > r)
+	* r++;
+*/
 int32 isqrt(uint32 x)
 {
-	return int32( sqrt(x) );
-}
+	uint32 r, nr, m;
+	r = 0;
+	m = 0x40000000;
+	do
+	{
+		nr = r + m;
+		if (nr <= x)
+		{
+			x -= nr;
+			r = nr + m;
+		}
+		r >>= 1;
+		m >>= 2;
+	}
+	while (m);
+	
+	if(x > r) 
+		r++;
+	return r;
+} 
 
 // LP additions: stuff for handling long-distance views
 
