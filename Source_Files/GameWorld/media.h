@@ -1,6 +1,4 @@
-#ifndef __MEDIA_H
-#define __MEDIA_H
-
+#pragma once
 /*
 MEDIA.H
 
@@ -172,6 +170,3 @@ uint8 *pack_media_data(uint8 *Stream, media_data* Objects, size_t Count);
 
 // LP change: added liquid-parser export
 XML_ElementParser *Liquids_GetParser();
-
-#endif
-
