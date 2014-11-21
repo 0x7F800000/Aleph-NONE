@@ -1,6 +1,4 @@
-#ifndef __ITEM_DEFINITIONS_H
-#define __ITEM_DEFINITIONS_H
-
+#pragma once
 /*
 ITEM_DEFINITIONS.H
 
@@ -114,6 +112,3 @@ static struct item_definition item_definitions[]=
 };
 
 #endif
-
-#endif
-
