@@ -1,5 +1,4 @@
-#ifndef __EFFECTS_H
-#define __EFFECTS_H
+#pragma once
 
 /*
 EFFECTS.H
@@ -177,6 +176,3 @@ uint8 *unpack_effect_definition(uint8 *Stream, size_t Count);
 uint8 *pack_effect_definition(uint8 *Stream, size_t Count);
 uint8* unpack_m1_effect_definition(uint8* Stream, size_t Count);
 void init_effect_definitions();
-
-#endif
-
