@@ -323,9 +323,9 @@ public:
 	
 	struct object_data* getObject();
 	
-	bool testDefinitionFlags(uint32 flagtest);
-	bool testObjectFlags(uint16 flagtest);
-	bool testAnimationFlags(uint16 flagtest);
+	uint32 testDefinitionFlags(uint32 flagtest);
+	uint16 testObjectFlags(uint16 flagtest);
+	uint16 testAnimationFlags(uint16 flagtest);
 	struct monster_definition*	getDefinition();
 	int16 type;
 	int16 vitality; /* if ==NONE, will be properly initialized when the monster is first activated */
