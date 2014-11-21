@@ -1,6 +1,4 @@
-#ifndef __MAP_H
-#define __MAP_H
-
+#pragma once
 /*
 MAP.H
 
@@ -1418,5 +1416,3 @@ bool goto_level(struct entry_point *entry, bool new_game);
 
 // LP addition: get the parser for the texture-loading control (name "texture_loading")
 XML_ElementParser *TextureLoading_GetParser();
-
-#endif
