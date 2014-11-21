@@ -370,7 +370,7 @@ overlay_queue_with_queue_into_queue(ActionQueues* inBaseQueues, ActionQueues* in
 
 
 // Return values for update_world_elements_one_tick()
-enum 
+enum : int32
 {
         kUpdateNormalCompletion,
         kUpdateGameOver,
