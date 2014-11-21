@@ -748,7 +748,8 @@ void monster_died(short target_index)
 		set_monster_mode(target_index, _monster_unlocked, NONE);
 		monster->removePath();
 	}
-
+	if(	monster->hasInstanceDefinition()	)
+		monster_instances::delete_definition_instance(monster->instance_definition_index);
 	/* anyone locked on this monster needs a clue */
 	foreach_monster(monster_index, monster)
 	{
@@ -760,14 +761,18 @@ void monster_died(short target_index)
 		monster_needs_path(monster_index, false);
 		
 		play_object_sound(monster->object_index, monster-> getDefinition()->kill_sound);
+		
 		if(	closest_target_index != NONE	)
 			change_monster_target(monster_index, closest_target_index);
-		else if(	monster->isWaitingToAttackAgain()	) 
-			set_monster_action(monster_index, _monster_is_moving);
-		set_monster_mode(monster_index, _monster_unlocked, NONE);
+			
+		else 
+		{
+			if(	monster->isWaitingToAttackAgain()	) 
+				set_monster_action(monster_index, _monster_is_moving);
+			set_monster_mode(monster_index, _monster_unlocked, NONE);
+		}
 	}
-	if(	monster->hasInstanceDefinition()	)
-		monster_instances::delete_definition_instance(monster->instance_definition_index);
+
 }
 
 void initialize_monsters()
