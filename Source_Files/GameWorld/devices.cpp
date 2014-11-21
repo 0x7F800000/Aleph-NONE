@@ -65,7 +65,6 @@ Feb 3, 2003 (Woody Zenfell):
 #include "platforms.h"
 #include "SoundManager.h"
 #include "computer_interface.h"
-//#include "music.h"
 #include "lightsource.h"
 #include "game_window.h"
 #include "items.h"
@@ -75,10 +74,6 @@ Feb 3, 2003 (Woody Zenfell):
 
 #include <string.h>
 #include <limits.h>
-
-#ifdef env68k
-#pragma segment marathon
-#endif
 
 /* ---------- constants */
 
@@ -193,7 +188,8 @@ static struct control_panel_definition control_panel_definitions[]=
 	{_panel_is_tag_switch, 0, _collection_walls4, 1, 0, {_snd_destroy_control_panel, NONE, NONE}, FIXED_ONE, NONE},
 };
 
-struct control_panel_settings_definition {
+struct control_panel_settings_definition 
+{
 	// How far can one reach to activate the controls?
 	short ReachDistance;
 	short ReachHorizontal;
@@ -219,225 +215,215 @@ struct control_panel_settings_definition control_panel_settings = {
 
 /* ------------ private prototypes */
 
-control_panel_definition *get_control_panel_definition(
-	const short control_panel_type);
+control_panel_definition *get_control_panel_definition(const short control_panel_type);
 
-//static bool line_side_has_control_panel(short line_index, short polygon_index, short *side_index_with_panel);
-static void	somebody_save_full_auto(player_data* inWhoSaved, bool inOverwrite);
-static void	change_panel_state(short player_index, short panel_side_index);
-void set_control_panel_texture(struct side_data *side);
-
-static bool line_is_within_range(short monster_index, short line_index, world_distance range);
-
-static bool switch_can_be_toggled(short line_index, bool player_hit);
-
-static void play_control_panel_sound(short side_index, short sound_index);
-
-static bool get_recharge_status(short side_index);
+static void	somebody_save_full_auto(	player_data* inWhoSaved, bool inOverwrite);
+static void	change_panel_state(		short player_index, short panel_side_index);
+void 		set_control_panel_texture(	struct side_data *side	);
+static bool 	line_is_within_range(		short monster_index, short line_index, world_distance range);
+static bool 	switch_can_be_toggled(		short line_index, bool player_hit	);
+static void 	play_control_panel_sound(	short side_index, short sound_index	);
+static bool 	get_recharge_status(		short side_index	);
 
 /* ---------- code */
 
 /* set the initial states of all switches based on the objects they control */
-void initialize_control_panels_for_level(
-	void)
+void initialize_control_panels_for_level()
 {
 	short side_index;
-	struct side_data *side;
+	side_data *side;
 
-	for (side_index= 0, side= map_sides; side_index<dynamic_world->side_count; ++side, ++side_index)
+	for (side_index = 0, side= map_sides; side_index<dynamic_world->side_count; ++side, ++side_index)
 	{
-		if (SIDE_IS_CONTROL_PANEL(side))
+		if (!SIDE_IS_CONTROL_PANEL(side))
+			continue;
+		
+		// LP change: modified previous fix so that it edits the side definition
+		control_panel_definition *definition = get_control_panel_definition(side->control_panel_type);
+		if (!definition)
 		{
-			// LP change: modified previous fix so that it edits the side definition
-			struct control_panel_definition *definition= get_control_panel_definition(side->control_panel_type);
-			if (!definition)
-			{
-				SET_SIDE_CONTROL_PANEL(side,false);
-				continue;
-			}
-			bool status= false;
-			
-			switch (definition->_class)
-			{
-				case _panel_is_tag_switch:
-					status= GET_CONTROL_PANEL_STATUS(side);
-					// use default position
-					break;
-				
-				case _panel_is_light_switch:
-					status= get_light_status(side->control_panel_permutation);
-					break;
-				
-				case _panel_is_platform_switch:
-					if (platform_is_on(get_polygon_data(side->control_panel_permutation)->permutation)) status= true;
-					break;
-			}
-			
-			SET_CONTROL_PANEL_STATUS(side, status);
-			set_control_panel_texture(side);
+			SET_SIDE_CONTROL_PANEL(side,false);
+			continue;
 		}
+		bool status = false;
+		
+		switch (definition->_class)
+		{
+			case _panel_is_tag_switch:
+				status= GET_CONTROL_PANEL_STATUS(side);
+				// use default position
+				break;
+			
+			case _panel_is_light_switch:
+				status= get_light_status(side->control_panel_permutation);
+				break;
+			
+			case _panel_is_platform_switch:
+				if (platform_is_on(get_polygon_data(side->control_panel_permutation)->permutation)) status= true;
+				break;
+		}
+		SET_CONTROL_PANEL_STATUS(side, status);
+		set_control_panel_texture(side);
 	}
 }
 
-void update_control_panels(
-	void)
+void update_control_panels()
 {
 	short player_index;
-	struct player_data *player;
+	player_data *player;
 
 	for (player_index= 0, player= players; player_index<dynamic_world->player_count; ++player_index, ++player)
 	{
 		short side_index;
 
-		if ((side_index= player->control_panel_side_index)!=NONE)
+		if ((side_index= player->control_panel_side_index)==NONE)
+			continue;
+		
+		side_data *side = get_side_data(player->control_panel_side_index);
+		// LP change: idiot-proofing
+		control_panel_definition *definition= get_control_panel_definition(side->control_panel_type);
+		if (!definition) 
+			continue;
+
+		if(definition->_class == _panel_is_pattern_buffer)
+		{	// Player was working on a full-auto save
+			if(dynamic_world->tick_count - player->ticks_at_last_successful_save > kDoubleClickTicks)
+			{	// no double-click - need to safe save
+				somebody_save_full_auto(player, false);
+			}
+			continue;
+		}
+		
+		bool still_in_use = false;
+
+		if (player->variables.direction == player->variables.last_direction &&
+			player->variables.last_position.x == player->variables.position.x &&
+			player->variables.last_position.y == player->variables.position.y &&
+			player->variables.last_position.z == player->variables.position.z)
 		{
-			struct side_data *side= get_side_data(player->control_panel_side_index);
-			// LP change: idiot-proofing
-			struct control_panel_definition *definition= get_control_panel_definition(side->control_panel_type);
-			if (!definition) continue;
-
-			if(definition->_class == _panel_is_pattern_buffer)
-			{	// Player was working on a full-auto save
-				if(dynamic_world->tick_count - player->ticks_at_last_successful_save > kDoubleClickTicks)
-				{	// no double-click - need to safe save
-					somebody_save_full_auto(player, false);
-				}
-			}
-			else
+			switch (definition->_class)
 			{
-				bool still_in_use= false;
-
-				if (player->variables.direction == player->variables.last_direction &&
-					player->variables.last_position.x == player->variables.position.x &&
-					player->variables.last_position.y == player->variables.position.y &&
-					player->variables.last_position.z == player->variables.position.z)
-				{
-					switch (definition->_class)
+				case _panel_is_oxygen_refuel:
+					if (!(dynamic_world->tick_count&OXYGEN_RECHARGE_FREQUENCY))
 					{
-						case _panel_is_oxygen_refuel:
-							if (!(dynamic_world->tick_count&OXYGEN_RECHARGE_FREQUENCY))
-							{
-								if (player->suit_oxygen<PLAYER_MAXIMUM_SUIT_OXYGEN)
-								{
-									player->suit_oxygen+= TICKS_PER_SECOND;
-									mark_oxygen_display_as_dirty();
-									still_in_use= true;
-								}
-							}
-							break;
-                                                
-						case _panel_is_shield_refuel:
-						case _panel_is_double_shield_refuel:
-						case _panel_is_triple_shield_refuel:
-							if (!(dynamic_world->tick_count&ENERGY_RECHARGE_FREQUENCY))
-							{
-								short maximum, rate;
-
-								switch (definition->_class)
-								{
-									case _panel_is_shield_refuel:
-										maximum= control_panel_settings.SingleEnergy;
-										rate= control_panel_settings.SingleEnergyRate;
-										break;
-									case _panel_is_double_shield_refuel:
-										maximum= control_panel_settings.DoubleEnergy;
-										rate= control_panel_settings.DoubleEnergyRate;
-										break;
-									case _panel_is_triple_shield_refuel:
-										maximum= control_panel_settings.TripleEnergy;
-										rate= control_panel_settings.TripleEnergyRate;
-										break;
-									default:
-										assert(false);
-								}
-								if (player->suit_energy<maximum)
-								{
-									player->suit_energy= CEILING(player->suit_energy+rate, maximum);
-									mark_shield_display_as_dirty();
-									still_in_use= true;
-								}
-							}
-							break;
-
-						default:
-							assert(false);
+						if (player->suit_oxygen<PLAYER_MAXIMUM_SUIT_OXYGEN)
+						{
+							player->suit_oxygen+= TICKS_PER_SECOND;
+							mark_oxygen_display_as_dirty();
+							still_in_use= true;
+						}
 					}
-				}
-			
-				if (still_in_use)
-				{
-					set_control_panel_texture(side);
-					play_control_panel_sound(side_index, _activating_sound);
-				}
-				else
-				{
-					change_panel_state(player_index, side_index);
-					SoundManager::instance()->StopSound(NONE, definition->sounds[_activating_sound]);
-				}
+					break;
+                                
+				case _panel_is_shield_refuel:
+				case _panel_is_double_shield_refuel:
+				case _panel_is_triple_shield_refuel:
+					if (!(dynamic_world->tick_count&ENERGY_RECHARGE_FREQUENCY))
+					{
+						short maximum, rate;
+
+						switch (definition->_class)
+						{
+							case _panel_is_shield_refuel:
+								maximum= control_panel_settings.SingleEnergy;
+								rate= control_panel_settings.SingleEnergyRate;
+								break;
+							case _panel_is_double_shield_refuel:
+								maximum= control_panel_settings.DoubleEnergy;
+								rate= control_panel_settings.DoubleEnergyRate;
+								break;
+							case _panel_is_triple_shield_refuel:
+								maximum= control_panel_settings.TripleEnergy;
+								rate= control_panel_settings.TripleEnergyRate;
+								break;
+							default:
+								assert(false);
+						}
+						if (player->suit_energy<maximum)
+						{
+							player->suit_energy= CEILING(player->suit_energy+rate, maximum);
+							mark_shield_display_as_dirty();
+							still_in_use 66666= true;
+						}
+					}
+					break;
+
+				default:
+					assert(false);
 			}
+		}
+	
+		if (still_in_use)
+		{
+			set_control_panel_texture(side);
+			play_control_panel_sound(side_index, _activating_sound);
+		}
+		else
+		{
+			change_panel_state(player_index, side_index);
+			SoundManager::instance()->StopSound(NONE, definition->sounds[_activating_sound]);
 		}
 	}
 }
 
-void update_action_key(
-	short player_index,
-	bool triggered)
+void update_action_key(short player_index, bool triggered)
 {
-	short               object_index;
 	short               target_type;
 	
-	if(triggered) 
+	if(!triggered) 
+		return;
+	
+	auto object_index = find_action_key_target(player_index, MAXIMUM_ACTIVATION_RANGE, &target_type);
+	
+	if(object_index != NONE)
 	{
-		object_index= find_action_key_target(player_index, MAXIMUM_ACTIVATION_RANGE, &target_type);
-		
-		if(object_index != NONE)
+		switch(target_type) 
 		{
-			switch(target_type) 
-			{
-				case _target_is_platform:
-					player_touch_platform_state(player_index, object_index);
-					break;
-				case _target_is_control_panel:
-					change_panel_state(player_index, object_index);
-					break;
+			case _target_is_platform:
+				player_touch_platform_state(player_index, object_index);
+				break;
+			case _target_is_control_panel:
+				change_panel_state(player_index, object_index);
+				break;
 
-				case _target_is_unrecognized:
-					break;
-					
-				default:
-					vhalt(csprintf(temporary, "%d is not a valid target type", target_type));
-					break;
-			}
+			case _target_is_unrecognized:
+				break;
+				
+			default:
+				assert(false);
+				break;
 		}
 	}
+
 }
 
-bool untoggled_repair_switches_on_level(
-	void)
+bool untoggled_repair_switches_on_level()
 {
 	short side_index;
 	struct side_data *side;
-	bool untoggled_switch= false;
+	bool untoggled_switch = false;
 	
 	for (side_index= 0, side= map_sides; side_index<dynamic_world->side_count && !untoggled_switch; ++side_index, ++side)
 	{
-		if (SIDE_IS_CONTROL_PANEL(side) && SIDE_IS_REPAIR_SWITCH(side))
+		if (!SIDE_IS_CONTROL_PANEL(side) || !SIDE_IS_REPAIR_SWITCH(side))
+			continue;
+		
+		// LP change: idiot-proofing
+		control_panel_definition *definition = get_control_panel_definition(side->control_panel_type);
+		if (!definition) 
+			continue;
+		
+		switch (definition->_class)
 		{
-			// LP change: idiot-proofing
-			struct control_panel_definition *definition= get_control_panel_definition(side->control_panel_type);
-			if (!definition) continue;
+			case _panel_is_platform_switch:
+				untoggled_switch = platform_is_at_initial_state(get_polygon_data(side->control_panel_permutation)->permutation) ? true : false;
+				break;
 			
-			switch (definition->_class)
-			{
-				case _panel_is_platform_switch:
-					untoggled_switch= platform_is_at_initial_state(get_polygon_data(side->control_panel_permutation)->permutation) ? true : false;
-					break;
-				
-				default:
-					untoggled_switch= !GET_CONTROL_PANEL_STATUS(side);
-					break;
-			}
+			default:
+				untoggled_switch = !GET_CONTROL_PANEL_STATUS(side);
+				break;
 		}
+	
 	}
 	
 	return untoggled_switch;
@@ -449,30 +435,27 @@ void assume_correct_switch_position(
 	bool new_state)
 {
 	short side_index;
-	struct side_data *side;
+	side_data *side;
 	
 	for (side_index= 0, side= map_sides; side_index<dynamic_world->side_count; ++side_index, ++side)
 	{
-		if (SIDE_IS_CONTROL_PANEL(side) && side->control_panel_permutation==permutation)
+		if (!SIDE_IS_CONTROL_PANEL(side) || side->control_panel_permutation != permutation)
+			continue;
+		control_panel_definition *definition = get_control_panel_definition( side->control_panel_type );
+		// LP change: idiot-proofing
+		if (!definition) 
+			continue;
+		
+		if (switch_type==definition->_class)
 		{
-			struct control_panel_definition *definition= get_control_panel_definition(side->control_panel_type);
-			// LP change: idiot-proofing
-			if (!definition) continue;
-			
-			if (switch_type==definition->_class)
-			{
-				play_control_panel_sound(side_index, new_state ? _activating_sound : _deactivating_sound);
-				SET_CONTROL_PANEL_STATUS(side, new_state);
-				set_control_panel_texture(side);
-			}
+			play_control_panel_sound(side_index, new_state ? _activating_sound : _deactivating_sound);
+			SET_CONTROL_PANEL_STATUS(side, new_state);
+			set_control_panel_texture(side);
 		}
 	}
 }
 
-void try_and_toggle_control_panel(
-	short polygon_index,
-	short line_index, 
-	short projectile_index)
+void try_and_toggle_control_panel(short polygon_index, short line_index,  short projectile_index)
 {
 	short side_index= find_adjacent_side(polygon_index, line_index);
 	
@@ -526,80 +509,29 @@ void try_and_toggle_control_panel(
 	}
 }
 
-#if 0
-/* ---------- these functions are all used in Vulcan */
-static bool shape_is_control_panel(
-	shape_descriptor texture)
+
+short get_panel_class(short panel_type)
 {
-	bool is_control_panel= false;
-
-	for(unsigned index= 0; index<NUMBER_OF_CONTROL_PANEL_DEFINITIONS; ++index)
-	{
-		struct control_panel_definition *definition= get_control_panel_definition(index);
-
-		if(texture==BUILD_DESCRIPTOR(definition->collection, definition->active_shape) ||
-			texture==BUILD_DESCRIPTOR(definition->collection, definition->inactive_shape))
-		{
-			is_control_panel= true;
-			break;
-		}
-	}
-	
-	return is_control_panel;
-}
-
-#endif
-
-short get_panel_class(
-	short panel_type)
-{
-	struct control_panel_definition *definition= get_control_panel_definition(panel_type);
-	
+	control_panel_definition *definition = get_control_panel_definition(panel_type);
 	return definition->_class;
 }
 
-#if 0
-//---------- changed 9.18.95
-static bool control_panel_type_valid_for_texture(
-	shape_descriptor shape,
-	short control_panel_type)
-{
-	struct control_panel_definition *definition= get_control_panel_definition(control_panel_type);
-	bool valid= false;
-	
-	if(GET_DESCRIPTOR_COLLECTION(shape)==definition->collection)
-	{
-		if((GET_DESCRIPTOR_SHAPE(shape)==definition->active_shape) ||
-			(GET_DESCRIPTOR_SHAPE(shape)==definition->inactive_shape))
-		{
-			valid= true;
-		}
-	}
-	
-	return valid;
-}
-//------------------
-#endif
-
 /* ---------- private code */
 
-control_panel_definition *get_control_panel_definition(
-	const short control_panel_type)
+control_panel_definition *get_control_panel_definition(const short control_panel_type)
 {
 	return GetMemberWithBounds(control_panel_definitions,control_panel_type,NUMBER_OF_CONTROL_PANEL_DEFINITIONS);
 }
 
-short find_action_key_target(
-	short player_index,
-	world_distance range,
-	short *target_type)
+short find_action_key_target(short player_index, world_distance range, short *target_type)
 {
-	struct player_data *player= get_player_data(player_index);
-	short current_polygon= player->camera_polygon_index;
+	player_data *player	= get_player_data(player_index);
+	auto current_polygon	= player->camera_polygon_index;
+	
 	world_point2d destination;
-	bool done= false;
+	bool done = false;
 	short itemhit, line_index;
-	struct polygon_data *polygon;
+	polygon_data *polygon;
 	
 	// In case we don't hit anything
 	*target_type = _target_is_unrecognized;
@@ -607,9 +539,7 @@ short find_action_key_target(
 	/* Should we use this one, the physics one, or the object one? */
 	ray_to_line_segment((world_point2d *) &player->location, &destination, player->facing, range);
 
-//	dprintf("#%d(#%d,#%d) --> (#%d,#%d) (#%d along #%d)", current_polygon, player->location.x, player->location.y, destination.x, destination.y, range, player->facing);
-
-	itemhit= NONE;
+	itemhit = NONE;
 	while (!done)
 	{
 		line_index= find_line_crossed_leaving_polygon(current_polygon, (world_point2d *) &player->location, &destination);
@@ -617,63 +547,51 @@ short find_action_key_target(
 		if (line_index==NONE)
 		{
 			done= true;
+			break;
+		} 
+
+		line_data *line = get_line_data(line_index);
+		auto original_polygon = current_polygon;
+		current_polygon = find_adjacent_polygon(current_polygon, line_index);
+
+
+		if (current_polygon!=NONE)
+		{
+			polygon = get_polygon_data(current_polygon);
+
+			/* We hit a platform */				
+			if (polygon->type==_polygon_is_platform && line_is_within_range(player->monster_index, line_index, MAXIMUM_PLATFORM_ACTIVATION_RANGE) &&
+				platform_is_legal_player_target(polygon->permutation))
+			{
+				itemhit = polygon->permutation;
+				*target_type = _target_is_platform;
+				done = true;
+			} 
 		} 
 		else 
+			done = true;
+
+		/* Slammed a wall */
+		if (line_is_within_range(player->monster_index, line_index, control_panel_settings.ReachDistance))
 		{
-			struct line_data *line;
-			short original_polygon;
-
-			line= get_line_data(line_index);
-			original_polygon= current_polygon;
-			current_polygon= find_adjacent_polygon(current_polygon, line_index);
-
-//			dprintf("leaving polygon #%d through line #%d to polygon #%d", original_polygon, line_index, current_polygon);
-
-			if (current_polygon!=NONE)
+			if (line_side_has_control_panel(line_index, original_polygon, &itemhit))
 			{
-				polygon= get_polygon_data(current_polygon);
-
-				/* We hit a platform */				
-				if (polygon->type==_polygon_is_platform && line_is_within_range(player->monster_index, line_index, MAXIMUM_PLATFORM_ACTIVATION_RANGE) &&
-					platform_is_legal_player_target(polygon->permutation))
+				if (switch_can_be_toggled(itemhit, true))
 				{
-//					dprintf("found platform #%d in %p", polygon->permutation, polygon);
-					itemhit= polygon->permutation;
-					*target_type= _target_is_platform;
+					*target_type= _target_is_control_panel;
 					done= true;
-				} 
-			} 
-			else 
-			{
-				done= true;
-			}
-
-			/* Slammed a wall */
-			if (line_is_within_range(player->monster_index, line_index, control_panel_settings.ReachDistance))
-			{
-				if (line_side_has_control_panel(line_index, original_polygon, &itemhit))
-				{
-					if (switch_can_be_toggled(itemhit, true))
-					{
-						*target_type= _target_is_control_panel;
-						done= true;
-					}
-					else
-					{
-						itemhit= NONE;
-					}
 				}
+				else
+					itemhit = NONE;
 			}
 		}
+	
 	}
 	
 	return itemhit;
 }
 
-static bool line_is_within_range(
-	short monster_index,
-	short line_index,
-	world_distance range)
+static bool line_is_within_range(short monster_index, short line_index, world_distance range)
 {
 	world_point3d monster_origin= get_object_data(get_monster_data(monster_index)->object_index)->location;
 	world_point3d line_origin;
@@ -682,45 +600,39 @@ static bool line_is_within_range(
 	
 	calculate_line_midpoint(line_index, &line_origin);
 	get_monster_dimensions(monster_index, &radius, &height);
-	monster_origin.z+= height>>1;
+	monster_origin.z += height / 2;
 	
-	dx= monster_origin.x-line_origin.x;
-	dy= monster_origin.y-line_origin.y;
-	dz= control_panel_settings.ReachHorizontal*(monster_origin.z-line_origin.z); /* dz is weighted */
+	dx = monster_origin.x - line_origin.x;
+	dy = monster_origin.y - line_origin.y;
+	dz = control_panel_settings.ReachHorizontal * (monster_origin.z - line_origin.z); /* dz is weighted */
 	
-	return isqrt(SQUARE(dx) + SQUARE(dy) + SQUARE(dz)) < range ? true : false;
+	return isqrt( SQUARE(dx) + SQUARE(dy) + SQUARE(dz) ) < range ? true : false;
 }
 
 //tiennou: removed static for lua access
-bool line_side_has_control_panel(
-	short line_index, 
-	short polygon_index,
-	short *side_index_with_panel)
+bool line_side_has_control_panel(short line_index, short polygon_index, short *side_index_with_panel)
 {
 	short             side_index = NONE;
 	bool           has_panel = false;
-	struct line_data  *line = get_line_data(line_index);
-	struct side_data  *side = NULL;
+	line_data  *line = get_line_data(line_index);
+	side_data  *side = nullptr;
 	
-	if (line->clockwise_polygon_owner==polygon_index)
+	if (line->clockwise_polygon_owner == polygon_index)
 	{
 		side_index = line->clockwise_polygon_side_index;
 		if (side_index != NONE)
-		{
 			side = get_side_data(side_index);
-		}
 	} 
 	else
 	{
-		assert(line->counterclockwise_polygon_owner==polygon_index);
+		assert(line->counterclockwise_polygon_owner == polygon_index);
+		
 		side_index = line->counterclockwise_polygon_side_index;
 		if (side_index != NONE)
-		{
-			side= get_side_data(side_index);
-		}
+			side = get_side_data(side_index);
 	}
 
-	if (side != NULL && SIDE_IS_CONTROL_PANEL(side))
+	if (side != nullptr && SIDE_IS_CONTROL_PANEL(side))
 	{
 		*side_index_with_panel = side_index;
 		has_panel = true;
@@ -740,18 +652,12 @@ somebody_save_full_auto(player_data* inWhoSaved, bool inOverwrite)
         inWhoSaved->ticks_at_last_successful_save = dynamic_world->tick_count;
 
         if(inWhoSaved == local_player)
-        {
                 save_game_full_auto(inOverwrite);
-        }
         else
-        {
                 screen_printf("%s has saved the game", inWhoSaved->name);
-        }
 }
 
-static void	change_panel_state(
-	short player_index,
-	short panel_side_index)
+static void	change_panel_state(short player_index, short panel_side_index)
 {
 	bool state, make_sound= false;
 	struct side_data *side= get_side_data(panel_side_index);
@@ -786,7 +692,7 @@ static void	change_panel_state(
                                 //MH: Lua script hook
                                 L_Call_Terminal_Enter(side->control_panel_permutation,player_index);
 				
-				/* this will handle changing levels, if necessary (i.e., if weÕre finished) */
+				/* this will handle changing levels, if necessary (i.e., if weÃ•re finished) */
 				enter_computer_interface(player_index, side->control_panel_permutation, calculate_level_completion_state());
 			}
 			break;
@@ -851,15 +757,13 @@ static void	change_panel_state(
                                                 //MH: Lua script hook
                                                 L_Call_Pattern_Buffer(/*side->control_panel_permutation*/panel_side_index,player_index);
                                         
-                //				fade_out_background_music(30);
-                
+
                                                 /* Assume a successful save- prevents vidding of the save game key.. */
                                                 player->ticks_at_last_successful_save= dynamic_world->tick_count;
                                                 if (!save_game()) 
                                                 {
                                                         player->ticks_at_last_successful_save= 0;
                                                 }
-                //				fade_in_background_music(30);
                                         }
                                 }
                         }
@@ -867,15 +771,12 @@ static void	change_panel_state(
 	}
 	
 	if (make_sound)
-	{
 		play_control_panel_sound(panel_side_index, state ? _activating_sound : _deactivating_sound);
-	}
 	
 	return;	
 }
 
-void set_control_panel_texture(
-	struct side_data *side)
+void set_control_panel_texture(struct side_data *side)
 {
 	struct control_panel_definition *definition= get_control_panel_definition(side->control_panel_type);
 	// LP change: idiot-proofing
@@ -886,63 +787,58 @@ void set_control_panel_texture(
 }
 
 
-static bool switch_can_be_toggled(
-	short side_index,
-	bool player_hit)
+static bool switch_can_be_toggled(short side_index, bool player_hit)
 {
-	bool valid_toggle= true;
-	struct side_data *side= get_side_data(side_index);
-	struct control_panel_definition *definition= get_control_panel_definition(side->control_panel_type);
+	bool valid_toggle = true;
+	side_data *side				= get_side_data(side_index);
+	control_panel_definition *definition	= get_control_panel_definition(side->control_panel_type);
+	
 	// LP change: idiot-proofing
-	if (!definition) return false;
+	if (!definition) 
+		return false;
 	
 	if (side->flags&_side_is_lighted_switch)
-	{
-		valid_toggle= get_light_intensity(side->primary_lightsource_index)>(3*FIXED_ONE/4) ? true : false;
-	}
+		valid_toggle = get_light_intensity(side->primary_lightsource_index) > (3*FIXED_ONE/4) ? true : false;
 
-	if (definition->item!=NONE && !player_hit) valid_toggle= false;
-	if (player_hit && (side->flags&_side_switch_can_only_be_hit_by_projectiles)) valid_toggle= false;
+	if (definition->item!=NONE && !player_hit) 
+		valid_toggle = false;
+	if (player_hit && (side->flags&_side_switch_can_only_be_hit_by_projectiles)) 
+		valid_toggle = false;
 	
 	if (valid_toggle && (side->flags&_side_switch_can_be_destroyed))
-	{
-		// destroy switch
-		SET_SIDE_CONTROL_PANEL(side, false);
-	}
+		SET_SIDE_CONTROL_PANEL(side, false);// destroy switch
 	
-	if (!valid_toggle && player_hit) play_control_panel_sound(side_index, _unusuable_sound);
+	if (!valid_toggle && player_hit) 
+		play_control_panel_sound(side_index, _unusuable_sound);
 	
 	return valid_toggle;
 }
 
-static void play_control_panel_sound(
-	short side_index,
-	short sound_index)
+static void play_control_panel_sound(short side_index, short sound_index)
 {
-	struct side_data *side= get_side_data(side_index);
-	struct control_panel_definition *definition= get_control_panel_definition(side->control_panel_type);
+	side_data *side				= get_side_data(side_index);
+	control_panel_definition *definition	= get_control_panel_definition(side->control_panel_type);
 	
 	// LP change: idiot-proofing
-	if (!definition) return;
+	if (!definition) 
+		return;
 
-	if (!(sound_index>=0 && sound_index<NUMBER_OF_CONTROL_PANEL_SOUNDS)) return;
+	if (!(sound_index>=0 && sound_index<NUMBER_OF_CONTROL_PANEL_SOUNDS)) 
+		return;
 	
 	_play_side_sound(side_index, definition->sounds[sound_index], definition->sound_frequency);
 }
 
-static bool get_recharge_status(
-	short side_index)
+static bool get_recharge_status(short side_index)
 {
-	short player_index;
-	bool status= false;
-	
-	for (player_index= 0; player_index<dynamic_world->player_count; ++player_index)
+	bool status = false;
+	for (ix player_index = 0; player_index < dynamic_world->player_count; ++player_index)
 	{
-		struct player_data *player= get_player_data(player_index);
+		player_data *player= get_player_data(player_index);
 		
-		if (player->control_panel_side_index==side_index) status= true;
+		if (player->control_panel_side_index== side_index) 
+			status = true;
 	}
-	
 	return status;
 }
 
