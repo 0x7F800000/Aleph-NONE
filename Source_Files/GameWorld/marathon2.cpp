@@ -144,7 +144,7 @@ static uint32	sMostRecentFlagsForPlayer[MAXIMUM_NUMBER_OF_PLAYERS];
 
 static void game_timed_out();
 
-static void load_all_game_sounds(short environment_code);
+[[deprecated]] static void load_all_game_sounds(short environment_code);
 
 /* ---------- code */
 
@@ -862,4 +862,4 @@ static void game_timed_out()
 
 
 // LP: suppressed this as superfluous; won't try to reassign these sounds for M1 compatibility
-[[deprecated("Don't use this.")]] static void load_all_game_sounds(short environment_code){}
+static void load_all_game_sounds(short environment_code){}
