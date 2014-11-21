@@ -1,3 +1,4 @@
+#pragma once
 /*
 
 	Copyright (C) 1991-2001 and beyond by Bo Lindbergh
@@ -26,10 +27,6 @@
 Aug 27, 2000 (Loren Petrich):
 	Added object wrappers for memcpy() and memset(); these copy, set, and clear objects
 */
-
-#ifndef _CSERIES_MACROS_
-#define _CSERIES_MACROS_
-
 #include <string.h>
 #include "FilmProfile.h" // TERRIBLE
 
@@ -126,5 +123,4 @@ template<class T> void obj_clear(T& object)
 
 template<class T> void objlist_clear(T* object_list, size_t num_objects)
 	{objlist_set(object_list, 0, num_objects);}
-#endif
 #endif
