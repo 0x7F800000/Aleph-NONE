@@ -1,5 +1,4 @@
-#ifndef __MONSTER_DEFINITIONS_H
-#define __MONSTER_DEFINITIONS_H
+#pragma once
 
 /*
 MONSTER_DEFINITIONS.H
@@ -146,7 +145,7 @@ enum /* flags */
 	_monster_major= 0x8, /* type -1 is minor */
 	_monster_minor= 0x10, /* type +1 is major */
 	_monster_cannot_be_dropped= 0x20, /* low levels cannot skip this monster */
-	_monster_floats= 0x40, /* exclusive from flys; forces the monster to take +ｶh gradually */
+	_monster_floats= 0x40, /* exclusive from flys; forces the monster to take +ﾂｶh gradually */
 	_monster_cannot_attack= 0x80, /* monster has no weapons and cannot attack (runs constantly to safety) */
 	_monster_uses_sniper_ledges= 0x100, /* sit on ledges and hurl shit at the player (ranged attack monsters only) */
 	_monster_is_invisible= 0x200, /* this monster uses _xfer_invisibility */
@@ -155,9 +154,9 @@ enum /* flags */
 	_monster_is_berserker= 0x1000, /* below 1/4 vitality this monster goes berserk */
 	_monster_is_enlarged= 0x2000, /* monster is 1.25 times normal height */
 	_monster_has_delayed_hard_death= 0x4000, /* always dies soft, then switches to hard */
-	_monster_fires_symmetrically= 0x8000, /* fires at ｱdy, simultaneously */
-	_monster_has_nuclear_hard_death= 0x10000, /* playerﾕs screen whites out and slowly recovers */
-	_monster_cant_fire_backwards= 0x20000, /* monster canﾕt turn more than 135｡ to fire */
+	_monster_fires_symmetrically= 0x8000, /* fires at ﾂｱdy, simultaneously */
+	_monster_has_nuclear_hard_death= 0x10000, /* playerﾃ不 screen whites out and slowly recovers */
+	_monster_cant_fire_backwards= 0x20000, /* monster canﾃ付 turn more than 135ﾂ｡ to fire */
 	_monster_can_die_in_flames= 0x40000, /* uses humanoid flaming body shape */
 	_monster_waits_with_clear_shot= 0x80000, /* will sit and fire (slowly) if we have a clear shot */
 	_monster_is_tiny= 0x100000, /* 0.25-size normal height */
@@ -203,7 +202,7 @@ struct attack_definition
 {
 	int16 type;
 	int16 repetitions;
-	angle error; /* ｱerror is added to the firing angle */
+	angle error; /* ﾂｱerror is added to the firing angle */
 	world_distance range; /* beyond which we cannot attack */
 	int16 attack_shape; /* attack occurs when keyframe is displayed */
 	
@@ -226,7 +225,7 @@ struct monster_definition /* <128 bytes */
 	uint32 flags;
 
 	int32 _class; /* our class */
-	int32 friends, enemies; /* bit fields of what classes we consider friendly and what types we donﾕt like */
+	int32 friends, enemies; /* bit fields of what classes we consider friendly and what types we donﾃ付 like */
 
 	_fixed sound_pitch;
 	int16 activation_sound, friendly_activation_sound, clear_sound;
@@ -234,7 +233,7 @@ struct monster_definition /* <128 bytes */
 	int16 flaming_sound; /* the scream we play when we go down in flames */
 	int16 random_sound, random_sound_mask; /* if moving and locked play this sound if we get time and our mask comes up */
 
-	int16 carrying_item_type; /* an item type we might drop if we donﾕt explode */
+	int16 carrying_item_type; /* an item type we might drop if we donﾃ付 explode */
 
 	world_distance radius, height;
 	world_distance preferred_hover_height;
@@ -273,7 +272,7 @@ struct monster_definition /* <128 bytes */
 struct monster_definition monster_definitions[NUMBER_OF_MONSTER_TYPES];
 const struct monster_definition original_monster_definitions[NUMBER_OF_MONSTER_TYPES]=
 {
-	{ /* _monster_marine (canﾕt be used as a regular monster) */
+	{ /* _monster_marine (canﾃ付 be used as a regular monster) */
 		_collection_player, /* shape collection */
 		20, 0, 0, /* vitality, immunities, weaknesses */
 		_monster_cannot_be_dropped|_monster_can_die_in_flames, /* flags */
@@ -2922,6 +2921,3 @@ uint8 *unpack_monster_definition(uint8 *Stream, monster_definition *Objects, siz
 uint8 *pack_monster_definition(uint8 *Stream, monster_definition *Objects, size_t Count);
 
 #endif
-
-#endif
-
