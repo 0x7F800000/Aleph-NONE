@@ -1,5 +1,4 @@
-#ifndef __FLOOD_MAP_H
-#define __FLOOD_MAP_H
+#pragma once
 
 /*
 FLOOD_MAP.H
@@ -40,8 +39,8 @@ typedef int32 (*cost_proc_ptr)(short source_polygon_index, short line_index, sho
 
 /* ---------- prototypes/PATHFINDING.C */
 
-void allocate_pathfinding_memory(void);
-void reset_paths(void);
+void allocate_pathfinding_memory();
+void reset_paths();
 
 short new_path(world_point2d *source_point, short source_polygon_index,
 	world_point2d *destination_point, short destination_polygon_index,
@@ -51,15 +50,12 @@ void delete_path(short path_index);
 
 /* ---------- prototypes/FLOOD_MAP.C */
 
-void allocate_flood_map_memory(void);
+void allocate_flood_map_memory();
 
 /* default cost_proc, NULL, is the area of the destination polygon and is significantly faster
 	than supplying a user procedure */
 short flood_map(short first_polygon_index, int32 maximum_cost, cost_proc_ptr cost_proc, short flood_mode, void *caller_data);
-short reverse_flood_map(void);
-short flood_depth(void);
+short reverse_flood_map();
+short flood_depth();
 
 void choose_random_flood_node(world_vector2d *bias);
-
-#endif
-
