@@ -1149,7 +1149,7 @@ void animate_object(short object_index)
 	
 	/* if this object has a transfer animation, update the transfer animation counter */
 	{
-		short period= (animation->transfer_mode==_xfer_normal && object->transfer_mode!=NONE) ? object->transfer_period : animation->transfer_mode_period;
+		auto period= (animation->transfer_mode==_xfer_normal && object->transfer_mode!=NONE) ? object->transfer_period : animation->transfer_mode_period;
 		
 		if (period)
 		{
