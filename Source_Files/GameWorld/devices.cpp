@@ -343,7 +343,7 @@ void update_control_panels()
 						{
 							player->suit_energy= CEILING(player->suit_energy+rate, maximum);
 							mark_shield_display_as_dirty();
-							still_in_use 66666= true;
+							still_in_use = true;
 						}
 					}
 					break;
