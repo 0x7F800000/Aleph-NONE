@@ -27,7 +27,7 @@ Wednesday, October 26, 1994 3:18:59 PM (Jason)
 Wednesday, November 30, 1994 6:56:20 PM  (Jason)
 	oxygen is used up faster by running and by firing.
 Thursday, January 12, 1995 11:18:18 AM  (Jason')
-	dead players donﾕt continue to use up oxygen.
+	dead players donﾃ付 continue to use up oxygen.
 Thursday, July 6, 1995 4:53:52 PM
 	supports multi-player cooperative games. (Ryan)
 
@@ -177,10 +177,6 @@ May 22, 2003 (Woody Zenfell):
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h> 
-
-#ifdef env68k
-#pragma segment player
-#endif
 
 /* ---------- constants */
 
@@ -389,8 +385,7 @@ static void adjust_player_physics(monster_data *me);
 
 /* ---------- code */
 
-player_data *get_player_data(
-	const size_t player_index)
+player_data *get_player_data(const size_t player_index)
 {
 	player_data *data = GetMemberWithBounds(players,player_index,dynamic_world->player_count);
 	vassert(data,
@@ -399,17 +394,11 @@ player_data *get_player_data(
 	return data;
 }
 
-void allocate_player_memory(
-	void)
+void allocate_player_memory()
 {
 	/* allocate space for all our players */
 	players= new player_data[MAXIMUM_NUMBER_OF_PLAYERS];
 	assert(players);
-
-#ifdef BETA
-	dprintf("#%d players at %p (%x bytes each) ---------------------------------------;g;", MAXIMUM_NUMBER_OF_PLAYERS, players, sizeof(struct player_data));
-#endif
-
 	sRealActionQueues = new ActionQueues(MAXIMUM_NUMBER_OF_PLAYERS, ACTION_QUEUE_BUFFER_DIAMETER, false);
 }
 
@@ -425,8 +414,8 @@ short new_player(
 	/* find a free slot */
 	player_index= dynamic_world->player_count;
 	assert(player_index<MAXIMUM_NUMBER_OF_PLAYERS);
-	dynamic_world->player_count += 1;
-	player= get_player_data(player_index);
+	dynamic_world->player_count++;
+	player = get_player_data(player_index);
 
 	/* and initialize it */
 	obj_clear(*player);
@@ -465,8 +454,7 @@ short new_player(
 	return player_index;
 }
 
-void walk_player_list(
-	void)
+void walk_player_list()
 {
 	struct player_data *player;
 	short player_index= current_player_index;
@@ -500,10 +488,10 @@ reset_other_queues() {
 
 void initialize_players()
 {
-	short i;
+	ix i;
 	
 	/* no players */
-	dynamic_world->player_count= 0;
+	dynamic_world->player_count = 0;
 	
 	/* reset the action flag queues and zero the player slots */
 	for (i=0;i<MAXIMUM_NUMBER_OF_PLAYERS;++i)
@@ -514,7 +502,8 @@ void initialize_players()
 	sRealActionQueues->reset();
 	reset_other_queues();
 
-	for (i = 0; i < NUMBER_OF_TEAM_COLORS; i++) {
+	for (i = 0; i < NUMBER_OF_TEAM_COLORS; i++) 
+	{
 	  obj_clear(team_damage_given[i]);
 	  obj_clear(team_damage_taken[i]);
 	  obj_clear(team_monster_damage_taken[i]);
@@ -534,7 +523,7 @@ reset_player_queues()
 {
 	sRealActionQueues->reset();
 	reset_recording_and_playback_queues();
-	sync_heartbeat_count(); //･･ﾊMY ADDITION...
+	sync_heartbeat_count(); //ﾂ･ﾂ･ﾃ凱Y ADDITION...
 }
 
 // ZZZ addition: need to reset (potentially) multiple sets of ActionQueues, not just the RealActionQueues.
@@ -574,7 +563,7 @@ void update_m1_solo_player_in_terminal(ActionQueues* inActionQueuesToUse)
 	sLocalPlayerTicksSinceTerminal = 0;
 }
 
-/* assumes ｶt==1 tick */
+/* assumes ﾂｶt==1 tick */
 void update_players(ActionQueues* inActionQueuesToUse, bool inPredictive)
 {
 	struct player_data *player;
@@ -626,7 +615,7 @@ void update_players(ActionQueues* inActionQueuesToUse, bool inPredictive)
 		
 		bool IsSwimming = TEST_FLAG(player->variables.flags,_HEAD_BELOW_MEDIA_BIT) && player_settings.CanSwim;
 
-		// if weﾕve got the ball we canﾕt run (that sucks)
+		// if weﾃ夫e got the ball we canﾃ付 run (that sucks)
 		// Benad: also works with _game_of_rugby and _game_of_capture_the_flag
 		// LP change: made it possible to swim under a liquid if one has the ball
 		// START Benad changed oct. 1st (works with ANY ball color, d'uh...)
@@ -637,9 +626,8 @@ void update_players(ActionQueues* inActionQueuesToUse, bool inPredictive)
 			&& !IsSwimming) action_flags&= ~_run_dont_walk;
 		// END Benad changed oct. 1st
 		
-		// if (GET_GAME_TYPE()==_game_of_kill_man_with_ball && dynamic_world->game_player_index==player_index) action_flags&= ~_run_dont_walk;
-		
-		// if our head is under media, we canﾕt run (that sucks, too)
+
+		// if our head is under media, we canﾃ付 run (that sucks, too)
 		if (IsSwimming && (action_flags&_run_dont_walk)) action_flags&= ~_run_dont_walk, action_flags|= _swim;
 		
 		update_player_physics_variables(player_index, action_flags, inPredictive);
@@ -705,7 +693,7 @@ void update_players(ActionQueues* inActionQueuesToUse, bool inPredictive)
 					if (player_index==local_player_index) set_interface_microphone_recording_state(false);
 				}
 			}
-#endif // !defined(DISABLE_NETWORKING)
+#endif 
 
 			if (PLAYER_IS_DEAD(player))
 			{
@@ -793,7 +781,6 @@ void damage_player(
 				++i,++definition)
 			;
 		vwarn(i!=NUMBER_OF_DAMAGE_RESPONSE_DEFINITIONS, csprintf(temporary, "can't react to damage type #%d", damage_type));
-		// vassert(i!=NUMBER_OF_DAMAGE_RESPONSE_DEFINITIONS, csprintf(temporary, "can't react to damage type #%d", damage_type));
 	}
 	
 	if (damage_type!=_damage_absorbed)
@@ -881,7 +868,7 @@ void damage_player(
 								Console::instance()->report_kill(player_index, aggressor_player_index, projectile_index);
 							}
 							else
-#endif // !defined(DISABLE_NETWORKING)
+#endif 
 							{
 								player->monster_damage_taken.kills+= 1;
 								team_monster_damage_taken[player->team].kills += 1;
@@ -915,8 +902,7 @@ void damage_player(
 	}
 }
 
-short player_identifier_to_player_index(
-	short player_identifier)
+short player_identifier_to_player_index(short player_identifier)
 {
 	struct player_data *player;
 	short player_index;
@@ -932,8 +918,7 @@ short player_identifier_to_player_index(
 	return player_index;
 }
 
-void mark_player_collections(
-	bool loading)
+void mark_player_collections(bool loading)
 {
 	mark_collection(player_shapes.collection, loading);
 	// LP change: unload player shapes for single-player game only if
@@ -946,20 +931,18 @@ void mark_player_collections(
 	mark_interface_collections(loading);
 }
 
-player_shape_definitions*
-get_player_shape_definitions() {
+player_shape_definitions* get_player_shape_definitions()
+{
     return &player_shapes;
 }
 
-void set_local_player_index(
-	short player_index)
+void set_local_player_index(short player_index)
 {
 	local_player_index= player_index;
 	local_player= get_player_data(player_index);
 }
 
-void set_current_player_index(
-	short player_index)
+void set_current_player_index(short player_index)
 {
 	current_player_index= player_index;
 	current_player= get_player_data(player_index);
@@ -969,30 +952,37 @@ void set_current_player_index(
 void recreate_players_for_new_level()
 {
 	/* Recreate all of the players for the new level.. */	
-	for(short player_index = 0; player_index < dynamic_world->player_count; ++player_index)
+	for(ix player_index = 0; player_index < dynamic_world->player_count; ++player_index)
 		recreate_player(player_index);
 }
 
 void team_damage_from_player_data(void)
 {
-  for (short player_index = 0; player_index < dynamic_world->player_count; player_index++) {
-    struct player_data *player = get_player_data(player_index);
-    team_damage_given[player->team].damage += player->total_damage_given.damage;
-    team_damage_given[player->team].kills += player->total_damage_given.kills;
-    team_monster_damage_given[player->team].damage += player->monster_damage_given.damage;
-    team_monster_damage_given[player->team].kills += player->monster_damage_given.kills;
-    team_monster_damage_taken[player->team].damage += player->monster_damage_taken.damage;
-    team_monster_damage_taken[player->team].kills += player->monster_damage_taken.kills; 
-    for (short opponent_index = 0; opponent_index < dynamic_world->player_count; opponent_index++) {
-      struct player_data *opponent = get_player_data(player_index);
-      team_damage_taken[player->team].damage += player->damage_taken[opponent_index].damage;
-      team_damage_taken[player->team].kills += player->damage_taken[opponent_index].kills;
-      if (player->team == opponent->team) {
-	team_friendly_fire[player->team].damage += player->damage_taken[opponent_index].damage;
-	team_friendly_fire[player->team].kills += player->damage_taken[opponent_index].kills;
-      }
-    }
-  }
+	for (ix player_index = 0; player_index < dynamic_world->player_count; player_index++) 
+	{
+		player_data *player = get_player_data(player_index);
+		
+		team_damage_given[player->team].damage 		+= player->total_damage_given.damage;
+		team_damage_given[player->team].kills 		+= player->total_damage_given.kills;
+		team_monster_damage_given[player->team].damage 	+= player->monster_damage_given.damage;
+		team_monster_damage_given[player->team].kills 	+= player->monster_damage_given.kills;
+		team_monster_damage_taken[player->team].damage 	+= player->monster_damage_taken.damage;
+		team_monster_damage_taken[player->team].kills 	+= player->monster_damage_taken.kills; 
+		
+		for (ix opponent_index = 0; opponent_index < dynamic_world->player_count; opponent_index++) 
+		{
+			player_data *opponent = get_player_data(player_index);
+			team_damage_taken[player->team].damage 	+= player->damage_taken[opponent_index].damage;
+			team_damage_taken[player->team].kills 	+= player->damage_taken[opponent_index].kills;
+			
+			if (player->team == opponent->team) 
+			{
+				team_friendly_fire[player->team].damage	+= player->damage_taken[opponent_index].damage;
+				team_friendly_fire[player->team].kills	+= player->damage_taken[opponent_index].kills;
+			}
+			
+		}
+	}
 }   
 
 short monster_index_to_player_index(
@@ -1025,7 +1015,7 @@ bool legal_player_powerup(
 	short item_index)
 {
 	struct player_data *player= get_player_data(player_index);
-	bool legal= true;
+	bool legal = true;
 
 	if (item_index == player_powerups.Powerup_Invincibility)
 	{
@@ -1158,63 +1148,51 @@ bool try_and_subtract_player_item(
 /* ---------- private prototypes */
 
 // LP change: assumes nonpositive change rate
-static void handle_player_in_vacuum(
-	short player_index,
-	uint32 action_flags)
+static void handle_player_in_vacuum(short player_index, uint32 action_flags)
 {
-	struct player_data *player= get_player_data(player_index);
+	player_data *player= get_player_data(player_index);
 
-	if (player->suit_oxygen>0)	
+	if (player->suit_oxygen <= 0)
+		return;
+	
+	// lolbungie
+	auto breathing_frequency = TICKS_PER_MINUTE/2;
+	
+	assert(player_settings.OxygenChange <= 0);
+	
+	auto oxygenChange = player_settings.OxygenChange;
+	
+	switch (dynamic_world->game_information.difficulty_level)
 	{
-		short breathing_frequency;
-		
-		// lolbungie
-		breathing_frequency = TICKS_PER_MINUTE/2;
-		/*
-		switch (player->suit_oxygen/TICKS_PER_MINUTE)
-		{
-			case 0: breathing_frequency= TICKS_PER_MINUTE/6;
-			case 1: breathing_frequency= TICKS_PER_MINUTE/5;
-			case 2: breathing_frequency= TICKS_PER_MINUTE/4;
-			case 3: breathing_frequency= TICKS_PER_MINUTE/3;
-			default: breathing_frequency= TICKS_PER_MINUTE/2;
-		}
-		 */
-		
-		assert(player_settings.OxygenChange <= 0);
-		short oxygenChange = player_settings.OxygenChange;
-		switch (dynamic_world->game_information.difficulty_level)
-		{
-			case _total_carnage_level:
-				if (action_flags&_run_dont_walk) oxygenChange+= player_settings.OxygenChange;
-			case _major_damage_level:
-				if (action_flags&(_left_trigger_state|_right_trigger_state)) oxygenChange+= player_settings.OxygenChange;
-				break;
-		}
-		
-		while (oxygenChange < 0)
-		{
-			player->suit_oxygen -= 1;
-			oxygenChange += 1;
-			if (!(player->suit_oxygen%breathing_frequency)) 
-				SoundManager::instance()->PlayLocalSound(Sound_Breathing());
-			if ((player->suit_oxygen+OXYGEN_WARNING_OFFSET)<OXYGEN_WARNING_LEVEL && !((player->suit_oxygen+OXYGEN_WARNING_OFFSET)%OXYGEN_WARNING_FREQUENCY)) 
-				SoundManager::instance()->PlayLocalSound(Sound_OxygenWarning());
-		}
-				
-		if (player->suit_oxygen<=0)
-		{
-			struct damage_definition damage;
-			
-			damage.flags= 0;
-			damage.type= _damage_suffocation;
-			damage.base= player->suit_energy+1;
-			damage.random= 0;
-			damage.scale= FIXED_ONE;
-			
-			damage_player(player->monster_index, NONE, NONE, &damage, NONE);
-		}
+		case _total_carnage_level:
+			if (action_flags&_run_dont_walk) oxygenChange+= player_settings.OxygenChange;
+		case _major_damage_level:
+			if (action_flags&(_left_trigger_state|_right_trigger_state)) oxygenChange+= player_settings.OxygenChange;
+			break;
 	}
+	
+	while (oxygenChange < 0)
+	{
+		player->suit_oxygen -= 1;
+		oxygenChange += 1;
+		if (!(player->suit_oxygen%breathing_frequency)) 
+			SoundManager::instance()->PlayLocalSound(Sound_Breathing());
+		if ((player->suit_oxygen+OXYGEN_WARNING_OFFSET)<OXYGEN_WARNING_LEVEL && !((player->suit_oxygen+OXYGEN_WARNING_OFFSET)%OXYGEN_WARNING_FREQUENCY)) 
+			SoundManager::instance()->PlayLocalSound(Sound_OxygenWarning());
+	}
+			
+	if (player->suit_oxygen > 0)
+		return;
+	/*	suffocating	*/
+	damage_definition damage;
+	
+	damage.flags = 0;
+	damage.type = _damage_suffocation;
+	damage.base = player->suit_energy + 1;	//ded
+	damage.random = 0;
+	damage.scale = FIXED_ONE;
+	
+	damage_player(player->monster_index, NONE, NONE, &damage, NONE);
 }
 
 // LP: assumes nonnegative change rate
@@ -1222,7 +1200,7 @@ static void ReplenishPlayerOxygen(short player_index, uint32 action_flags)
 {
 	(void)(action_flags);
 	
-	struct player_data *player= get_player_data(player_index);
+	player_data *player= get_player_data(player_index);
 	
 	// Be careful to avoid short-integer wraparound
 	assert(player_settings.OxygenChange >= 0);
@@ -1235,8 +1213,7 @@ static void ReplenishPlayerOxygen(short player_index, uint32 action_flags)
 	}
 }
 
-static void update_player_teleport(
-	short player_index)
+static void update_player_teleport(short player_index)
 {
 	struct player_data *player= get_player_data(player_index);
 	struct monster_data *monster= get_monster_data(player->monster_index);
@@ -1390,7 +1367,7 @@ static void update_player_teleport(
 					{
 						player= get_player_data(other_player_index);
 
-						/* Set them to be teleporting if the already arenﾕt, or if they are but it */
+						/* Set them to be teleporting if the already arenﾃ付, or if they are but it */
 						/*  is a simple teleport (intralevel) */
 						if (player_index!=other_player_index)
 						{
@@ -1409,89 +1386,78 @@ static void update_player_teleport(
 	}
 }
 
-static void update_player_media(
-	short player_index)
+static void update_player_media(short player_index)
 {
-	struct player_data *player= get_player_data(player_index);
-	struct monster_data *monster= get_monster_data(player->monster_index);
-	struct object_data *object= get_object_data(monster->object_index);
-	struct polygon_data *polygon= get_polygon_data(object->polygon);
+	player_data *player	= get_player_data(	player_index);
+	monster_data *monster	= get_monster_data(	player->monster_index);
+	object_data *object	= get_object_data(	monster->object_index);
+	polygon_data *polygon	= get_polygon_data(	object->polygon);
 
-	{
-		short sound_type= NONE;
-			
-		if (player_index==current_player_index)
-		{
-			bool under_media= (player->variables.flags&_HEAD_BELOW_MEDIA_BIT);
-			short media_index= polygon->media_index;
-						
-			world_point3d cam_pos;
-			short cam_poly;
-			angle cam_yaw;
-			angle cam_pitch;
-			if (ChaseCam_GetPosition(cam_pos, cam_poly, cam_yaw, cam_pitch))
-			{
-				struct polygon_data *cam_polygon= get_polygon_data(cam_poly);
-				media_index= cam_polygon->media_index;
-				media_data *media = get_media_data(media_index);
-				world_distance media_height= (media_index==NONE || !media) ? INT16_MIN : media->height;
-				under_media = (cam_pos.z < media_height);
-			}
-			set_fade_effect(under_media ? get_media_submerged_fade_effect(media_index) : NONE);
-		}
 	
-		if (player->variables.flags&_FEET_BELOW_MEDIA_BIT)
-		{
-			// LP change: idiot-proofing
-			struct media_data *media= get_media_data(polygon->media_index); // should be valid
-			{
-			world_distance current_magnitude= (player->variables.old_flags&_HEAD_BELOW_MEDIA_BIT) ? media->current_magnitude : (media->current_magnitude>>1);
-			world_distance external_magnitude= FIXED_TO_WORLD(GUESS_HYPOTENUSE(ABS(player->variables.external_velocity.i), ABS(player->variables.external_velocity.j)));
-			struct damage_definition *damage= get_media_damage(polygon->media_index, (player->variables.flags&_HEAD_BELOW_MEDIA_BIT) ? FIXED_ONE : FIXED_ONE/4);
-			
-			// apply current if possible
-			if (!PLAYER_IS_DEAD(player) && external_magnitude<current_magnitude) accelerate_player(player->monster_index, 0, NORMALIZE_ANGLE(media->current_direction-HALF_CIRCLE), media->current_magnitude>>2);
-			
-			// cause damage if possible
-			if (damage) damage_player(player->monster_index, NONE, NONE, damage, NONE);
-			
-			// feet entering media sound
-			if (!(player->variables.old_flags&_FEET_BELOW_MEDIA_BIT)) sound_type= _media_snd_feet_entering;
-			// head entering media sound
-			if (!(player->variables.old_flags&_HEAD_BELOW_MEDIA_BIT) && (player->variables.flags&_HEAD_BELOW_MEDIA_BIT)) sound_type= _media_snd_head_entering;
-			// head leaving media sound
-			if (!(player->variables.flags&_HEAD_BELOW_MEDIA_BIT) && (player->variables.old_flags&_HEAD_BELOW_MEDIA_BIT)) sound_type= _media_snd_head_leaving;
-			}
-		}
-		else
-		{
-			// feet leaving media sound
-			if (polygon->media_index!=NONE && (player->variables.old_flags&_FEET_BELOW_MEDIA_BIT)) sound_type= _media_snd_feet_leaving;
-		}
+	short sound_type = NONE;
 		
-		if (sound_type!=NONE)
+	if( player_index == current_player_index )
+	{
+		bool under_media = player->variables.flags & _HEAD_BELOW_MEDIA_BIT;
+		auto media_index = polygon->media_index;
+					
+		world_point3d cam_pos;
+		short cam_poly;
+		angle cam_yaw;
+		angle cam_pitch;
+		if (ChaseCam_GetPosition(cam_pos, cam_poly, cam_yaw, cam_pitch))
 		{
-			play_object_sound(monster->object_index, get_media_sound(polygon->media_index, sound_type));
+			struct polygon_data *cam_polygon= get_polygon_data(cam_poly);
+			media_index= cam_polygon->media_index;
+			media_data *media = get_media_data(media_index);
+			world_distance media_height= (media_index==NONE || !media) ? INT16_MIN : media->height;
+			under_media = (cam_pos.z < media_height);
+		}
+		set_fade_effect(under_media ? get_media_submerged_fade_effect(media_index) : NONE);
+	}
+
+	if (player->variables.flags&_FEET_BELOW_MEDIA_BIT)
+	{
+		// LP change: idiot-proofing
+		struct media_data *media= get_media_data(polygon->media_index); // should be valid
+		{
+		world_distance current_magnitude= (player->variables.old_flags&_HEAD_BELOW_MEDIA_BIT) ? media->current_magnitude : (media->current_magnitude>>1);
+		world_distance external_magnitude= FIXED_TO_WORLD(GUESS_HYPOTENUSE(ABS(player->variables.external_velocity.i), ABS(player->variables.external_velocity.j)));
+		struct damage_definition *damage= get_media_damage(polygon->media_index, (player->variables.flags&_HEAD_BELOW_MEDIA_BIT) ? FIXED_ONE : FIXED_ONE/4);
+		
+		// apply current if possible
+		if (!PLAYER_IS_DEAD(player) && external_magnitude<current_magnitude) accelerate_player(player->monster_index, 0, NORMALIZE_ANGLE(media->current_direction-HALF_CIRCLE), media->current_magnitude>>2);
+		
+		// cause damage if possible
+		if (damage) damage_player(player->monster_index, NONE, NONE, damage, NONE);
+		
+		// feet entering media sound
+		if (!(player->variables.old_flags&_FEET_BELOW_MEDIA_BIT)) sound_type= _media_snd_feet_entering;
+		// head entering media sound
+		if (!(player->variables.old_flags&_HEAD_BELOW_MEDIA_BIT) && (player->variables.flags&_HEAD_BELOW_MEDIA_BIT)) sound_type= _media_snd_head_entering;
+		// head leaving media sound
+		if (!(player->variables.flags&_HEAD_BELOW_MEDIA_BIT) && (player->variables.old_flags&_HEAD_BELOW_MEDIA_BIT)) sound_type= _media_snd_head_leaving;
 		}
 	}
+	else
+	{
+		// feet leaving media sound
+		if (polygon->media_index!=NONE && (player->variables.old_flags&_FEET_BELOW_MEDIA_BIT)) sound_type= _media_snd_feet_leaving;
+	}
+	
+	if (sound_type!=NONE)
+		play_object_sound(monster->object_index, get_media_sound(polygon->media_index, sound_type));
+
 
 	if (player->variables.flags&_STEP_PERIOD_BIT)
 	{
-		short sound_index= NONE;
+		short sound_index = NONE;
 		
 		if ((player->variables.flags&_FEET_BELOW_MEDIA_BIT) && !(player->variables.flags&_HEAD_BELOW_MEDIA_BIT))
-		{
-			sound_index= get_media_sound(polygon->media_index, _media_snd_splashing);
-		}
-		else
-		{
-			/* make ordinary walking sound */
-		}
+			sound_index = get_media_sound(polygon->media_index, _media_snd_splashing);
 		
-		if (sound_index!=NONE)
-		{
+		if (sound_index != NONE)
 			play_object_sound(monster->object_index, sound_index);
-		}
 	}
 }
 
@@ -1509,7 +1475,7 @@ static void set_player_shapes(
 	
 	get_player_transfer_mode(player_index, &transfer_mode, &transfer_period);
 	
-	/* if weﾕre not dead, handle changing shapes (if we are dead, the correct dying shape has
+	/* if weﾃ瓶e not dead, handle changing shapes (if we are dead, the correct dying shape has
 		already been set and we just have to wait for the animation to finish) */
 	if (!PLAYER_IS_DEAD(player))
 	{
@@ -1544,11 +1510,11 @@ static void set_player_shapes(
 	
 	if (animate)
 	{
-		/* animate the player only if weﾕre not airborne and not totally dead */
+		/* animate the player only if weﾃ瓶e not airborne and not totally dead */
 		if ((variables->action!=_player_airborne || (PLAYER_IS_TELEPORTING(player) || PLAYER_IS_INTERLEVEL_TELEPORTING(player)))&&!PLAYER_IS_TOTALLY_DEAD(player)) animate_object(monster->object_index);
 		if (PLAYER_IS_DEAD(player) && !PLAYER_IS_TELEPORTING(player) && (GET_OBJECT_ANIMATION_FLAGS(legs)&_obj_last_frame_animated) && !PLAYER_IS_TOTALLY_DEAD(player))
 		{
-			/* weﾕve finished the animation; let the player reincarnate if he wants to */
+			/* weﾃ夫e finished the animation; let the player reincarnate if he wants to */
 			SET_PLAYER_TOTALLY_DEAD_STATUS(player, true);
 			set_player_dead_shape(player_index, false);
 
@@ -1574,13 +1540,13 @@ static void revive_player(
 
 	monster->action= _monster_is_moving; /* was probably _dying or something */
 
-	/* remove only the playerﾕs torso, which should be invisible anyway, and turn his legs
+	/* remove only the playerﾃ不 torso, which should be invisible anyway, and turn his legs
 		into garbage */
 	remove_parasitic_object(monster->object_index);
 	turn_object_to_shit(monster->object_index);
 
-	/* create a new pair of legs, and (completely behind MONSTERS.Cﾕs back) reattach it to
-		itﾕs monster (shape will be set by set_player_shapes, below) */
+	/* create a new pair of legs, and (completely behind MONSTERS.Cﾃ不 back) reattach it to
+		itﾃ不 monster (shape will be set by set_player_shapes, below) */
 	player->object_index= monster->object_index= new_map_object(&location, 0);
 	object= get_object_data(monster->object_index);
 	SET_OBJECT_SOLIDITY(object, true);
@@ -1797,7 +1763,7 @@ static void remove_dead_player_items(
 			short item_kind= get_item_kind(item_type);
 			bool dropped= false;
 			
-			// if weﾕre not set to burn items or this is an important item (i.e., repair chip) drop it
+			// if weﾃ瓶e not set to burn items or this is an important item (i.e., repair chip) drop it
 			if (!(GET_GAME_OPTIONS()&_burn_items_on_death) ||
 				(item_kind==_item && dynamic_world->player_count>1))
 			{
