@@ -1,5 +1,4 @@
-#ifndef __SCENERY_H
-#define __SCENERY_H
+#pragma once
 
 /*
 SCENERY.H
@@ -51,5 +50,3 @@ bool get_damaged_scenery_collection(short scenery_type, short& collection);
 
 // LP change: added scenery-parser export
 XML_ElementParser *Scenery_GetParser();
-
-#endif
