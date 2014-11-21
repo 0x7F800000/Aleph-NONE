@@ -246,7 +246,7 @@ void choose_random_flood_node(world_vector2d *bias)
 	assert(node_count >= 1);
 	find_center_of_polygon(nodes[0].polygon_index, &origin);
 	
-	if(node_count =< 1)
+	if(node_count <= 1)
 		return;
 	
 	bool suitable;
