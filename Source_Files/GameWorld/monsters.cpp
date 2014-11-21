@@ -1251,7 +1251,7 @@ void monster_moved(short target_index, short old_polygon_index)
 					intelligence *= 2; 
 					break;
 				case _total_carnage_level: 
-					intelligence *= 4 
+					intelligence *= 4;
 					break;
 			}
 			
@@ -3074,7 +3074,7 @@ static void execute_monster_attack(short monster_index)
 	world_point3d origin = object->location;
 	world_point3d _vector;
 	
-	projectile_polygon_index = position_monster_projectile(monster_index, monster->target_index, attack, &origin, nullptrL, &_vector, object->facing);
+	projectile_polygon_index = position_monster_projectile(monster_index, monster->target_index, attack, &origin, nullptr, &_vector, object->facing);
 	if (projectile_polygon_index != NONE)
 		new_projectile(&origin, projectile_polygon_index, &_vector, attack->error, attack->type, monster_index, monster->type, monster->target_index, FIXED_ONE);
 	
