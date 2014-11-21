@@ -319,6 +319,8 @@ public:
 	
 	void removePath();
 	
+	inline void setActiveStatus(bool s)	{	SET_MONSTER_ACTIVE_STATUS(this, s);	}
+	
 	struct object_data* getObject();
 	
 	bool testDefinitionFlags(uint32 flagtest);
