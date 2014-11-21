@@ -89,8 +89,7 @@ typedef long double Real;
 /* arguments must be positive (!) or use guess_hypotenuse() */
 #define GUESS_HYPOTENUSE(x, y) ((x)>(y) ? ((x)+((y)>>1)) : ((y)+((x)>>1)))
 
-/* -360ก<t<720ก (!) or use normalize_angle() */
-//#define NORMALIZE_ANGLE(t) ((t)<(angle)0?(t)+NUMBER_OF_ANGLES:((t)>=NUMBER_OF_ANGLES?(t)-NUMBER_OF_ANGLES:(t)))
+/* -360ยก<t<720ยก (!) or use normalize_angle() */
 #define NORMALIZE_ANGLE(t) ((t)&(angle)(NUMBER_OF_ANGLES-1))
 
 /* ---------- point structures */
@@ -222,7 +221,7 @@ world_point3d *translate_point3d(world_point3d *point, world_distance distance, 
 world_point2d *transform_point2d(world_point2d *point, world_point2d *origin, angle theta);
 world_point3d *transform_point3d(world_point3d *point, world_point3d *origin, angle theta, angle phi);
 
-/* angle is in [0,NUMBER_OF_ANGLES), or, [0,2น) */
+/* angle is in [0,NUMBER_OF_ANGLES), or, [0,2ยน) */
 // LP change: made this long-distance friendly
 angle arctangent(int32 x, int32 y);
 
