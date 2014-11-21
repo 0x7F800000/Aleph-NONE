@@ -1,5 +1,4 @@
-#ifndef __PHYSICS_MODELS_H
-#define __PHYSICS_MODELS_H
+#pragma once
 
 /*
 PHYSICS_MODELS.H
@@ -47,7 +46,7 @@ struct physics_constants
 	_fixed maximum_elevation; /* positive and negative */
 	_fixed external_angular_deceleration;
 	
-	/* step_length is distance between adjacent nodes in the actor’s phase */
+	/* step_length is distance between adjacent nodes in the actor√ïs phase */
 	_fixed step_delta, step_amplitude;
 	_fixed radius, height, dead_height, camera_height, splash_height;
 	
@@ -102,4 +101,3 @@ uint8* unpack_m1_physics_constants(uint8* Stream, size_t Count);
 void init_physics_constants();
 struct physics_constants *get_physics_constants_for_model(short physics_model, uint32 action_flags);
 
-#endif
