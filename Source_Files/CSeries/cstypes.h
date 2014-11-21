@@ -76,6 +76,9 @@ typedef time_t TimeType;
 
 //VC++
 #if _WIN32 || _WIN64
+
+	#define		restrict	__restrict
+	
 	#if _WIN64
 		typedef int64 ix;
 	#else
@@ -85,7 +88,11 @@ typedef time_t TimeType;
 
 //GCC/G++
 #if __GNUC__
+
 	#define		restrict	__restrict__
+	
+	#define		__GPLUSPLUS_DEPRECATED__	__attribute__ ((deprecated))
+	
 	#if __x86_64__
 		typedef int64 ix;
 	#else
@@ -131,7 +138,7 @@ const int KILO = 0x400L;
 #define FOUR_CHARS_TO_INT(a,b,c,d) (((uint32)(a) << 24) | ((uint32)(b) << 16) | ((uint32)(c) << 8) | (uint32)(d))
 
 // Hmmm, this should be removed one day...
-typedef uint8 byte;
+typedef uint8 byte __GPLUSPLUS_DEPRECATED__;
 
 // Make it compile on systems without OpenGL
 #ifndef HAVE_OPENGL
