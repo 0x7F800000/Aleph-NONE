@@ -1,6 +1,4 @@
-#ifndef __WEAPON_DEFINITIONS_H
-#define __WEAPON_DEFINITIONS_H
-
+#pragma once
 /*
 	WEAPON_DEFINITIONS2.H
 
@@ -203,7 +201,7 @@ struct weapon_definition {
 	_fixed firing_light_intensity;
 	int16 firing_intensity_decay_ticks;
 
-	/* weapon will come up to FIXED_ONE when fired; idle_height±bob_amplitude should be in
+	/* weapon will come up to FIXED_ONE when fired; idle_heightÂ±bob_amplitude should be in
 		the range [0,FIXED_ONE] */
 	_fixed idle_height, bob_amplitude, kick_height, reload_height;
 	_fixed idle_width, horizontal_amplitude;
@@ -1147,4 +1145,3 @@ const struct weapon_definition original_weapon_definitions[NUMBER_OF_WEAPONS]=
 uint8 *unpack_weapon_definition(uint8 *Stream, weapon_definition *Objects, size_t Count);
 uint8 *pack_weapon_definition(uint8 *Stream, weapon_definition *Objects, size_t Count);
 
-#endif
