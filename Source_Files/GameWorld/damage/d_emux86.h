@@ -1,3 +1,4 @@
+#pragma once
 /*
 	Helper code for emulating certain complex x86 instructions
 	These should eventually be phased out.
@@ -7,10 +8,6 @@
 	for writing the implementation of these
 	
 */
-
-#ifndef		X86ASMHELPER
-#define		X86ASMHELPER
-
 #define		bitsizeof(type)		(sizeof(type) * 8)
 
 namespace x86Emu
@@ -43,5 +40,3 @@ namespace x86Emu
 		return (val >> (bitsizeof(T) - 1)) & 1;
 	}
 };
-
-#endif
