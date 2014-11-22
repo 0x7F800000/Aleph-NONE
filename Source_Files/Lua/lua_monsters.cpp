@@ -1042,9 +1042,10 @@ static int Lua_Monster_Set_Vitality(lua_State *L)
 	monster->vitality = static_cast<int>(lua_tonumber(L, 2));
 	return 0;
 }
+
 int Lua_Monster_Set_Special(lua_State *L)
 {
-	if( !lua_isnumber(L, 2) || !lua_isnumber(L, 3) )
+	if( !lua_isnumber(L, 2) )
 	{
 		return luaL_error(L, "set_special: incorrect argument type");
 	}
@@ -1055,7 +1056,7 @@ int Lua_Monster_Set_Special(lua_State *L)
 	{
 		return luaL_error(L, "set_special: invalid monster index");
 	}
-	int special = static_cast<int>( lua_tonumber(L, 3) );
+	int special = static_cast<int>( lua_tonumber(L, 2) );
 	
 	if(special == -1)	//clearing the special
 	{
@@ -1067,7 +1068,7 @@ int Lua_Monster_Set_Special(lua_State *L)
 	switch(special)
 	{
 		case DeathSpecial_t::_ds_damage_monster:
-			if( !lua_isnumber(L, 4) )
+			if( !lua_isnumber(L, 3)  )
 			{
 				return luaL_error(L, "set_special: invalid arguments for special _ds_damage_monster");
 			}
@@ -1076,25 +1077,25 @@ int Lua_Monster_Set_Special(lua_State *L)
 			
 			break;
 		case DeathSpecial_t::_ds_heal_monster:
-			if( !lua_isnumber(L, 4) || !lua_isnumber(L, 5) )
+			if( !lua_isnumber(L, 3) || !lua_isnumber(L, 4) )
 			{
 				return luaL_error(L, "set_special: invalid arguments for special _ds_heal_monster");
 			}
 			monster.death_special = DeathSpecial_t::_ds_heal_monster;
 			
-			monster._heal_monster_id = static_cast<int>( lua_tonumber(L, 4) );
-			monster._heal_monster_amount = static_cast<int>( lua_tonumber(L, 5) );
+			monster._heal_monster_id = static_cast<int>( lua_tonumber(L, 3) );
+			monster._heal_monster_amount = static_cast<int>( lua_tonumber(L, 4) );
 			
 			break;
 		case DeathSpecial_t::_ds_set_monster_speed:
-			if( !lua_isnumber(L, 4) || !lua_isnumber(L, 5) )
+			if( !lua_isnumber(L, 3) || !lua_isnumber(L, 4) )
 			{
 				return luaL_error(L, "set_special: invalid arguments for special _ds_set_monster_speed");
 			}
 			monster.death_special = DeathSpecial_t::_ds_set_monster_speed;
 			
-			monster._hasten_monster_id = static_cast<int>( lua_tonumber(L, 4) );
-			monster._hasten_monster_value = static_cast<int>( lua_tonumber(L, 5) * WORLD_ONE );
+			monster._hasten_monster_id = static_cast<int>( lua_tonumber(L, 3) );
+			monster._hasten_monster_value = static_cast<int>( lua_tonumber(L, 4) * WORLD_ONE );
 			
 			break;
 		default:
