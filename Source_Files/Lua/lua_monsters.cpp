@@ -1240,7 +1240,7 @@ const luaL_Reg Lua_Monster_Set[] = {
 	{"teleport_in_shape", Lua_Monster_Set_Teleport_In_Shape},
 	{"teleport_out_shape", Lua_Monster_Set_Teleport_Out_Shape},
 	{"attack_frequency", Lua_Monster_Set_Attack_Frequency},
-	{"set_special", Lua_Monster_Set_Special},
+	{"set_special", L_TableFunction<Lua_Monster_Set_Special>},
 	{0, 0}
 };
 
