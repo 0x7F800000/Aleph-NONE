@@ -1098,6 +1098,14 @@ int Lua_Monster_Set_Special(lua_State *L)
 			monster._hasten_monster_value = static_cast<int>( lua_tonumber(L, 4) * WORLD_ONE );
 			
 			break;
+		case DeathSpecial_t::_ds_set_platform_state:
+			if( !lua_isnumber(L, 3) || !lua_isboolean(L, 4))
+				return luaL_error(L, "set_special: invalid arguments for special _ds_set_platform_state");
+			monster.death_special = DeathSpecial_t::_ds_set_platform_state;
+			
+			monster._set_platform_state_id = static_cast<int>(lua_tonumber(L, 3));
+			monster._set_platform_state_state = lua_toboolean(L, 4);
+			break;
 		default:
 			return luaL_error(L, "set_special: invalid death special provided");
 	}
