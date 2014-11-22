@@ -357,6 +357,20 @@ struct damage_record
 	int16 kills;
 };
 
+#define	__accessordecl(thing, type, field) \
+	inline type get#thing()\
+	{\
+		return field; \
+	}\
+	inline type set#thing(const type newval)\
+	{\
+		return field = newval;\
+	}\
+	inline bool is#thing(const type isval)\
+	{\
+		return field == isval;\
+	}
+
 struct player_data
 {
 
@@ -372,20 +386,43 @@ struct player_data
 	bool isTeleporting();
 	bool isInterlevelTeleporting();
 	
-	inline int16 getIdentifier()	{	return identifier;	}
-	inline void setIdentifier(int16 ni)	{	identifier = ni;	}
+	inline int16 getFlags()			{return flags;}
+	inline int16 setFlags(int16 nf)		{return flags = nf;}
+	inline int16 testFlags(int16 flagtest)	{return getFlags() & flagtest;}	
 	
+	__accessordecl(Identifier, int16, identifier)
+	__accessordecl(Color, int16, color)
+	__accessordecl(Team, int16, team)
+	
+	__accessordecl(CameraPolygonIndex, int16, camera_polygon_index)
+	
+	__accessordecl(Facing, angle, facing)
+	__accessordecl(Elevation, angle, elevation)
+	
+	__accessordecl(SupportingPolygonIndex, int16, supporting_polygon_index)
+	__accessordecl(LastSupportingPolygonIndex, int16, last_supporting_polygon_index)
+	
+	__accessordecl(SuitEnergy, int16, suit_energy)
+	__accessordecl(SuitOxygen, int16, suit_oxygen)
+	
+	__accessordecl(MonsterIndex, int16, monster_index)
+	__accessordecl(ObjectIndex, int16, object_index)
+	
+	__accessordecl(WeaponIntensityDecay, int16, weapon_instensity_decay)
+	
+	__accessordecl(WeaponIntensity, _fixed, weapon_intensity)
 	
 	int16 identifier;
 	int16 flags; /* [unused.1] [dead.1] [zombie.1] [totally_dead.1] [map.1] [teleporting.1] [unused.10] */
 
 	int16 color;
 	int16 team;
-	char name[MAXIMUM_PLAYER_NAME_LENGTH+1];
+	char name[MAXIMUM_PLAYER_NAME_LENGTH + 1];
 	
 	/* shadowed from physics_variables structure below and the playerÕs object (read-only) */
 	world_point3d location;
 	world_point3d camera_location; // beginning of fake world_location3d structure
+	
 	int16 camera_polygon_index;
 	angle facing, elevation;
 	int16 supporting_polygon_index; /* what polygon is actually supporting our weight */
@@ -401,12 +438,20 @@ struct player_data
 	int16 weapon_intensity_decay; /* zero is idle intensity */
 	_fixed weapon_intensity;
 
+	__accessordecl(InvisibilityDuration, int16, invisibility_duration)
+	__accessordecl(InvincibilityDuration, int16, invincibility_duration)
+	__accessordecl(InfravisionDuration, int16, infravision_duration)
+	__accessordecl(ExtravisionDuration, int16, extravision_duration)
 	/* powerups */
 	int16 invisibility_duration;
 	int16 invincibility_duration;
 	int16 infravision_duration;
 	int16 extravision_duration;
-
+	
+	__accessordecl(DelayBeforeTeleport, int16, delay_before_teleport)
+	__accessordecl(TeleportingPhase, int16, teleporting_phase)
+	__accessordecl(TeleportingDestination, int16, teleporting_destination)
+	__accessordecl(InterlevelTeleportPhase, int16, interlevel_teleport_phase)
 	/* teleporting */
 	int16 delay_before_teleport; /* This is only valid for interlevel teleports (teleporting_destination is a negative number) */
 	int16 teleporting_phase; /* NONE means no teleporting, otherwise [0,TELEPORTING_PHASE) */
@@ -415,32 +460,57 @@ struct player_data
 
 	/* there is no state information associated with items; each item slot is only a count */
 	int16 items[NUMBER_OF_ITEMS];
+	
+	inline int16 getItemQuantityHeld(const ix item_index)
+	{
+		return items[ item_index ];
+	}
+	inline int16 setItemQuantityHeld(const ix item_index, const int16 quantity)
+	{
+		return items[ item_index ] = quantity;
+	}
 
 	/* Used by the game window code to keep track of the interface state. */
 	int16 interface_flags;
+	
+	__accessordecl(InterfaceFlags, int16, interface_flags)
+	
+	inline int16 testInterfaceFlags(const int16 test)
+	{
+		return interface_flags & test;
+	}
+	
 	int16 interface_decay;
-
+	__accessordecl(InterfaceDecay, int16, interface_decay)
+	
 	struct physics_variables variables;
+	
+	inline struct physics_variables& getPhysicsVariables()
+	{
+		return variables;
+	}
 
 	struct damage_record total_damage_given;
 	struct damage_record damage_taken[MAXIMUM_NUMBER_OF_PLAYERS];
 	struct damage_record monster_damage_taken, monster_damage_given;
 
 	int16 reincarnation_delay;
-
+	__accessordecl(ReincarnationDelay, int16, reincarnation_delay)
+	
 	int16 control_panel_side_index; // NONE, or the side index of a control panel the user is using that requires passage of time
+	__accessordecl(ControlPanelSideIndex, int16, control_panel_side_index)
 	
 	int32 ticks_at_last_successful_save;
+	__accessordecl(TicksAtLastSuccessfulSave, int32, ticks_at_last_successful_save)
 
 	int32 netgame_parameters[2];
 
 	bool	netdead;	// ZZZ: added this; it should not be serialized/deserialized
+	inline bool isNetdead()			{	return netdead;	}
+	inline bool setNetdead(bool newval)	{	return netdead = newval;	}
 
 	world_distance step_height; // not serialized, used to correct chase cam bob
-
-	// ZZZ: since we don't put this structure directly into files or network communications,
-	// there ought? to be no reason for the padding
-//	int16 unused[256];
+	__accessordecl(StepHeight, world_distance, step_height)
 };
 
 const int SIZEOF_player_data = 930;
@@ -493,11 +563,11 @@ extern struct player_data *local_player, *current_player;
 class ActionQueues;
 extern ActionQueues*    GetRealActionQueues();
 
-/* ---------- prototypes/PLAYER.C */
+/* ---------- prototypes/PLAYER.CPP */
 
-void initialize_players(void);
-void reset_action_queues(void);
-void allocate_player_memory(void);
+void initialize_players();
+void reset_action_queues();
+void allocate_player_memory();
 
 void set_local_player_index(short player_index);
 void set_current_player_index(short player_index);
@@ -505,9 +575,9 @@ void set_current_player_index(short player_index);
 short new_player(short team, short color, short player_identifier);
 void delete_player(short player_number);
 
-void recreate_players_for_new_level(void);
+void recreate_players_for_new_level();
 
-void team_damage_from_player_data(void);
+void team_damage_from_player_data();
 
 // ZZZ: this now takes a set of ActionQueues as a parameter so the caller can redirect
 // the update routine's input.  Also, now callers can request a 'predictive update',
@@ -518,7 +588,7 @@ void update_players(ActionQueues* inActionQueuesToUse, bool inPredictive); /* as
 bool m1_solo_player_in_terminal();
 void update_m1_solo_player_in_terminal(ActionQueues* inActionQueuesToUse);
 
-void walk_player_list(void);
+void walk_player_list();
 
 void damage_player(short monster_index, short aggressor_index, short aggressor_type,
 	struct damage_definition *damage, short projectile_index);
@@ -530,8 +600,7 @@ player_shape_definitions* get_player_shape_definitions();
 
 short player_identifier_to_player_index(short player_identifier);
 
-player_data *get_player_data(
-	const size_t player_index);
+player_data *get_player_data(const size_t player_index);
 
 short monster_index_to_player_index(short monster_index);
 
