@@ -91,7 +91,7 @@ typedef time_t TimeType;
 
 	#define		restrict	__restrict__
 	
-	#define		__GPLUSPLUS_DEPRECATED__	__attribute__ ((deprecated))
+//	#define		__GPLUSPLUS_DEPRECATED__	__attribute__ ((deprecated))
 	
 	#if __x86_64__
 		typedef int64 ix;
