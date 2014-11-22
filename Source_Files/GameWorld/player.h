@@ -373,7 +373,7 @@ struct player_data
 	bool isInterlevelTeleporting();
 	
 	inline auto getIdentifier()	{	return identifier;	}
-	inline void setIdentifier(decltype(this->identifier) ni)	{	identifier = ni;	}
+	inline void setIdentifier(int16 ni)	{	identifier = ni;	}
 	
 	
 	int16 identifier;
