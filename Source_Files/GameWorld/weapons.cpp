@@ -112,10 +112,6 @@ Apr 10, 2003 (Woody Zenfell):
 
 #include "weapon_definitions.h"
 
-#ifdef env68k
-	#pragma segment weapons
-#endif
-
 // To Do:
 // lowering second weapon on ammo empty flubs.
 
@@ -205,19 +201,15 @@ static struct player_weapon_data *player_weapons_array;
 #define GET_WEAPON_FROM_IDENTIFIER(identifier) (identifier>>1)
 #define GET_TRIGGER_FROM_IDENTIFIER(identifier) (identifier&1)
 
-/*static*/ player_weapon_data *get_player_weapon_data(
-	const short player_index);
+player_weapon_data *get_player_weapon_data(const short player_index);
 
-static weapon_definition *get_weapon_definition(
-	const short weapon_type);
+static weapon_definition *get_weapon_definition(const short weapon_type);
 
-static shell_casing_definition *get_shell_casing_definition(
-	const short type);
+static shell_casing_definition *get_shell_casing_definition(const short type);
 
 /* -------------- accessors */
 
-player_weapon_data *get_player_weapon_data(
-	const short player_index)
+player_weapon_data *get_player_weapon_data(const short player_index)
 {
 	player_weapon_data *data = GetMemberWithBounds(player_weapons_array,player_index,get_maximum_number_of_players());
 	assert(data);
@@ -225,8 +217,7 @@ player_weapon_data *get_player_weapon_data(
 	return data;
 }
 
-weapon_definition *get_weapon_definition(
-	const short weapon_type)
+weapon_definition *get_weapon_definition(const short weapon_type)
 {
 	weapon_definition *definition = GetMemberWithBounds(weapon_definitions,weapon_type,NUMBER_OF_WEAPONS);
 	assert(definition);
@@ -234,8 +225,7 @@ weapon_definition *get_weapon_definition(
 	return definition;
 }
 
-shell_casing_definition *get_shell_casing_definition(
-	const short type)
+shell_casing_definition *get_shell_casing_definition(const short type)
 {
 	shell_casing_definition *definition = GetMemberWithBounds(shell_casing_definitions,type,NUMBER_OF_SHELL_CASING_TYPES);
 	assert(definition);
@@ -310,38 +300,27 @@ static short find_weapon_power_index(short weapon_type);
 // LP addition: this function indicates whether weapons can be wielded
 // Set to fists being NONE
 inline bool CannotWieldWeapons()
-	{return get_weapon_definition(_weapon_fist)->weapon_class == NONE;}
+{
+	return get_weapon_definition( _weapon_fist )->weapon_class == NONE;
+}
 
 // For animating the idle weapons shape
 static void UpdateIdleAnimation(short player_index, short which_trigger);
 
 
 /* ------------ code starts */
-void initialize_weapon_manager(
-	void)
+void initialize_weapon_manager()
 {
-	player_weapons_array= (struct player_weapon_data *) malloc(MAXIMUM_NUMBER_OF_PLAYERS*sizeof(struct player_weapon_data));
+	player_weapons_array = 
+	(player_weapon_data *) malloc(MAXIMUM_NUMBER_OF_PLAYERS * sizeof(player_weapon_data));
 	assert(player_weapons_array);
 
 	objlist_clear(player_weapons_array, MAXIMUM_NUMBER_OF_PLAYERS);
-
-#if 0
-{
-	short index;
-	
-	for(index= 0; index<NUMBER_OF_WEAPONS; ++index)
-	{
-		struct weapon_definition *definition= get_weapon_definition(index);
-		definition->ready_ticks *= 10;
-	}
-}
-#endif
 }
 
-void initialize_player_weapons_for_new_game(
-	short player_index)
+void initialize_player_weapons_for_new_game(short player_index)
 {
-	struct player_weapon_data *player_weapons= get_player_weapon_data(player_index);
+	player_weapon_data *player_weapons = get_player_weapon_data(player_index);
 
 	/* Clear the shots fired and all that jazz */
 	obj_clear(*player_weapons);
@@ -352,13 +331,12 @@ void initialize_player_weapons_for_new_game(
 }
 
 /* initialize the given players weapons-> called after creating a player */
-void initialize_player_weapons(
-	short player_index)
+void initialize_player_weapons(short player_index)
 {
-	struct player_weapon_data *player_weapons= get_player_weapon_data(player_index);
-	struct player_data *player= get_player_data(player_index);
+	player_weapon_data *player_weapons = get_player_weapon_data(player_index);
+	player_data *player = get_player_data(player_index);
 	
-	for(unsigned weapon_type= 0; weapon_type<NUMBER_OF_WEAPONS; ++weapon_type)
+	for(ix weapon_type= 0; weapon_type<NUMBER_OF_WEAPONS; ++weapon_type)
 	{
 		short which_trigger;
 
@@ -368,9 +346,9 @@ void initialize_player_weapons(
 		}
 	
 		/* We _could_ figure this out, but this is easier.. */
-		player_weapons->weapons[weapon_type].weapon_type= weapon_type;
-		player_weapons->weapons[weapon_type].flags= 0;
-		player_weapons->weapons[weapon_type].unused= 0;
+		player_weapons->weapons[weapon_type].weapon_type = weapon_type;
+		player_weapons->weapons[weapon_type].flags = 0;
+		player_weapons->weapons[weapon_type].unused = 0;
 	}
 	
 	/* Reset the current and desired weapon.. */
@@ -383,18 +361,17 @@ void initialize_player_weapons(
 }
 
 /* Mark the weapon collections for loading or unloading.. */
-void mark_weapon_collections(
-	bool loading)
+void mark_weapon_collections(bool loading)
 {
-	for(unsigned index= 0; index<NUMBER_OF_WEAPONS; ++index)
+	for( ix index = 0; index < NUMBER_OF_WEAPONS; ++index )
 	{
-		struct weapon_definition *definition= get_weapon_definition(index);
+		weapon_definition *definition = get_weapon_definition(index);
 		
-		/* Mark the weaponÕs collection */	
+		/* Mark the weaponÃ•s collection */	
 		loading ? mark_collection_for_loading(definition->collection) : 
 			mark_collection_for_unloading(definition->collection);
 
-		/* Mark the projectileÕs collection, NONE is handled correctly */
+		/* Mark the projectileÃ•s collection, NONE is handled correctly */
 		if(index != _weapon_ball)
 		{
 			mark_projectile_collections(definition->weapons_by_trigger[_primary_weapon].projectile_type, loading);
@@ -403,85 +380,70 @@ void mark_weapon_collections(
 	}
 }
 
-void player_hit_target(
-	short player_index,
-	short weapon_identifier)
+void player_hit_target(short player_index, short weapon_identifier)
 {
-	struct player_weapon_data *player_weapons= get_player_weapon_data(player_index);
-	short weapon_id, trigger;
+	player_weapon_data *player_weapons = get_player_weapon_data(player_index);
 	
-	weapon_id= GET_WEAPON_FROM_IDENTIFIER(weapon_identifier);
-	trigger= GET_TRIGGER_FROM_IDENTIFIER(weapon_identifier);
+	auto weapon_id 	= GET_WEAPON_FROM_IDENTIFIER(weapon_identifier);
+	auto trigger 	= GET_TRIGGER_FROM_IDENTIFIER(weapon_identifier);
 	
-	assert(weapon_id>=0 && weapon_id<short(NUMBER_OF_WEAPONS));
+	assert( weapon_id >= 0 && weapon_id < short(NUMBER_OF_WEAPONS) );
+	
 	player_weapons->weapons[weapon_id].triggers[trigger].shots_hit++;
 }
 
 /* Called on entry to a level, and will change weapons if this one doesn't work */
 /*  in the given environment. */
-void check_player_weapons_for_environment_change(
-	void)
+void check_player_weapons_for_environment_change()
 {
-	short player_index;
-	
-	for(player_index=0; player_index<dynamic_world->player_count; ++player_index)
+	for( ix player_index = 0; player_index < dynamic_world->player_count; ++player_index )
 	{
-		if(player_has_valid_weapon(player_index))
-		{
-			struct player_weapon_data *player_weapons= get_player_weapon_data(player_index);
+		if( !player_has_valid_weapon(player_index) )
+			continue;
+		
+		player_weapon_data *player_weapons = get_player_weapon_data(player_index);
 
-			if(!weapon_works_in_current_environment(player_weapons->current_weapon))
-			{
-				/* Change out of the current weapon immediately.. */
-				player_weapons->current_weapon= NONE;
-			
-				/* Select the next best weapon for this person.. */
-				select_next_best_weapon(player_index);
-			}
+		if( !weapon_works_in_current_environment(player_weapons->current_weapon) )
+		{
+			/* Change out of the current weapon immediately.. */
+			player_weapons->current_weapon = NONE;
+		
+			/* Select the next best weapon for this person.. */
+			select_next_best_weapon( player_index );
 		}
+	
 	}
 
 	/* while we are at it, setup the definitions for the weapons */
 	calculate_ticks_from_shapes();
-
-#if 0
-{
-	struct weapon_definition *definition= get_weapon_definition(_weapon_shotgun);
-	definition->ready_ticks *= 10;
-}
-#endif
 }
 
 /* Called when a player dies to discharge the weapons that they have charged up. */
-void discharge_charged_weapons(
-	short player_index)
+void discharge_charged_weapons(short player_index)
 {
 	struct trigger_data *weapon;
 	short which_trigger;
 
-	if(player_has_valid_weapon(player_index))
+	if( !player_has_valid_weapon(player_index) )
+		return;
+
+	short first_trigger;
+	player_weapon_data *player_weapons = get_player_weapon_data(player_index);
+
+	auto trigger_count= get_active_trigger_count_and_states(player_index, player_weapons->current_weapon,
+		0l, &first_trigger, nullptr);
+	for(which_trigger= first_trigger; which_trigger<trigger_count; ++which_trigger)
 	{
-		short first_trigger, trigger_count;
-		struct player_weapon_data *player_weapons= get_player_weapon_data(player_index);
-	
-		trigger_count= get_active_trigger_count_and_states(player_index, player_weapons->current_weapon,
-			0l, &first_trigger, NULL);
-		for(which_trigger= first_trigger; which_trigger<trigger_count; ++which_trigger)
-		{
-			weapon= get_player_trigger_data(player_index, which_trigger);
-			if(weapon->state==_weapon_charged)
-			{
-				/* Fire the weapon! (give it to them fully charged..) */
-				fire_weapon(player_index, which_trigger, FIXED_ONE, true);
-			}
-		}
+		weapon = get_player_trigger_data(player_index, which_trigger);
+		
+		if( weapon->state == _weapon_charged ) /* Fire the weapon! (give it to them fully charged..) */
+			fire_weapon(player_index, which_trigger, FIXED_ONE, true);
 	}
+
 }
 
 /* When the player runs over an item, check for reloads, etc. */
-void process_new_item_for_reloading(
-	short player_index, 
-	short item_type)
+void process_new_item_for_reloading(short player_index, short item_type)
 {
 	/* Is this a weapon? */
 	switch(get_item_kind(item_type))
@@ -633,9 +595,7 @@ void process_new_item_for_reloading(
 #define WEAPON_SHORTED_SOUND NONE
 
 /* Update the given player's weapons */
-void update_player_weapons(
-	short player_index, 
-	uint32 action_flags)
+void update_player_weapons(short player_index, uint32 action_flags)
 {
 	update_shell_casings(player_index);
 	
@@ -931,25 +891,18 @@ void update_player_weapons(
 	
 	/* If they didn't just finish switching weapons.. */
 	if(action_flags & _cycle_weapons_forward)
-	{
 		select_next_weapon(player_index, true);
-	} 
 		
 	/* Cycle the weapon backward */
 	if(action_flags & _cycle_weapons_backward)
-	{
 		select_next_weapon(player_index, false);
-	}
 
 	/* And switch the weapon.. */
 	idle_weapon(player_index);
-
-	// dprintf("done;g");
 }
 
 // START Benad
-void destroy_players_ball(
-	short player_index)
+void destroy_players_ball(short player_index)
 {
 	if (film_profile.destroy_players_ball_fix && !player_has_valid_weapon(player_index))
 		return;
@@ -962,16 +915,7 @@ void destroy_players_ball(
 	assert(ball_color!=NONE);
 	item_type= ball_color+BALL_ITEM_BASE;
 
-	/*
-	world_point3d origin, vector;
-	short origin_polygon;
-	calculate_weapon_origin_and_vector(player_index, _primary_weapon, 
-		&origin, &vector, &origin_polygon, 0);
 
-	drop_the_ball(&origin, origin_polygon, player->monster_index, 
-		_monster_marine, item_type);
-	*/
-	
 	weapon->triggers[0].rounds_loaded = 0;
 	weapon->triggers[1].rounds_loaded = 0;
 	weapon->weapon_type = _weapon_ball;
@@ -986,21 +930,17 @@ void destroy_players_ball(
 }
 // END Benad
 
-short get_player_desired_weapon(
-	short player_index)
+short get_player_desired_weapon(short player_index)
 {
-	struct player_weapon_data *player_weapons= get_player_weapon_data(player_index);
+	const player_weapon_data *player_weapons = get_player_weapon_data(player_index);
 	
 	return player_weapons->desired_weapon;
 }
 
-short get_player_weapon_ammo_count(
-	short player_index, 
-	short which_weapon,
-	short which_trigger)
+short get_player_weapon_ammo_count(short player_index, short which_weapon, short which_trigger)
 {
-	struct player_weapon_data *player_weapons= get_player_weapon_data(player_index);
-	struct weapon_definition *definition= get_weapon_definition(which_weapon);
+	player_weapon_data *player_weapons = get_player_weapon_data(player_index);
+	weapon_definition *definition = get_weapon_definition(which_weapon);
 	short rounds_loaded;
 	struct player_data *player= get_player_data(player_index);
 	
@@ -1150,16 +1090,14 @@ static void debug_trigger_data(
 }
 #endif
 
-void *get_weapon_array(
-	void)
+void *get_weapon_array()
 {
 	return player_weapons_array;
 }
 
-int32 calculate_weapon_array_length(
-	void)
+int32 calculate_weapon_array_length()
 {
-	return dynamic_world->player_count*sizeof(struct player_weapon_data);
+	return dynamic_world->player_count * sizeof(player_weapon_data);
 }
 
 /* -------------------------- functions related to rendering */
@@ -1595,41 +1533,36 @@ void get_player_weapon_mode_and_type(
 }
 
 /* -------- general static code */
-static void reset_trigger_data(
-	short player_index,
-	short weapon_type,
-	short which_trigger)
+static void reset_trigger_data(short player_index, short weapon_type, short which_trigger)
 {
-	struct trigger_data *trigger= get_trigger_data(player_index, weapon_type, which_trigger);
+	trigger_data *trigger = get_trigger_data(player_index, weapon_type, which_trigger);
 
-	trigger->state= _weapon_idle;
-	trigger->phase= 0;
-	trigger->rounds_loaded= 0;
+	trigger->state = _weapon_idle;
+	trigger->phase = 0;
+	trigger->rounds_loaded = 0;
 /* Note that trigger->shots_fired, and trigger->shots_hit are not reset (for total carnage graphs) */
-	trigger->ticks_since_last_shot= 0;
-	trigger->ticks_firing= 0;
-	trigger->sequence= 0;
+	trigger->ticks_since_last_shot = 0;
+	trigger->ticks_firing = 0;
+	trigger->sequence = 0;
 }
 
-static bool weapon_works_in_current_environment(
-	short weapon_index)
+static bool weapon_works_in_current_environment(short weapon_index)
 {
-	bool weapon_works= true;
+	bool weapon_works = true;
 
 	if(weapon_index!=NONE)
 	{
-		struct weapon_definition *definition= get_weapon_definition(weapon_index);
-		weapon_works= item_valid_in_current_environment(definition->item_type);
+		weapon_definition *definition = get_weapon_definition(weapon_index);
+		weapon_works = item_valid_in_current_environment(definition->item_type);
 	}
 	
 	return weapon_works;
 }
 
 /* This selects the next best weapon */
-/*static*/ void select_next_best_weapon(
-	short player_index)
+void select_next_best_weapon(short player_index)
 {
-	struct player_weapon_data *player_weapons= get_player_weapon_data(player_index);
+	player_weapon_data *player_weapons = get_player_weapon_data(player_index);
 	int index, current_weapon_index;
 	
 	/* Find where we are in the array. */
@@ -2205,7 +2138,7 @@ static bool check_reload(
 							} else {
 								if(which_trigger==_primary_weapon)
 								{
-									/* ¥¥ÊProblems? */
+									/* Â¥Â¥ÃŠProblems? */
 									struct trigger_data *other_trigger= 
 										get_player_trigger_data(player_index, !which_trigger);
 										
