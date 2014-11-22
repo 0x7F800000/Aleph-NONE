@@ -114,6 +114,9 @@ Jan 12, 2003 (Loren Petrich)
 #include "lua_script.h"
 #include "Logging.h"
 
+//need set_platform_state for _ds_set_platform_state
+#include "platforms.h"
+
 /*
 //explosive deaths should cause damage during their key frame
 */
