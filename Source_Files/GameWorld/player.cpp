@@ -394,6 +394,12 @@ player_data *get_player_data(const size_t player_index)
 	return data;
 }
 
+struct player_data& player_data::Get(const ix index)
+{
+	assert( index < dynamic_world->player_count );
+	return players[ index ];
+}
+
 void allocate_player_memory()
 {
 	/* allocate space for all our players */
