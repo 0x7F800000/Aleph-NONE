@@ -781,7 +781,7 @@ void monster_data::onDeath()
 		case DeathSpecial_t::_ds_set_platform_state:
 			if( isNONE( _set_platform_state_id ) )
 				break;
-			set_platform_state(_set_platform_state_id, _set_platform_state_state, NONE);
+			try_and_change_platform_state(_set_platform_state_id, _set_platform_state_state);
 			break;
 		default:
 			assert(false);
