@@ -235,7 +235,7 @@ enum /* monster modes */
 #define		EXFLAGTEST(gettername, settername, chkflag)		inline bool gettername()	{	return exflags & chkflag;	}	\
 	inline void settername(bool set)	{	exflags = (set) ? exflags | chkflag : exflags & (~chkflag);	}
 
-enum class DeathSpecial_t : int8
+enum DeathSpecial_t : int8
 {
 	_ds_damage_monster,
 	_ds_heal_monster,
