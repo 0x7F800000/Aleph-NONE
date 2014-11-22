@@ -656,11 +656,13 @@ void move_monsters()
 						update_monster_physics_model(monster_index);
 						if(monster->testDefinitionFlags(_monster_has_delayed_hard_death) && monster->isDyingSoft() )
 						{
-							int16 contrail;
+							
 							if ( !monster->external_velocity && object->location.z == monster->desired_height )
 								set_monster_action(monster_index, _monster_is_dying_hard);
 								
-							else if(  !isNONE(contrail = monster->getDefinition()->contrail_effect) ) 
+							int16 contrail = monster->getDefinition()->contrail_effect;
+							
+							else if( !isNONE( contrail ) ) 
 								new_effect(&object->location, object->polygon, contrail, object->facing);
 							break;
 						}
@@ -696,13 +698,17 @@ SkipBecauseObjectIsInvisible:
 		}
 	
 	
-		/* WARNING: a large number of unusual things could have happened here, including the monster
+		/* 
+			WARNING: a large number of unusual things could have happened here, including the monster
 			being dead, his slot being free, and his object having been removed from the map; in other
-			words, it's probably not a good idea to do any postprocessing here */
+			words, it's probably not a good idea to do any postprocessing here 
+		*/
 	}
 	
-	/* either there are no unlocked monsters or Ôdynamic_world->last_monster_index_to_get_time' is higher than
-		all of them (so we reset it to zero) ... same for paths */
+	/* 
+		either there are no unlocked monsters or dynamic_world->last_monster_index_to_get_time is higher than
+		all of them (so we reset it to zero) ... same for paths 
+	*/
 	if( !monster_got_time ) 
 		dynamic_world->last_monster_index_to_get_time = NONE;
 	if( !monster_built_path ) 
@@ -711,7 +717,7 @@ SkipBecauseObjectIsInvisible:
 	if( !dynamic_world->civilians_killed_by_players )
 		return;
 	
-	uint32 mask = 0;
+	unsigned mask = 0;
 	
 	switch (dynamic_world->game_information.difficulty_level)
 	{
@@ -1060,7 +1066,7 @@ void activate_monster(short monster_index)
 	CLEAR_MONSTER_RECOVERING_FROM_HIT(monster);
 	
 	SET_MONSTER_IDLE_STATUS(monster, false);
-	monster->setActiveStatus(true);
+	monster->setActiveStatus( true );
 	SET_MONSTER_BERSERK_STATUS(monster, false);
 	SET_MONSTER_HAS_BEEN_ACTIVATED(monster);
 	
@@ -1150,7 +1156,7 @@ void deactivate_monster(short monster_index)
 	if( !isNONE( monster->getPath() ) )
 		delete_path( monster->getPath() );
 
-	monster->setActiveStatus(false);
+	monster->setActiveStatus( false );
 }
 
 /* 
@@ -2441,28 +2447,28 @@ void change_monster_target(short monster_index, short target_index)
 		activate_monster(monster_index);
 
 	/* play activation sounds (including activating on a friendly) */
-	if (monster->getTarget() != target_index && TYPE_IS_FRIEND(monster->getDefinition(), get_monster_data(target_index)->type))
+	if( !monster->isTarget( target_index ) && TYPE_IS_FRIEND(monster->getDefinition(), get_monster_data(target_index)->type))
 		play_object_sound(monster->object_index, monster->getDefinition()->friendly_activation_sound);
 		
 	else if(!monster->testDefinitionFlags(_monster_makes_sound_when_activated) && monster->isUnlocked() ) 
 		play_object_sound(monster->object_index, monster->getDefinition()->activation_sound);
 		
 	/* instantiate the new target and ask for a new path */
-	if (monster->hasValidTarget() && target_index != monster->getTarget()) 
+	if( monster->hasValidTarget() && !monster->isTarget( target_index ) ) 
 		CLEAR_TARGET_DAMAGE_FLAG(monster);
 		
-	monster_needs_path(monster_index, false);
-	set_monster_mode(monster_index, _monster_locked, target_index);
+	monster_needs_path( monster_index, false );
+	set_monster_mode( monster_index, _monster_locked, target_index );
 }
 
 static void handle_moving_or_stationary_monster(short monster_index)
 {
-	monster_data *monster= get_monster_data(monster_index);
-	object_data *object= get_object_data(monster->object_index);
-	monster_definition *definition= monster->getDefinition();
+	monster_data *monster 		= get_monster_data(monster_index);
+	object_data *object 		= monster->getObject();
+	monster_definition *definition 	= monster->getDefinition();
 	
 	/* stationary, unlocked monsters without paths cannot move */
-	if(isNONE( monster->getPath() ) && !monster->isLocked() && monster->isStationary() )
+	if( isNONE( monster->getPath() ) && !monster->isLocked() && monster->isStationary() )
 	{
 		monster_needs_path(monster_index, false);
 		return;
@@ -2471,21 +2477,21 @@ static void handle_moving_or_stationary_monster(short monster_index)
 	auto distance_moved = definition->speed;
 	
 	/* base speed on difficulty level (for aliens) and berserk status */
-	if(definition->testFlags(_monster_is_alien))
+	if( definition->testFlags( _monster_is_alien ) )
 	{
 		switch (dynamic_world->game_information.difficulty_level)
 		{
 			case _wuss_level: 
-				distance_moved -= distance_moved >> 3; 
+				distance_moved -= distance_moved / 8; 
 				break;
 			case _easy_level: 
-				distance_moved -= distance_moved >> 4; 
+				distance_moved -= distance_moved / 16; 
 				break;
 			case _major_damage_level: 
-				distance_moved += distance_moved >> 3; 
+				distance_moved += distance_moved / 8; 
 				break;
 			case _total_carnage_level: 
-				distance_moved += distance_moved >> 2; 
+				distance_moved += distance_moved / 4; 
 				break;
 		}
 	}
@@ -2512,8 +2518,9 @@ static void handle_moving_or_stationary_monster(short monster_index)
 		monster->ticks_since_attack++;
 
 	/* whether we moved or not, see if we can attack if we have lock */
-	monster->ticks_since_attack += MONSTER_IS_BERSERK(monster) ? 3 : 1;
-	if(!OBJECT_WAS_ANIMATED(object) && !monster->isLocked())
+	monster->ticks_since_attack += monster->isBerserk() ? 3 : 1;
+	
+	if( !OBJECT_WAS_ANIMATED(object) && !monster->isLocked() )
 		return;
 	
 	auto attack_frequency = definition->attack_frequency;
@@ -2522,35 +2529,45 @@ static void handle_moving_or_stationary_monster(short monster_index)
 	{
 		switch (dynamic_world->game_information.difficulty_level)
 		{
-			case _wuss_level: attack_frequency= 3*attack_frequency; break;
-			case _easy_level: attack_frequency= 2*attack_frequency; break;
-			case _major_damage_level: attack_frequency= attack_frequency>>1; break;
-			case _total_carnage_level: attack_frequency= attack_frequency>>2; break;
+			case _wuss_level: 
+				attack_frequency *= 3; 
+				break;
+			case _easy_level: 
+				attack_frequency *= 2; 
+				break;
+			case _major_damage_level: 
+				attack_frequency /= 2; 
+				break;
+			case _total_carnage_level: 
+				attack_frequency /= 4; 
+				break;
 		}
 	}
 
-	if (monster->ticks_since_attack > attack_frequency)
+	if( monster->ticks_since_attack <= attack_frequency )
+		return;	//can't attack yet.
+	
+	/* activate with lock nearby monsters on our target */
+	if( try_monster_attack(monster_index) )
+		activate_nearby_monsters( monster->getTarget(), monster_index,
+			_pass_one_zone_border, MONSTER_ALERT_ACTIVATION_RANGE );
+			
+	else if( monster->isWaitingToAttackAgain() )
 	{
-		/* activate with lock nearby monsters on our target */
-		if (try_monster_attack(monster_index))
-			activate_nearby_monsters(monster->getTarget(), monster_index, _pass_one_zone_border, MONSTER_ALERT_ACTIVATION_RANGE);
-		else if (monster->isWaitingToAttackAgain() )
-		{
-			set_monster_action(monster_index, _monster_is_stationary);
-			monster_needs_path(monster_index, true);
-		}
-		
+		set_monster_action( monster_index, _monster_is_stationary );
+		monster_needs_path( monster_index, true );
 	}
+	
 }
 
 void set_monster_action(short monster_index, short action)
 {
-	monster_data *monster = get_monster_data(monster_index);
-	monster_definition *definition = monster->getDefinition();
+	monster_data *monster 		= get_monster_data( monster_index );
+	monster_definition *definition 	= monster->getDefinition();
 	shape_descriptor shape;
 
 	/* what shape should we use? */
-	if(action == _monster_is_dying_flaming)
+	if( action == _monster_is_dying_flaming )
 		shape = FLAMING_DYING_SHAPE;
 	else
 	{
@@ -2590,40 +2607,43 @@ void set_monster_action(short monster_index, short action)
 		shape = isUNONE(shape) ? UNONE : BUILD_DESCRIPTOR(definition->collection, shape);
 	}
 
-	if(shape != UNONE)
-	{
-		/* only set the action of the shape is not UNONE */
-		monster->setAction(action);
-		set_object_shape_and_transfer_mode(monster->object_index, shape, NONE);
+	/* only set the action of the shape is not UNONE */
+	if( isUNONE( shape ) )
+		return;
+	
+	monster->setAction(action);
+	set_object_shape_and_transfer_mode(
+		monster->getObjectIndex(), shape, NONE
+		);
 
-		/* if this monster does shrapnel damage, do it */
-		if(action == _monster_is_dying_hard)
+	/* if this monster does shrapnel damage, do it */
+	if( action == _monster_is_dying_hard )
+	{
+		if( definition->testFlags(_monster_has_delayed_hard_death) )
+			cause_shrapnel_damage(monster_index);
+		else if (film_profile.key_frame_zero_shrapnel_fix)
 		{
-			if(definition->flags & _monster_has_delayed_hard_death)
-				cause_shrapnel_damage(monster_index);
-			else if (film_profile.key_frame_zero_shrapnel_fix)
-			{
-				object_data* object = get_object_data(monster->object_index);
-				shape_animation_data* animation = get_shape_animation_data(object->shape);
-				if (animation && !animation->key_frame)
-					cause_shrapnel_damage(monster_index);
-			}
-		}
-		
-		if ((definition->flags & _monster_has_nuclear_hard_death) && action == _monster_is_dying_hard)
-		{
-			start_fade(_fade_long_bright);
-			SoundManager::instance()->PlayLocalSound(Sound_Exploding());
+			const object_data* object = monster->getObject();
+			const shape_animation_data* animation = get_shape_animation_data( object->shape );
+			if( animation && !animation->key_frame )
+				cause_shrapnel_damage( monster_index );
 		}
 	}
+	
+	if( definition->testFlags( _monster_has_nuclear_hard_death ) && action == _monster_is_dying_hard )
+	{
+		start_fade( _fade_long_bright );
+		SoundManager::instance()->PlayLocalSound( Sound_Exploding() );
+	}
+
 }
 
 /* do whatever needs to be done when this monster dies and remove it from the monster list */
 static void kill_monster(short monster_index)
 {
-	monster_data *monster = get_monster_data(monster_index);
-	monster_definition *definition = monster->getDefinition();
-	object_data *object = get_object_data(monster->object_index);
+	monster_data *monster 		= get_monster_data( monster_index );
+	monster_definition *definition 	= monster->getDefinition();
+	object_data *object 		= monster->getObject();
 	shape_descriptor shape;
 	
 	assert( monster->isDying() ); //eliminates default case
@@ -2642,7 +2662,7 @@ static void kill_monster(short monster_index)
 	}
 
 	/* add an item if we're supposed to be carrying something */
-	if (!isNONE(definition->carrying_item_type) && monster->isDyingSoft() )
+	if( !isNONE( definition->carrying_item_type ) && monster->isDyingSoft() )
 	{
 		world_distance radius, height;
 		world_point3d random_point;
@@ -2695,11 +2715,11 @@ static void kill_monster(short monster_index)
     }
     
 	if (remove_object)
-		remove_map_object(monster->object_index);
+		remove_map_object( monster->getObjectIndex() );
 	else
 	{
-		turn_object_to_shit(monster->object_index);
-		randomize_object_sequence(monster->object_index, shape);
+		turn_object_to_shit( monster->getObjectIndex() );
+		randomize_object_sequence( monster->getObjectIndex(), shape );
 	}
 
 	/* recover original type and notify the object stuff a monster died */
@@ -2708,11 +2728,10 @@ static void kill_monster(short monster_index)
 	if( monster->wasDemoted() ) 
 		monster->type++;
 
-	object_was_just_destroyed(_object_is_monster, monster->type);
+	object_was_just_destroyed( _object_is_monster, monster->getType() );
 
 	L_Invalidate_Monster(monster_index);
 	monster->markSlotAsFree();
-
 }
 		
 /* 
@@ -2724,9 +2743,9 @@ static void kill_monster(short monster_index)
 	*/
 static bool translate_monster(short monster_index, world_distance distance)
 {
-	monster_data *monster = get_monster_data(monster_index);
-	object_data *object = get_object_data(monster->object_index);
-	monster_definition *definition = monster->getDefinition();
+	monster_data *monster 		= get_monster_data(monster_index);
+	object_data *object 		= monster->getObject();
+	monster_definition *definition 	= monster->getDefinition();
 	world_point3d new_location;
 	bool legal_move = false;
 
