@@ -657,12 +657,10 @@ void move_monsters()
 						update_monster_physics_model(monster_index);
 						if(monster->testDefinitionFlags(_monster_has_delayed_hard_death) && monster->isDyingSoft() )
 						{
-							
+							int16 contrail = monster->getDefinition()->contrail_effect;
 							if ( !monster->external_velocity && object->location.z == monster->desired_height )
 								set_monster_action(monster_index, _monster_is_dying_hard);
 								
-							int16 contrail = monster->getDefinition()->contrail_effect;
-							
 							else if( !isNONE( contrail ) ) 
 								new_effect(&object->location, object->polygon, contrail, object->facing);
 							break;
