@@ -1,5 +1,5 @@
 /*
-LIGHTSOURCE.C
+LIGHTSOURCE.CPP
 
 	Copyright (C) 1991-2001 and beyond by Bungie Studios, Inc.
 	and the "Aleph One" developers.
@@ -59,8 +59,6 @@ Jul 3, 2002 (Loren Petrich):
 // took over their maximum number as how many of them
 
 vector<light_data> LightList;
-
-// struct light_data *lights = NULL;
 
 /* ---------- private prototypes */
 
@@ -146,11 +144,11 @@ static light_definition *get_light_definition(const short type);
 
 light_data *get_light_data(const size_t light_index)
 {
-	struct light_data *light = GetMemberWithBounds(lights,light_index,MAXIMUM_LIGHTS_PER_MAP);
+	light_data *light = GetMemberWithBounds(lights,light_index,MAXIMUM_LIGHTS_PER_MAP);
 	
 	if (!light) 
 		return nullptr;
-	if (!SLOT_IS_USED(light)) 
+	if( !SLOT_IS_USED(light) ) 
 		return nullptr;
 	
 	return light;
@@ -216,10 +214,12 @@ void update_lights()
 	
 	for (light_index= 0, light= lights; light_index<short(MAXIMUM_LIGHTS_PER_MAP); ++light_index, ++light)
 	{
-		if (!SLOT_IS_USED(light))
+		if( !SLOT_IS_USED(light) )
 			continue;
 	
-		/* update light phase; if weÕve overflowed our period change to the next state */
+		/* 
+			update light phase; if we've overflowed our period change to the next state 
+		*/
 		light->phase++;
 		rephase_light(light_index);
 		
@@ -244,13 +244,13 @@ bool get_light_status(size_t light_index)
 		case _light_becoming_active:
 		case _light_primary_active:
 		case _light_secondary_active:
-			status= true;
+			status = true;
 			break;
 		
 		case _light_becoming_inactive:
 		case _light_primary_inactive:
 		case _light_secondary_inactive:
-			status= false;
+			status = false;
 			break;
 
 		default:
@@ -270,7 +270,7 @@ bool set_light_status(size_t light_index, bool new_status)
 	bool old_status = get_light_status(light_index);
 	bool changed = false;
 	
-	if ((new_status&&!old_status) || (!new_status&&old_status))
+	if ( (new_status && !old_status) || (!new_status && old_status))
 	{
 		if (!LIGHT_IS_STATELESS(light))
 		{
@@ -279,7 +279,7 @@ bool set_light_status(size_t light_index, bool new_status)
                         //MH: Lua script hook
                         L_Call_Light_Activated(light_index);
 			assume_correct_switch_position(_panel_is_light_switch, static_cast<short>(light_index), new_status);
-			changed= true;
+			changed = true;
 		}
 	}
 	
@@ -290,15 +290,15 @@ bool set_tagged_light_statuses(short tag, bool new_status)
 {
 	bool changed = false;
 
-	if (!tag)
+	if( !tag )
 		return false;
 	
 	ix light_index;
 	light_data *light;
 	
-	for (light_index = 0, light= lights; light_index<short(MAXIMUM_LIGHTS_PER_MAP); ++light_index, ++light)
+	for (light_index = 0, light= lights; light_index < short(MAXIMUM_LIGHTS_PER_MAP); ++light_index, ++light)
 	{
-		if (light->static_data.tag==tag && set_light_status(light_index, new_status))
+		if (light->static_data.tag == tag && set_light_status(light_index, new_status))
 			changed = true;
 	}
 	return changed;
@@ -441,33 +441,17 @@ static _fixed lighting_function_dispatch(
 	return lighting_functions[function_index](initial_intensity, final_intensity, phase, period);
 }
 
-static _fixed constant_lighting_proc(
-	_fixed initial_intensity,
-	_fixed final_intensity,
-	short phase,
-	short period)
+static _fixed constant_lighting_proc( _fixed initial_intensity, _fixed final_intensity, short phase, short period )
 {
-	(void) (initial_intensity);
-	(void) (phase);
-	(void) (period);
-	
 	return final_intensity;
 }
 
-static _fixed linear_lighting_proc(
-	_fixed initial_intensity,
-	_fixed final_intensity,
-	short phase,
-	short period)
+static _fixed linear_lighting_proc( _fixed initial_intensity, _fixed final_intensity, short phase, short period)
 {
-	return initial_intensity + ((final_intensity-initial_intensity)*phase)/period;
+	return initial_intensity + ( (final_intensity - initial_intensity) * phase ) / period;
 }
 
-static _fixed smooth_lighting_proc(
-	_fixed initial_intensity,
-	_fixed final_intensity,
-	short phase,
-	short period)
+static _fixed smooth_lighting_proc(_fixed initial_intensity, _fixed final_intensity, short phase, short period)
 {
 	return initial_intensity + (((final_intensity-initial_intensity)*(cosine_table[(phase*HALF_CIRCLE)/period+HALF_CIRCLE]+TRIG_MAGNITUDE))>>(TRIG_SHIFT+1));
 }
