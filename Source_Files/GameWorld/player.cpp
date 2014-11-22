@@ -412,35 +412,39 @@ void allocate_player_memory()
 short new_player(short team, short color, short identifier)
 {
 	/* find a free slot */
-	auto player_index = dynamic_world->player_count;
+	auto player_index = dynamic_world->player_count++;
+	
 	assert( player_index < MAXIMUM_NUMBER_OF_PLAYERS );
 	
-	dynamic_world->player_count++;
-	player_data *player = get_player_data(player_index);
+	player_data &player = player_data::Get( player_index );
 
 	/* and initialize it */
-	obj_clear(*player);
-	player->teleporting_destination = NO_TELEPORTATION_DESTINATION;
-	player->interface_flags = 0; // Doesn't matter-> give_player_initial_items will take care of it.
-	// LP change: using variables for these
-	player->suit_energy = player_settings.InitialEnergy;
-	player->suit_oxygen = player_settings.InitialOxygen;
-	player->color = color;
-	player->team = team;
-	player->flags = 0;
+	obj_clear(player);
 	
-	player->invincibility_duration = 0;
-	player->invisibility_duration = 0;
-	player->infravision_duration = 0;
-	player->extravision_duration = 0;
-	player->identifier = player_identifier_value( identifier );
+	player.setTeleportingDestination( NO_TELEPORTATION_DESTINATION );
+	player.setInterfaceFlags( 0 ); // Doesn't matter-> give_player_initial_items will take care of it.
+	// LP change: using variables for these
+	
+	player.setSuitEnergy( player_settings.InitialEnergy );
+	player.setSuitOxygen( player_settings.InitialOxygen );
+	
+	player.setColor( color );
+	player.setTeam( team );
+	player.setFlags( 0 );
+	
+	player.setInvincibilityDuration( 0 );
+	player.setInvisibilityDuration( 0 );
+	player.setInfravisionDuration( 0 );
+	player.setExtravisionDuration( 0 );
+	
+	player.setIdentifier( player_identifier_value( identifier ) );
 
-	SET_PLAYER_DOESNT_AUTO_RECENTER_STATUS(player, player_identifier_doesnt_auto_recenter(identifier));
-	SET_PLAYER_DOESNT_AUTO_SWITCH_WEAPONS_STATUS(player, player_identifier_doesnt_auto_switch_weapons(identifier));
+	SET_PLAYER_DOESNT_AUTO_RECENTER_STATUS(&player, player_identifier_doesnt_auto_recenter(identifier));
+	SET_PLAYER_DOESNT_AUTO_SWITCH_WEAPONS_STATUS(&player, player_identifier_doesnt_auto_switch_weapons(identifier));
 	
 	/* initialize inventory */	
-	for( ix loop = 0; loop < NUMBER_OF_ITEMS; ++loop ) 
-		player->items[loop] = NONE;
+	for( ix i = 0; i < NUMBER_OF_ITEMS; ++i ) 
+		player.setItemQuantityHeld(i, NONE);
 
 	/* create the player.. */
 	recreate_player( player_index );
