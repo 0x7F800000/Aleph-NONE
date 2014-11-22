@@ -746,15 +746,15 @@ SkipBecauseObjectIsInvisible:
 
 void monster_data::onDeath()
 {
-	if( death_special == _ds_NONE )
+	if( death_special == DeathSpecial_t::_ds_NONE )
 		return;
 	switch(death_special):
 	{
-		case _ds_damage_monster:
+		case DeathSpecial_t::_ds_damage_monster:
 			if(!isNONE( _damage_monster_id ) )
 				cause_shrapnel_damage(_damage_monster_id); //lameee
 			break;
-		case _ds_heal_monster:
+		case DeathSpecial_t::_ds_heal_monster:
 			if( isNONE( _heal_monster_id ) )
 				break;
 				
@@ -764,7 +764,7 @@ void monster_data::onDeath()
 				break;
 			heal_target.setVitality( heal_target.getVitality() + _heal_monster_amount);
 			break;
-		case _ds_set_monster_speed:
+		case DeathSpecial_t::_ds_set_monster_speed:
 			if( isNONE( _hasten_monster_id ) )
 				break;
 			
