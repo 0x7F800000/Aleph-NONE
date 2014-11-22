@@ -438,7 +438,7 @@ short new_monster(struct object_location *location, short monster_type)
 		auto object_index = new_map_object(location, BUILD_DESCRIPTOR(definition->collection, definition->stationary_shape));
 		
 		/*	return nonzero == break	*/
-		if(	isNONE(object_index)	)
+		if( isNONE(object_index) )
 			return (monster_index = NONE, -1);
 			
 		object_data* obj = get_object_data( object_index );
@@ -534,8 +534,10 @@ void move_monsters()
 
 			update_monster_vertical_physics_model(monster_index);
 
-			/* update our object's animation unless we're Ôsuffering' from an external velocity
-				or we're airborne (if we're a flying or floating monster, ignore both of these */
+			/* 
+				update our object's animation unless we're suffering from an external velocity
+				or we're airborne (if we're a flying or floating monster, ignore both of these 
+			*/
 			if(!monster->hasVelocity() || (film_profile.ketchup_fix && monster->isAttacking() ) ||
 				((!monster->isBeingHit() || !monster->external_velocity) && monster->canFlyOrFloat()))
 				animate_object(monster->object_index);
@@ -546,18 +548,22 @@ void move_monsters()
 				switch (monster->mode)
 				{
 					case _monster_unlocked:
-						/* if this monster is unlocked and we haven't already given a monster time,
-							call find_closest_appropriate_target() */
+						/* 
+							if this monster is unlocked and we haven't already given a monster time,
+							call find_closest_appropriate_target() 
+						*/
 						change_monster_target(monster_index, find_closest_appropriate_target(monster_index, false));
 						monster_got_time = true;
 						break;
 					
 					case _monster_lost_lock:
 					case _monster_losing_lock:
-						/* if this monster has lost or is losing lock and we haven't already given a monster
-							time, check to see if his target has become visible again */
+						/* 
+							if this monster has lost or is losing lock and we haven't already given a monster
+							time, check to see if his target has become visible again 
+							*/
 						if (clear_line_of_sight(monster_index, monster->getTarget(), false))
-							change_monster_target(monster_index, monster->getTarget());
+							change_monster_target( monster_index, monster->getTarget() );
 						monster_got_time = true;
 						break;
 				}
@@ -573,8 +579,8 @@ void move_monsters()
 			if (MONSTER_NEEDS_PATH(monster) && !monster->isDying() && !monster->isAttacking() &&
 				((!monster_built_path && monster_index > dynamic_world->last_monster_index_to_build_path) || !monster->hasPath()))
 			{
-				generate_new_path_for_monster(monster_index);
-				if(!monster_built_path)
+				generate_new_path_for_monster( monster_index );
+				if( !monster_built_path )
 				{
 					monster_built_path = true;
 					dynamic_world->last_monster_index_to_build_path = monster_index;
@@ -592,16 +598,17 @@ void move_monsters()
 					case _monster_is_waiting_to_attack_again:
 					case _monster_is_stationary:
 					case _monster_is_moving:
-						handle_moving_or_stationary_monster(monster_index);
+						handle_moving_or_stationary_monster( monster_index );
 						break;
 					
 					case _monster_is_attacking_close:
 					case _monster_is_attacking_far:
-							if (monster->testAnimationFlags(_obj_keyframe_started))
+							if( monster->testAnimationFlags( _obj_keyframe_started ) )
 								execute_monster_attack(monster_index);
-							if (monster->testAnimationFlags(_obj_last_frame_animated))
+							if( monster->testAnimationFlags( _obj_last_frame_animated ) )
 							{
-								if (((monster->attack_repetitions-=1)<0) || !try_monster_attack(monster_index))
+								monster->attack_repetitions--;
+								if( monster->attack_repetitions < 0 || !try_monster_attack(monster_index) )
 								{
 									/* after an attack has been initiated successfully we need to return to
 									_monster_is_moving action, kill our path and ask for a new one
@@ -609,37 +616,37 @@ void move_monsters()
 									set_monster_action(monster_index,
 									(monster->attack_repetitions < 0 && monster->testDefinitionFlags(_monster_waits_with_clear_shot) && MONSTER_IS_LOCKED(monster)) ?
 									_monster_is_waiting_to_attack_again : _monster_is_moving);
-									monster_needs_path(monster_index, true);
+									monster_needs_path( monster_index, true );
 									monster->ticks_since_attack = 0;
 								}
 							}
 						break;
 					
 					case _monster_is_teleporting_in:
-						if( !monster->testAnimationFlags(_obj_last_frame_animated) )
+						if( !monster->testAnimationFlags( _obj_last_frame_animated ) )
 							break;
 						monster->setAction( _monster_is_moving );
 						set_monster_action(monster_index, _monster_is_moving);
 						change_monster_target(monster_index, find_closest_appropriate_target(monster_index, false));
 						break;
 					case _monster_is_teleporting_out:
-						if(!monster->testAnimationFlags(_obj_keyframe_started))
+						if( !monster->testAnimationFlags(_obj_keyframe_started) )
 							break;
 						
 						monster->setAction( _monster_is_dying_soft ); // to prevent aggressors from relocking
 						monster_died( monster_index );
-						teleport_object_out( monster->object_index );
-						remove_map_object( monster->object_index );
+						teleport_object_out( monster->getObjectIndex() );
+						remove_map_object( monster->getObjectIndex()  );
 						L_Invalidate_Monster( monster_index );
 						monster->markSlotAsFree();
 						break;
 					
 					case _monster_is_being_hit:
-						update_monster_physics_model(monster_index);
-						if(!monster->testAnimationFlags(_obj_last_frame_animated))
+						update_monster_physics_model( monster_index );
+						if( !monster->testAnimationFlags( _obj_last_frame_animated ) )
 							break;
-						monster_needs_path(monster_index, true);
-						set_monster_action(monster_index, _monster_is_moving);
+						monster_needs_path( monster_index, true );
+						set_monster_action( monster_index, _monster_is_moving );
 						monster->external_velocity = 0;
 						break;
 					
@@ -650,9 +657,10 @@ void move_monsters()
 						if(monster->testDefinitionFlags(_monster_has_delayed_hard_death) && monster->isDyingSoft() )
 						{
 							int16 contrail;
-							if (!monster->external_velocity && object->location.z == monster->desired_height)
+							if ( !monster->external_velocity && object->location.z == monster->desired_height )
 								set_monster_action(monster_index, _monster_is_dying_hard);
-							else if((contrail = monster-> getDefinition()->contrail_effect) != NONE) 
+								
+							else if(  !isNONE(contrail = monster->getDefinition()->contrail_effect) ) 
 								new_effect(&object->location, object->polygon, contrail, object->facing);
 							break;
 						}
@@ -660,10 +668,11 @@ void move_monsters()
 						// LP change: if keyframe is zero, then a monster should not produce shrapnel damage.
 						// This fixes a side effect of a fix of the keyframe-never-zero bug,
 						// which is that Hunters injure those nearby when they die a soft death.
-						if(monster->testAnimationFlags(_obj_keyframe_started) && (!film_profile.keyframe_fix || GET_SEQUENCE_FRAME(object->sequence) != 0))
-							cause_shrapnel_damage(monster_index);
-						if(monster->testAnimationFlags(_obj_last_frame_animated)) 
-							kill_monster(monster_index);
+						if( monster->testAnimationFlags( _obj_keyframe_started ) && (!film_profile.keyframe_fix || GET_SEQUENCE_FRAME(object->sequence) != 0))
+							cause_shrapnel_damage( monster_index );
+							
+						if( monster->testAnimationFlags( _obj_last_frame_animated ) ) 
+							kill_monster( monster_index );
 						break;
 					
 					default:
@@ -674,11 +683,13 @@ SkipBecauseObjectIsInvisible:
 			;
 		}
 		/* all inactive monsters get time to scan for targets */
-		else if(!monster_got_time && !monster->isBlind() && monster_index > dynamic_world->last_monster_index_to_get_time)
+		else if( !monster_got_time && !monster->isBlind() && monster_index > dynamic_world->last_monster_index_to_get_time)
 		{
-				change_monster_target(monster_index, find_closest_appropriate_target(monster_index, false));
-				if(monster->hasValidTarget()) 
-					activate_nearby_monsters(monster->getTarget(), monster_index, _pass_one_zone_border, MONSTER_ALERT_ACTIVATION_RANGE);
+				change_monster_target( monster_index, 
+							find_closest_appropriate_target( monster_index, false )
+							);
+				if( monster->hasValidTarget() ) 
+					activate_nearby_monsters( monster->getTarget(), monster_index, _pass_one_zone_border, MONSTER_ALERT_ACTIVATION_RANGE );
 				
 				monster_got_time = true;
 				dynamic_world->last_monster_index_to_get_time = monster_index;
@@ -727,9 +738,11 @@ SkipBecauseObjectIsInvisible:
 }
 
 
-/* when a monster dies, all monsters locked on it need to find something better to do; this
+/* 
+	when a monster dies, all monsters locked on it need to find something better to do; this
 	function should be called before the given target is expunged from the monster list but
-	after it is marked as dying */
+	after it is marked as dying 
+*/
 void monster_died(short target_index)
 {
 	monster_data *monster = get_monster_data(target_index);
@@ -738,8 +751,8 @@ void monster_died(short target_index)
 	/* orphan this monster's projectiles if they don't belong to a player (player's monster
 		slots are always valid and we want to correctly attribute damage and kills that ocurr
 		after a player dies) */
-	if(!monster->isPlayer()) 
-		orphan_projectiles(target_index);
+	if( !monster->isPlayer() ) 
+		orphan_projectiles( target_index );
 	
 	/* active monsters need extant paths deleted and should be marked as unlocked */
 	if( monster->isActive() )
@@ -747,10 +760,13 @@ void monster_died(short target_index)
 		set_monster_mode(target_index, _monster_unlocked, NONE);
 		monster->removePath();
 	}
-	if(	monster->hasInstanceDefinition()	)
-		monster_instances::delete_definition_instance(monster->instance_definition_index);
+	
+	/*	best place to do this	*/
+	if( monster->hasInstanceDefinition() )
+		monster_instances::delete_definition_instance( monster->instance_definition_index) ;
+		
 	/* anyone locked on this monster needs a clue */
-	foreach_monster(monster_index, monster)
+	foreach_monster( monster_index, monster )
 	{
 		if( !monster->slotIsUsed() || !monster->isActive() || !monster->isTarget( target_index ) )
 			continue;
@@ -766,7 +782,7 @@ void monster_died(short target_index)
 			
 		else 
 		{
-			if(	monster->isWaitingToAttackAgain()	) 
+			if( monster->isWaitingToAttackAgain() ) 
 				set_monster_action( monster_index, _monster_is_moving );
 			set_monster_mode( monster_index, _monster_unlocked, NONE );
 		}
@@ -827,14 +843,14 @@ void mark_monster_collections(short monster_type, bool loading)
 {
 	if( isNONE(monster_type) )
 		return;
-	monster_definition *definition = get_monster_definition(monster_type);
+	monster_definition *definition = get_monster_definition( monster_type );
 
 	/* mark the monster collection */
-	mark_collection(definition->collection, loading);
+	mark_collection( definition->collection, loading );
 	
 	/* mark the monster's projectile's collection */
-	mark_projectile_collections(definition->ranged_attack.type, loading);
-	mark_projectile_collections(definition->melee_attack.type, loading);
+	mark_projectile_collections( definition->ranged_attack.type, loading );
+	mark_projectile_collections( definition->melee_attack.type, loading );
 }
 
 enum
@@ -853,7 +869,7 @@ void activate_nearby_monsters(
     if( static_world->environment_flags & _environment_activation_ranges )
     {
 		if( max_range > 0 )
-			max_cost = SQUARE(max_range);
+			max_cost = SQUARE( max_range );
 		else if( flags & _activate_glue_monsters )
 			max_cost = GLUE_TRIGGER_ACTIVATION_RANGE * GLUE_TRIGGER_ACTIVATION_RANGE;
     }
@@ -861,8 +877,8 @@ void activate_nearby_monsters(
 	if (dynamic_world->tick_count-caller->ticks_since_last_activation > MINIMUM_ACTIVATION_SEPARATION ||
 		(flags&_activation_cannot_be_avoided))
 	{
-		auto polygon_index = get_object_data(caller->object_index)->polygon;
-		short need_target_indexes[MAXIMUM_NEED_TARGET_INDEXES];
+		auto polygon_index = get_object_data( caller->getObjectIndex() )->polygon;
+		short need_target_indexes[ MAXIMUM_NEED_TARGET_INDEXES ];
 		short need_target_count = 0;
 		int32 flood_flags = flags;
 		
@@ -894,9 +910,9 @@ void activate_nearby_monsters(
 						(!(flood_flags & _passed_zone_border) || !aggressor->hasNeverBeenActivated() ) &&
 						( flood_flags & _activate_deaf_monsters || !aggressor->isDeaf() && !aggressor->isLocked() ))
 					{
-						bool monster_was_active;
+						bool monster_was_active = aggressor->isActive();
 						/* activate the monster if he's inactive */
-						if(! ( monster_was_active = aggressor->isActive() ) )
+						if( !monster_was_active )
 							activate_monster(aggressor_index);
 
 						
@@ -910,11 +926,11 @@ void activate_nearby_monsters(
 									switch_target_check(aggressor_index, target_index, 0);
 								/* but hey, if the target isn't hostile, maybe the caller is ...
 										(mostly for the automated defenses and the civilians on the ship) */
-								else if (get_monster_attitude(aggressor_index, caller_index)==_hostile)
+								else if( get_monster_attitude(aggressor_index, caller_index) == _hostile )
 									switch_target_check(aggressor_index, caller_index, 0);
 							}
 							// must defer find_closest_appropriate_target; pathfinding is not reentrant
-							else if(need_target_count < MAXIMUM_NEED_TARGET_INDEXES)
+							else if( need_target_count < MAXIMUM_NEED_TARGET_INDEXES )
 								need_target_indexes[ need_target_count++ ] = aggressor_index;
 							
 						}
@@ -926,7 +942,7 @@ void activate_nearby_monsters(
 		}
 
 		// deferred find_closest_appropriate_target() calls
-		while(--need_target_count >= 0)
+		while( --need_target_count >= 0 )
 		{
 			change_monster_target(
 				need_target_indexes[ need_target_count ],
@@ -951,7 +967,7 @@ static int32 monster_activation_flood_proc(short source_polygon_index, short lin
 	if (destination_polygon->type == _polygon_is_zone_border)
 	{
 		if (((*flags)&_pass_one_zone_border) && !((*flags)&_passed_zone_border))
-			*flags|= _passed_zone_border;
+			*flags |= _passed_zone_border;
 		else
 			cost= -1; // can't pass this zone border
 	}
@@ -1044,7 +1060,7 @@ void activate_monster(short monster_index)
 	CLEAR_MONSTER_RECOVERING_FROM_HIT(monster);
 	
 	SET_MONSTER_IDLE_STATUS(monster, false);
-	SET_MONSTER_ACTIVE_STATUS(monster, true);
+	monster->setActiveStatus(true);
 	SET_MONSTER_BERSERK_STATUS(monster, false);
 	SET_MONSTER_HAS_BEEN_ACTIVATED(monster);
 	
@@ -1060,14 +1076,12 @@ void activate_monster(short monster_index)
 	if (!definition->attack_frequency) // IP: Avoid division by zero
 		definition->attack_frequency++;	 
 
-	monster->ticks_since_attack = 
-	definition->testFlags(_monster_attacks_immediately) 
-	?	definition->attack_frequency 
-	:	global_random() % definition->attack_frequency;
+	monster->ticks_since_attack = definition->testFlags(_monster_attacks_immediately) 
+			?	definition->attack_frequency :	global_random(definition->attack_frequency);
 	
 	monster->desired_height = object->location.z; /* best guess */
 	monster->random_desired_height = INT16_MAX; // to be out of range and recalculated
-	monster->external_velocity = monster->vertical_velocity= 0;	
+	monster->external_velocity = monster->vertical_velocity = 0;	
 	monster->ticks_since_last_activation = 0;
 	
 	/* 
@@ -1080,7 +1094,7 @@ void activate_monster(short monster_index)
 		
 		if( definition->testFlags( _monster_is_alien ) )
 		{
-			switch(dynamic_world->game_information.difficulty_level)
+			switch( dynamic_world->game_information.difficulty_level )
 			{
 				case _wuss_level: 
 					vitality -= vitality / 2; 
@@ -1130,7 +1144,7 @@ void deactivate_monster(short monster_index)
 	}
 
 	/* assume stationary shape before deactivation */
-	set_monster_action(monster_index, _monster_is_stationary);
+	set_monster_action( monster_index, _monster_is_stationary );
 	
 	/* get rid of this monster's path if he has one */
 	if( !isNONE( monster->getPath() ) )
@@ -1139,8 +1153,10 @@ void deactivate_monster(short monster_index)
 	monster->setActiveStatus(false);
 }
 
-/* returns a list of object indexes of all monsters in or adjacent to the given polygon,
-	up to maximum_object_count. */
+/* 
+	returns a list of object indexes of all monsters in or adjacent to the given polygon,
+	up to maximum_object_count. 
+*/
 // LP change: called with growable list
 bool possible_intersecting_monsters(vector<short> *IntersectedObjectsPtr, unsigned maximum_object_count, short polygon_index, bool include_scenery)
 {
@@ -1161,7 +1177,7 @@ bool possible_intersecting_monsters(vector<short> *IntersectedObjectsPtr, unsign
 	
 		auto object_index = neighboring_polygon->first_object;
 		
-		while(object_index!=NONE)
+		while( !isNONE(object_index) )
 		{
 			object_data *object = get_object_data(object_index);
 			bool solid_object = false;
@@ -1191,15 +1207,17 @@ bool possible_intersecting_monsters(vector<short> *IntersectedObjectsPtr, unsign
 					found_solid_object = true;
 					
 					// LP change:
-					if (IntersectedObjectsPtr && IntersectedObjectsPtr->size()<maximum_object_count) /* do we have enough space to add it? */
+					if (IntersectedObjectsPtr && IntersectedObjectsPtr->size() < maximum_object_count) /* do we have enough space to add it? */
 					{
-						unsigned j;
+						ix j;
 						
 						/* only add this object_index if it's not already in the list */
 						vector<short>& IntersectedObjects = *IntersectedObjectsPtr;
-						for (j=0; j<IntersectedObjects.size() && IntersectedObjects[j]!=object_index; ++j)
+						
+						for( j = 0; j < IntersectedObjects.size() && IntersectedObjects[j] != object_index; ++j )
 							;
-						if (j==IntersectedObjects.size())
+							
+						if( j == IntersectedObjects.size() )
 							IntersectedObjects.push_back(object_index);
 					}
 				}
@@ -1304,7 +1322,7 @@ short legal_player_move(short monster_index, world_point3d *new_location, world_
 	world_distance radius, height;
 	short obstacle_index = NONE;
 
-	get_monster_dimensions(monster_index, &radius, &height);	
+	get_monster_dimensions( monster_index, &radius, &height );	
 	
 	IntersectedObjects.clear();
 	possible_intersecting_monsters(&IntersectedObjects, LOCAL_INTERSECTING_MONSTER_BUFFER_SIZE, object->polygon, true);
@@ -1332,20 +1350,20 @@ short legal_player_move(short monster_index, world_point3d *new_location, world_
 		world_point3d *obstacle_location = &obstacle->location;
 
 		auto separation = radius + obstacle_radius;
-		auto separation_squared = SQUARE(separation);
+		auto separation_squared = SQUARE( separation );
 
 		auto new_dx = obstacle_location->x - new_location->x;
 		auto new_dy = obstacle_location->y - new_location->y;
-		auto new_distance_squared = SQUARE(new_dx) + SQUARE(new_dy);
+		auto new_distance_squared = SQUARE( new_dx ) + SQUARE( new_dy );
 		
 		if(new_distance_squared >= separation_squared)
 			continue;
 		
 		auto old_dx = obstacle_location->x - old_location->x;
 		auto old_dy = obstacle_location->y - old_location->y;
-		auto old_distance_squared = SQUARE(old_dx) + SQUARE(old_dy);
+		auto old_distance_squared = SQUARE( old_dx ) + SQUARE( old_dy );
 
-		if (old_distance_squared > new_distance_squared)
+		if( old_distance_squared > new_distance_squared )
 		{
 			auto this_object_floor = obstacle_location->z + obstacle_height;
 			
@@ -1356,7 +1374,7 @@ short legal_player_move(short monster_index, world_point3d *new_location, world_
 				continue; 
 			if( new_location->z > this_object_floor )
 			{
-				if ( this_object_floor > *object_floor) 
+				if( this_object_floor > *object_floor) 
 					*object_floor = this_object_floor;
 				continue;
 			}
@@ -1368,9 +1386,8 @@ short legal_player_move(short monster_index, world_point3d *new_location, world_
 }
 
 /* returns NONE or a monster_index that prevented us from moving */
-short legal_monster_move(
-	short monster_index,
-	angle facing, /* could be different than object->facing for players and Ôflying' (heh heh) monsters */
+short legal_monster_move(short monster_index,
+	angle facing, /* could be different than object->facing for players and flying (heh heh) monsters */
 	world_point3d *new_location)
 {
 	monster_data *monster 	= get_monster_data(monster_index);
@@ -2711,14 +2728,13 @@ static bool translate_monster(short monster_index, world_distance distance)
 	object_data *object = get_object_data(monster->object_index);
 	monster_definition *definition = monster->getDefinition();
 	world_point3d new_location;
-	short obstacle_index;
 	bool legal_move = false;
 
 	new_location = object->location;
 	translate_point2d((world_point2d *)&new_location, distance, object->facing);
-
+	auto obstacle_index = legal_monster_move(monster_index, object->facing, &new_location);
 	/* find out where we're going and see if we could actually move there */
-	if ((obstacle_index = legal_monster_move(monster_index, object->facing, &new_location))==NONE)
+	if( isNONE(obstacle_index) )
 	{
 		/* legal move: see if there is a platform that we have to open or wait for,
 			if not move, if so, wait */
@@ -2730,7 +2746,7 @@ static bool translate_monster(short monster_index, world_distance distance)
 		switch (find_obstructing_terrain_feature(monster_index, &feature_index, &relevant_polygon_index))
 		{
 			case _entering_platform_polygon:
-				switch (monster_can_enter_platform(feature_index, relevant_polygon_index, definition->height, definition->minimum_ledge_delta, definition->maximum_ledge_delta))
+				switch ( monster_can_enter_platform(feature_index, relevant_polygon_index, definition->height, definition->minimum_ledge_delta, definition->maximum_ledge_delta))
 				{
 					case _platform_will_never_be_accessable:
 						monster_needs_path(monster_index, true);
@@ -2738,7 +2754,8 @@ static bool translate_monster(short monster_index, world_distance distance)
 						
 					case _platform_will_be_accessable:
 						/* we avoid vidding the door by only trying to open it every door_retry_mask+1 ticks */
-						if (!(dynamic_world->tick_count&definition->door_retry_mask)) try_and_change_platform_state(feature_index, true);
+						if (!(dynamic_world->tick_count&definition->door_retry_mask)) 
+							try_and_change_platform_state(feature_index, true);
 						SET_MONSTER_IDLE_STATUS(monster, true);
 						legal_move = false;
 						break;
@@ -2793,24 +2810,24 @@ static bool translate_monster(short monster_index, world_distance distance)
 	}
 	else
 	{
-		object_data *obstacle_object= get_object_data(obstacle_index);
+		object_data *obstacle_object = get_object_data(obstacle_index);
 		
 		if (GET_OBJECT_OWNER(obstacle_object)==_object_is_monster)
 		{
-			monster_data *obstacle_monster= get_monster_data(obstacle_object->permutation);
+			monster_data *obstacle_monster = get_monster_data(obstacle_object->permutation);
 	
 			/* we collided with another monster: see if we want to attack him; if not, see if we
 				can attack his current target (if he is locked or losing_lock); if not, drop lock
 				and ask for a new path. */
 			
-			if (!mTYPE_IS_ENEMY(definition, obstacle_monster->type) && !( monster->hasValidTarget() && monster->isTarget(obstacle_object->permutation) ) &&
+			if(!mTYPE_IS_ENEMY(definition, obstacle_monster->type) && !( monster->hasValidTarget() && monster->isTarget(obstacle_object->permutation) ) &&
 				!MONSTER_IS_BERSERK(monster))
 			{
-				if (not obstacle_monster->isPlayer())
+				if( !obstacle_monster->isPlayer() )
 				{
-					if (not monster->isLocked())
+					if( !monster->isLocked() )
 					{
-						if (not obstacle_monster->hasValidTarget() || !switch_target_check(monster_index, obstacle_monster->getTarget(), 0))
+						if( !obstacle_monster->hasValidTarget() || !switch_target_check(monster_index, obstacle_monster->getTarget(), 0))
 						{
 							if (monster->isUnlocked() && !(global_random()&OBSTRUCTION_DEACTIVATION_MASK) &&
 								(monster->goal_polygon_index == NONE || monster->goal_polygon_index == object->polygon))
@@ -2818,15 +2835,17 @@ static bool translate_monster(short monster_index, world_distance distance)
 							else
 							{
 								monster_needs_path(monster_index, false);
-								/* if we're not locked, we might want to think about deactivating here, but
-								for now we just build a new random path by forcing our state to _unlocked. */
-								if( not monster->isLocked() )
-									set_monster_mode(monster_index, _monster_unlocked, NONE);
+								/* 
+									if we're not locked, we might want to think about deactivating here, but
+									for now we just build a new random path by forcing our state to _unlocked. 
+								*/
+								if( !monster->isLocked() )
+									set_monster_mode( monster_index, _monster_unlocked, NONE );
 							}
 						}
 					}
 					else
-						attempt_evasive_manouvers(monster_index);
+						attempt_evasive_manouvers( monster_index );
 				}
 	
 				SET_MONSTER_IDLE_STATUS(monster, true);
@@ -2834,12 +2853,12 @@ static bool translate_monster(short monster_index, world_distance distance)
 			else
 			{
 				monster_definition *obstacle_definition = obstacle_monster->getDefinition();
-				auto key_height = obstacle_object->location.z + ( obstacle_definition->height >> 1 );
+				auto key_height = obstacle_object->location.z + ( obstacle_definition->height / 2 );
 				
 				change_monster_target(monster_index, obstacle_object->permutation);
 				
 				/* if we're a kamakazi and we're within range, pop */
-				if(definition->testFlags(_monster_is_kamakazi) && object->location.z < key_height)
+				if( definition->testFlags( _monster_is_kamakazi ) && object->location.z < key_height)
 				{
 					bool in_range = object->location.z + definition->height > key_height;
 					
@@ -2855,12 +2874,12 @@ static bool translate_monster(short monster_index, world_distance distance)
 				}
 				
 				/* if we float and this is our target, go up */
-				if(definition->testFlags(_monster_floats))
+				if( definition->testFlags( _monster_floats ) )
 					monster->desired_height = obstacle_object->location.z;
 			}
 		}
 		else
-			attempt_evasive_manouvers(monster_index); // to avoid the scenery
+			attempt_evasive_manouvers( monster_index ); // to avoid the scenery
 	}
 	
 	return legal_move;
@@ -2907,8 +2926,11 @@ static bool attempt_evasive_manouvers(short monster_index)
 	if(successful)
 	{
 		object->facing = new_facing;
-		if(!monster->isPath(NONE)) 
-			delete_path(monster->path), monster->path = NONE;
+		if( !monster->isPath( NONE ) ) 
+		{
+			delete_path( monster->getPath() );
+			monster->setPath( NONE );
+		}
 		monster->path_segment_length = EVASIVE_MANOUVER_DISTANCE;
 	}
 	
@@ -2918,7 +2940,7 @@ static bool attempt_evasive_manouvers(short monster_index)
 void advance_monster_path(short monster_index)
 {
 	monster_data *monster = get_monster_data(monster_index);
-	object_data *object = get_object_data(monster->object_index);
+	object_data *object = get_object_data( monster->getObjectIndex() );
 	world_point2d path_goal;
 	bool done = true;
 
@@ -2938,7 +2960,7 @@ void advance_monster_path(short monster_index)
 	if ((done || monster->isPath(NONE) ) && monster->isLocked() )
 	{
 		monster_data *target = get_monster_data( monster->getTarget() );
-		object_data *target_object = get_object_data(target->object_index);
+		object_data *target_object = get_object_data( target->getObjectIndex() );
 		
 		if (object->polygon == target_object->polygon)
 		{
@@ -2950,8 +2972,8 @@ void advance_monster_path(short monster_index)
 	if (done)
 	{
 		/* ask for a new path (never happens to locked monsters) */
-		monster_needs_path(monster_index, false);
-		if (monster->mode==_monster_unlocked)
+		monster_needs_path( monster_index, false );
+		if( monster->isUnlocked() )
 		{
 			monster->goal_polygon_index = NONE;
 			if (MONSTER_TELEPORTS_OUT_WHEN_DEACTIVATED(monster)) 
@@ -2961,8 +2983,8 @@ void advance_monster_path(short monster_index)
 	else
 	{
 		/* point ourselves at this new point in the path */
-		object->facing= arctangent(path_goal.x-object->location.x, path_goal.y-object->location.y);
-		monster->path_segment_length= distance2d(&path_goal, (world_point2d *)&object->location);
+		object->facing = arctangent( path_goal.x-object->location.x, path_goal.y-object->location.y );
+		monster->path_segment_length = distance2d( &path_goal, (world_point2d *)&object->location );
 	}
 }
 
@@ -2980,14 +3002,19 @@ static bool try_monster_attack(short monster_index)
 
 	if( monster->hasValidTarget() )
 	{
-		object_data *target_object = get_object_data(get_monster_data(monster->getTarget())->object_index);
-		world_point3d origin = object->location, destination = target_object->location;
-		auto range = distance2d((world_point2d *)&origin, (world_point2d *)&destination);
+		object_data *target_object = get_object_data(
+			get_monster_data(monster->getTarget())->getObjectIndex()
+			);
+			
+		world_point3d origin = object->location;
+		world_point3d destination = target_object->location;
+		
+		auto range = distance2d( (world_point2d *)&origin, (world_point2d *)&destination );
 		short polygon_index;
 		world_point3d _vector;
 	
-		theta = arctangent(destination.x-origin.x, destination.y-origin.y);
-		auto delta_theta = NORMALIZE_ANGLE(theta-object->facing);
+		theta = arctangent(destination.x - origin.x, destination.y - origin.y);
+		auto delta_theta = NORMALIZE_ANGLE(theta - object->facing);
 		
 		if (!(definition->flags&_monster_cant_fire_backwards) || (delta_theta<QUARTER_CIRCLE+QUARTER_CIRCLE/2 || delta_theta>FULL_CIRCLE-QUARTER_CIRCLE-QUARTER_CIRCLE/2))
 		{
@@ -3037,7 +3064,7 @@ static bool try_monster_attack(short monster_index)
 					if ((obstruction_index!=NONE && get_monster_attitude(monster_index, obstruction_index)==_hostile) ||
 						!line_is_obstructed(object->polygon, (world_point2d *) &object->location, target_object->polygon, (world_point2d *) &target_object->location))
 					{
-						repetitions= definition->melee_attack.repetitions;
+						repetitions = definition->melee_attack.repetitions;
 					}
 				}
 			}
@@ -3063,20 +3090,24 @@ static bool try_monster_attack(short monster_index)
 		}
 	}
 	
-	if (repetitions!=NONE)
+	if (repetitions != NONE)
 	{
 		/* we can attack; set monster facing, start the attack action and reset ticks_since_attack */
-		object->facing= theta;
-		if (monster->action!=new_action) /* if we're already attacking, this is a chained attack */
+		object->facing = theta;
+		if( monster->getAction() != new_action ) /* if we're already attacking, this is a chained attack */
 		{
 			switch (dynamic_world->game_information.difficulty_level)
 			{
-				case _wuss_level: case _easy_level: repetitions>>= 1;
-				case _normal_level: repetitions= (repetitions<=1) ? repetitions : repetitions-1; break;
+				case _wuss_level: 
+				case _easy_level: 
+					repetitions /= 2;
+				case _normal_level: 
+					repetitions = repetitions <= 1 ? repetitions : repetitions - 1; 
+					break;
 			}
 			
-			set_monster_action(monster_index, new_action);
-			monster->attack_repetitions= repetitions;
+			set_monster_action( monster_index, new_action );
+			monster->attack_repetitions = repetitions;
 		}
 		
 		/* on the highest level, hitting a monster in the middle of an attack doesn't really
@@ -3165,14 +3196,19 @@ int32 monster_pathfinding_cost_function(short source_polygon_index, short line_i
 	if (source_polygon->area<MINIMUM_MONSTER_PATHFINDING_POLYGON_AREA) cost= -1;
 
 	// do platform stuff	
-	if (cost>0)
+	if (cost > 0)
 	{
-		if (destination_polygon->type==_polygon_is_platform)
+		if (destination_polygon->type == _polygon_is_platform)
 		{
 			switch (monster_can_enter_platform(destination_polygon->permutation, source_polygon_index, definition->height, definition->minimum_ledge_delta, definition->maximum_ledge_delta))
 			{
-				case _platform_will_never_be_accessable: cost= -1; break;
-				default: cost+= MONSTER_PATHFINDING_PLATFORM_COST; respect_polygon_heights= false; break;
+				case _platform_will_never_be_accessable: 
+					cost= -1; 
+					break;
+				default: 
+					cost += MONSTER_PATHFINDING_PLATFORM_COST; 
+					respect_polygon_heights = false; 
+					break;
 			}
             
             // don't move into flooded platforms
@@ -3182,12 +3218,16 @@ int32 monster_pathfinding_cost_function(short source_polygon_index, short line_i
                 (find_flooding_polygon(destination_polygon_index) != NONE))
                 cost= -1;
 		}
-		if (source_polygon->type==_polygon_is_platform)
+		if (source_polygon->type == _polygon_is_platform)
 		{
 			switch (monster_can_leave_platform(source_polygon->permutation, destination_polygon_index, definition->height, definition->minimum_ledge_delta, definition->maximum_ledge_delta))
 			{
-				case _exit_will_never_be_accessable: cost= -1; break;
-				default: respect_polygon_heights= false; break;
+				case _exit_will_never_be_accessable: 
+					cost = -1; 
+					break;
+				default: 
+					respect_polygon_heights = false; 
+					break;
 			}
 		}
 	}
@@ -3195,18 +3235,22 @@ int32 monster_pathfinding_cost_function(short source_polygon_index, short line_i
 	/* if the ledge between polygons is too high, the fall is too far, or there just
 		isn't enough vertical space, disallow the move (and ignore this if we're dealing with
 		platforms or doors) */
-	if (respect_polygon_heights)
+	if( respect_polygon_heights )
 	{
-		world_distance delta_height= destination_polygon->floor_height-source_polygon->floor_height;
+		auto delta_height = destination_polygon->floor_height - source_polygon->floor_height;
 		
-		if (delta_height<definition->minimum_ledge_delta||delta_height>definition->maximum_ledge_delta) cost= -1;
-		if (line->lowest_adjacent_ceiling-line->highest_adjacent_floor<definition->height) cost= -1;
+		if( delta_height < definition->minimum_ledge_delta || delta_height>definition->maximum_ledge_delta ) 
+			cost = -1;
+		if( line->lowest_adjacent_ceiling - line->highest_adjacent_floor < definition->height ) 
+			cost = -1;
 		
-		if (cost>0) cost+= delta_height*delta_height; /* prefer not to change heights */
+		if( cost > 0 ) 
+			cost += SQUARE( delta_height ); /* prefer not to change heights */
 	}
 	
 	/* if this line not wide enough, disallow the move */
-	if (line->length<2*definition->radius) cost= -1;
+	if( line->length < 2 * definition->radius ) 
+		cost = -1;
 
 	if (cost>0)
 	{
@@ -3234,9 +3278,9 @@ int32 monster_pathfinding_cost_function(short source_polygon_index, short line_i
 	if (cost>0)
 	{
 		/* if we're trying to move into media, pay the penalty */
-		if (destination_polygon->media_index!=NONE)
+		if (destination_polygon->media_index != NONE)
 		{
-			media_data *media= get_media_data(destination_polygon->media_index);
+			media_data *media = get_media_data(destination_polygon->media_index);
 			
 			// LP change: idiot-proofed this
 			if (media)
@@ -3255,16 +3299,16 @@ int32 monster_pathfinding_cost_function(short source_polygon_index, short line_i
 	platforms.  relevant_polygon_index is the polygon_index we have to pass to platform_is_accessable */
 static short find_obstructing_terrain_feature(short monster_index, short *feature_index, short *relevant_polygon_index)
 {
-	monster_data *monster = get_monster_data(monster_index);
-	monster_definition *definition = monster->getDefinition();
-	object_data *object = get_object_data(monster->object_index);
+	monster_data *monster 		= get_monster_data(monster_index);
+	monster_definition *definition 	= monster->getDefinition();
+	object_data *object 		= get_object_data( monster->getObjectIndex() );
 	short polygon_index, feature_type;
 	world_point2d p1;
 
 	ray_to_line_segment((world_point2d *)&object->location, &p1, object->facing, MONSTER_PLATFORM_BUFFER_DISTANCE+definition->radius);
 	
 	feature_type = NONE;
-	*relevant_polygon_index= polygon_index= object->polygon;
+	*relevant_polygon_index = polygon_index = object->polygon;
 	do
 	{
 		polygon_data *polygon= get_polygon_data(polygon_index);
@@ -3275,23 +3319,25 @@ static short find_obstructing_terrain_feature(short monster_index, short *featur
 			case _polygon_is_platform:
 				if (object->polygon == polygon_index)
 				{
-					/* we're standing on the platform: find out where we're headed (if we're
-						going nowhere then pretend like everything is o.k.) */
+					/* 
+						we're standing on the platform: find out where we're headed (if we're
+						going nowhere then pretend like everything is o.k.) 
+					*/
 
 					polygon_index = line_index == NONE ? NONE : find_adjacent_polygon(polygon_index, line_index);
 					if (polygon_index != NONE)
 					{
-						*relevant_polygon_index= polygon_index;
-						*feature_index= polygon->permutation;
-						feature_type= _leaving_platform_polygon;
-						assert(*feature_index!=NONE);
+						*relevant_polygon_index = polygon_index;
+						*feature_index = polygon->permutation;
+						feature_type = _leaving_platform_polygon;
+						assert(*feature_index != NONE);
 					}
 				}
 				else
 				{
-					feature_type= _entering_platform_polygon;
-					*feature_index= polygon->permutation;
-					assert(*feature_index!=NONE);
+					feature_type = _entering_platform_polygon;
+					*feature_index = polygon->permutation;
+					assert(*feature_index != NONE);
 				}
 				break;
 			
@@ -3303,7 +3349,7 @@ static short find_obstructing_terrain_feature(short monster_index, short *featur
 					feature_type= _flying_or_floating_transition;
 					*feature_index= 0;
 				}
-				if (definition->flags&_monster_flys)
+				if( definition->testFlags(_monster_flys) )
 				{
 					if ((polygon->floor_height>monster->desired_height) ||
 						(polygon->ceiling_height<monster->desired_height+definition->height))
@@ -3314,50 +3360,64 @@ static short find_obstructing_terrain_feature(short monster_index, short *featur
 						*feature_index= 0;
 					}
 					
-					if (object->location.z<polygon->floor_height || object->location.z+definition->height>polygon->ceiling_height)
+					if( object->location.z < polygon->floor_height || object->location.z + definition->height > polygon->ceiling_height )
 					{
-						feature_type= _flying_or_floating_transition;
-						*feature_index= 0;
+						feature_type = _flying_or_floating_transition;
+						*feature_index = 0;
 					}
 				}
-				if (definition->flags&_monster_uses_sniper_ledges)
+				if( definition->testFlags(_monster_uses_sniper_ledges) )
 				{
-					if ((polygon->floor_height+MINIMUM_SNIPER_ELEVATION<monster->desired_height) &&
-						monster->mode==_monster_locked)
-					{
+					if (polygon->floor_height + MINIMUM_SNIPER_ELEVATION < monster->desired_height && monster->isLocked() )
 						feature_type= _standing_on_sniper_ledge;
-					}
 				}
-				if (!(definition->flags&(_monster_floats|_monster_flys)) && polygon->media_index!=NONE)
+				if (!definition->testFlags( _monster_floats | _monster_flys ) && !isNONE(polygon->media_index) )
 				{
-					media_data *media= get_media_data(polygon->media_index);
+					media_data *media = get_media_data( polygon->media_index );
 					// Monster will normally wade to half-height
-					world_distance height= definition->height>>1;
+					auto height = definition->height / 2;
 					// LP change: idiot-proofing
 					if (media)
 					{
 						// In dangerous media, wade only to zero height (that is, don't wade at all)
-						if (IsMediaDangerous(media->type)) height= 0;
+						if( IsMediaDangerous(media->type) ) 
+							height = 0;
 						
 						switch (media->type)
 						{
-							case _media_water: if (definition->flags&_monster_is_not_afraid_of_water) media= (media_data *) NULL; break;
+							case _media_water: 
+								if( definition->testFlags(_monster_is_not_afraid_of_water) )
+									media = nullptr; 
+								break;
+								
 							case _media_jjaro: // LP addition: monsters treat Jjaro goo like sewage
-							case _media_sewage: if (definition->flags&_monster_is_not_afraid_of_sewage) media= (media_data *) NULL; break;
-							case _media_lava: /* height= 0; */ if (definition->flags&_monster_is_not_afraid_of_lava) media= (media_data *) NULL; break;
-							case _media_goo: /* height= 0; */ if (definition->flags&_monster_is_not_afraid_of_goo) media= (media_data *) NULL; break;
+							case _media_sewage: 
+								if( definition->testFlags(_monster_is_not_afraid_of_sewage) )
+									media = nullptr; 
+								break;
+								
+							case _media_lava: /* height= 0; */ 
+								if( definition->testFlags(_monster_is_not_afraid_of_lava) )
+									media = nullptr; 
+								break;
+								
+							case _media_goo: /* height= 0; */ 
+								if( definition->testFlags(_monster_is_not_afraid_of_goo) )
+									media = nullptr;
+								break;
 						}
 					}
-					if (media && media->height-polygon->floor_height>height)
+					if( media && media->height - polygon->floor_height > height )
 					{
-						if (get_polygon_data(object->polygon)->floor_height>polygon->floor_height)
+						if( get_polygon_data(object->polygon)->floor_height > polygon->floor_height )
 						{
-							feature_type= _standing_on_sniper_ledge;
-							if (monster->mode!=_monster_locked) monster_needs_path(monster_index, false);
+							feature_type = _standing_on_sniper_ledge;
+							if ( !monster->isLocked() ) 
+								monster_needs_path( monster_index, false );
 						}
 					}
 				}
-				polygon_index= line_index==NONE ? NONE : find_adjacent_polygon(polygon_index, line_index);
+				polygon_index = isNONE(line_index) ? NONE : find_adjacent_polygon(polygon_index, line_index);
 				break;
 		}
 		
@@ -3378,8 +3438,10 @@ static short find_obstructing_terrain_feature(short monster_index, short *featur
 	return feature_type;
 }
 
-/* returns new polygon index; if destination is NULL then we fire along the monster's facing
-	and elevation, if destination is not NULL then we set it correctly and save the elevation angle */
+/* 
+	returns new polygon index; if destination is NULL then we fire along the monster's facing
+	and elevation, if destination is not NULL then we set it correctly and save the elevation angle 
+*/
 static short position_monster_projectile(
 	short aggressor_index,
 	short target_index,
@@ -3415,14 +3477,14 @@ static short position_monster_projectile(
 		_vector->y = destination->y - origin->y;
 		_vector->z = destination->z - origin->z;
 		
-		distance = isqrt( SQUARE(_vector->x) + SQUARE(_vector->y) );
+		distance = isqrt( SQUARE( _vector->x ) + SQUARE( _vector->y ) );
 		aggressor->elevation = distance ? (_vector->z * TRIG_MAGNITUDE) / distance : 0;
 	}
 	else
 	{
-		_vector->x= cosine_table[theta];
-		_vector->y= sine_table[theta];
-		_vector->z= aggressor->elevation;
+		_vector->x = cosine_table[ theta ];
+		_vector->y = sine_table[ theta ];
+		_vector->z = aggressor->elevation;
 	}
 	
 	/* return polygon_index of the new origin point */
@@ -3432,7 +3494,7 @@ static short position_monster_projectile(
 
 short nearest_goal_polygon_index(short polygon_index)
 {
-	polygon_index = flood_map(polygon_index, INT32_MAX, nearest_goal_cost_function, _breadth_first, nullptr);
+	polygon_index = flood_map( polygon_index, INT32_MAX, nearest_goal_cost_function, _breadth_first, nullptr );
 	
 	while( !isNONE(polygon_index) )
 	{
@@ -3441,7 +3503,7 @@ short nearest_goal_polygon_index(short polygon_index)
 		if (polygon->type == _polygon_is_goal) 
 			break;
 
-		polygon_index = flood_map(NONE, INT32_MAX, nearest_goal_cost_function, _breadth_first, nullptr);
+		polygon_index = flood_map( NONE, INT32_MAX, nearest_goal_cost_function, _breadth_first, nullptr );
 	}
 	
 	return polygon_index;
@@ -3456,7 +3518,7 @@ static int32 nearest_goal_cost_function(short source_polygon_index, short line_i
 	(void) (source_polygon_index);
 	(void) (line_index);
 
-	if (destination_polygon->type == _polygon_is_zone_border) 
+	if( destination_polygon->type == _polygon_is_zone_border ) 
 		cost = -1;
 	
 	return cost;
