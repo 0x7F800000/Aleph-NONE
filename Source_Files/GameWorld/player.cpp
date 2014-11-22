@@ -1,5 +1,5 @@
 /*
-PLAYER.C
+PLAYER.CPP
 
 	Copyright (C) 1991-2001 and beyond by Bungie Studios, Inc.
 	and the "Aleph One" developers.
@@ -397,86 +397,88 @@ player_data *get_player_data(const size_t player_index)
 void allocate_player_memory()
 {
 	/* allocate space for all our players */
-	players= new player_data[MAXIMUM_NUMBER_OF_PLAYERS];
-	assert(players);
+	players = new player_data[ MAXIMUM_NUMBER_OF_PLAYERS ];
+	assert( players );
 	sRealActionQueues = new ActionQueues(MAXIMUM_NUMBER_OF_PLAYERS, ACTION_QUEUE_BUFFER_DIAMETER, false);
 }
 
 /* returns player index */
 short new_player(short team, short color, short identifier)
 {
-	short player_index, loop;
-	struct player_data *player;
-
 	/* find a free slot */
-	player_index= dynamic_world->player_count;
-	assert(player_index<MAXIMUM_NUMBER_OF_PLAYERS);
+	auto player_index = dynamic_world->player_count;
+	assert( player_index < MAXIMUM_NUMBER_OF_PLAYERS );
+	
 	dynamic_world->player_count++;
-	player = get_player_data(player_index);
+	player_data *player = get_player_data(player_index);
 
 	/* and initialize it */
 	obj_clear(*player);
-	player->teleporting_destination= NO_TELEPORTATION_DESTINATION;
-	player->interface_flags= 0; // Doesn't matter-> give_player_initial_items will take care of it.
+	player->teleporting_destination = NO_TELEPORTATION_DESTINATION;
+	player->interface_flags = 0; // Doesn't matter-> give_player_initial_items will take care of it.
 	// LP change: using variables for these
-	player->suit_energy= player_settings.InitialEnergy;
-	player->suit_oxygen= player_settings.InitialOxygen;
-	player->color= color;
-	player->team= team;
-	player->flags= 0;
+	player->suit_energy = player_settings.InitialEnergy;
+	player->suit_oxygen = player_settings.InitialOxygen;
+	player->color = color;
+	player->team = team;
+	player->flags = 0;
 	
-	player->invincibility_duration= 0;
-	player->invisibility_duration= 0;
-	player->infravision_duration= 0;
-	player->extravision_duration= 0;
-	player->identifier= player_identifier_value(identifier);
+	player->invincibility_duration = 0;
+	player->invisibility_duration = 0;
+	player->infravision_duration = 0;
+	player->extravision_duration = 0;
+	player->identifier = player_identifier_value( identifier );
 
 	SET_PLAYER_DOESNT_AUTO_RECENTER_STATUS(player, player_identifier_doesnt_auto_recenter(identifier));
 	SET_PLAYER_DOESNT_AUTO_SWITCH_WEAPONS_STATUS(player, player_identifier_doesnt_auto_switch_weapons(identifier));
 	
 	/* initialize inventory */	
-	for (loop=0;loop<NUMBER_OF_ITEMS;++loop) player->items[loop]= NONE;
+	for( ix loop = 0; loop < NUMBER_OF_ITEMS; ++loop ) 
+		player->items[loop] = NONE;
 
 	/* create the player.. */
-	recreate_player(player_index);
+	recreate_player( player_index );
 
 	/* Mark the player's inventory as dirty */
-	mark_player_inventory_as_dirty(player_index, NONE);
-	initialize_player_weapons(player_index);
+	mark_player_inventory_as_dirty( player_index, NONE );
+	initialize_player_weapons( player_index );
 	
 	/* give the player his initial items */
-	give_player_initial_items(player_index);
-	try_and_strip_player_items(player_index);
+	give_player_initial_items( player_index );
+	try_and_strip_player_items( player_index );
 	
 	return player_index;
 }
 
 void walk_player_list()
 {
-	struct player_data *player;
-	short player_index= current_player_index;
+	player_data *player;
+	auto player_index = current_player_index;
 	
-	/* find the next player in the list we can look at and switch to them */
+	/* 
+		find the next player in the list we can look at and switch to them 
+	*/
 	do
 	{
-		if ((player_index+= 1)>=dynamic_world->player_count) player_index= 0;
-		player= get_player_data(player_index);
+		if( ++player_index >= dynamic_world->player_count ) 
+			player_index = 0;
+		player = get_player_data( player_index );
 	}
-	while (!(GET_GAME_OPTIONS()&_overhead_map_is_omniscient) && local_player->team!=player->team);
+	while(!( GET_GAME_OPTIONS() & _overhead_map_is_omniscient) && local_player->team != player->team);
 	
-	if (current_player_index!=player_index)
+	if( current_player_index != player_index )
 	{
-		set_current_player_index(player_index);
-		update_interface(NONE);
-		dirty_terminal_view(player_index); /* In case they are in terminal mode.. */
+		set_current_player_index( player_index );
+		update_interface( NONE );
+		dirty_terminal_view( player_index ); /* In case they are in terminal mode.. */
 	}
 }
 
 
 // ZZZ: need to reset other queues now besides just the RealActionQueues
 // This doesn't necessarily belong in this file, but I wasn't sure quite where to put it.
-static void
-reset_other_queues() {
+static void reset_other_queues() 
+{
 	// Not sure if we want to do this (not my code), put here as a reminder
 	//GetPfhortranActionQueues->reset();
 	
@@ -485,27 +487,24 @@ reset_other_queues() {
 
 void initialize_players()
 {
-	ix i;
-	
+
 	/* no players */
 	dynamic_world->player_count = 0;
 	
 	/* reset the action flag queues and zero the player slots */
-	for (i=0;i<MAXIMUM_NUMBER_OF_PLAYERS;++i)
-	{
-		obj_clear(players[i]);
-	}
+	for( ix i = 0; i < MAXIMUM_NUMBER_OF_PLAYERS; ++i )
+		obj_clear( players[ i ] );
 
 	sRealActionQueues->reset();
 	reset_other_queues();
 
-	for (i = 0; i < NUMBER_OF_TEAM_COLORS; i++) 
+	for( ix i = 0; i < NUMBER_OF_TEAM_COLORS; i++ ) 
 	{
-	  obj_clear(team_damage_given[i]);
-	  obj_clear(team_damage_taken[i]);
-	  obj_clear(team_monster_damage_taken[i]);
-	  obj_clear(team_monster_damage_given[i]);
-	  obj_clear(team_friendly_fire[i]);
+		obj_clear( team_damage_given[ i ] );
+		obj_clear( team_damage_taken[ i ] );
+		obj_clear( team_monster_damage_taken[ i ] );
+		obj_clear( team_monster_damage_given[ i ] );
+		obj_clear( team_friendly_fire[ i ] );
 	}
 }
 
@@ -515,8 +514,7 @@ void initialize_players()
  */
 /* The above comment is stale.  Now loading map calls this and so does new_game. Calling this */
 /*  from entering map would bone us. */
-static void
-reset_player_queues()
+static void reset_player_queues()
 {
 	sRealActionQueues->reset();
 	reset_recording_and_playback_queues();
@@ -541,15 +539,15 @@ reset_action_queues()
 // Note this mechanism is not very careful; should not be used for _important_ decisions.
 static int  sLocalPlayerTicksSinceTerminal = 1 * TICKS_PER_MINUTE;
 
-int
-get_ticks_since_local_player_in_terminal() {
+int get_ticks_since_local_player_in_terminal() 
+{
     return sLocalPlayerTicksSinceTerminal;
 }
 
 bool m1_solo_player_in_terminal()
 {
-	return (static_world->environment_flags & _environment_terminals_stop_time)
-		&& (dynamic_world->player_count == 1) 
+	return static_world->environment_flags & _environment_terminals_stop_time
+		&& dynamic_world->player_count == 1
 		&& player_in_terminal_mode(local_player_index);
 }
 
@@ -563,14 +561,14 @@ void update_m1_solo_player_in_terminal(ActionQueues* inActionQueuesToUse)
 /* assumes ¶t==1 tick */
 void update_players(ActionQueues* inActionQueuesToUse, bool inPredictive)
 {
-	struct player_data *player;
+	player_data *player;
 	short player_index;
 
-	if(!inPredictive)
+	if( !inPredictive )
 	{
 		// ZZZ: update ticks-since-terminal stuff
 		sLocalPlayerTicksSinceTerminal++;
-		if(player_in_terminal_mode(local_player_index))
+		if( player_in_terminal_mode( local_player_index ) )
 			sLocalPlayerTicksSinceTerminal = 0;
 	}
 	
@@ -748,30 +746,26 @@ void update_players(ActionQueues* inActionQueuesToUse, bool inPredictive)
 
 
 
-void damage_player(
-	short monster_index,
-	short aggressor_index,
-	short aggressor_type,
-	struct damage_definition *damage,
-	short projectile_index)
+void damage_player(short monster_index, short aggressor_index, short aggressor_type,
+	struct damage_definition *damage, short projectile_index)
 {
-	short player_index= monster_index_to_player_index(monster_index);
-	short aggressor_player_index= NONE; /* will be valid if the aggressor is a player */
-	struct player_data *player= get_player_data(player_index);
-	short damage_amount= calculate_damage(damage);
-	short damage_type= damage->type;
-	struct damage_response_definition *definition;
+	auto player_index = monster_index_to_player_index( monster_index );
+	
+	short aggressor_player_index = NONE; /* will be valid if the aggressor is a player */
+	player_data *player = get_player_data( player_index );
+	
+	auto damage_amount = calculate_damage( damage );
+	auto damage_type = damage->type;
+	damage_response_definition *definition;
 
 	(void) (aggressor_type);
 	
 	// LP change: made this more general
-	if (player->invincibility_duration && damage->type!=player_settings.Vulnerability)
-	{
-		damage_type= _damage_absorbed;
-	}
+	if (player->invincibility_duration && damage->type != player_settings.Vulnerability)
+		damage_type = _damage_absorbed;
 
 	{
-		unsigned i;
+		ix i;
 		
 		for (i=0,definition=damage_response_definitions;
 				definition->type!=damage_type && i<NUMBER_OF_DAMAGE_RESPONSE_DEFINITIONS;
@@ -885,32 +879,33 @@ void damage_player(
 	}
 	
 	{
-		if (!PLAYER_IS_DEAD(player)) play_object_sound(player->object_index, definition->sound);
+		if (!PLAYER_IS_DEAD(player)) 
+			play_object_sound(player->object_index, definition->sound);
 		if (player_index==current_player_index)
 		{
-			if (definition->fade!=NONE) start_fade((definition->damage_threshhold!=NONE&&damage_amount>definition->damage_threshhold) ? (definition->fade+1) : definition->fade);
-			if (damage_amount) mark_shield_display_as_dirty();
+			if (definition->fade!=NONE) 
+				start_fade((definition->damage_threshhold!=NONE&&damage_amount>definition->damage_threshhold) ? (definition->fade+1) : definition->fade);
+			if (damage_amount) 
+				mark_shield_display_as_dirty();
 		}
 	}
 
 	if(player_in_terminal_mode(player_index))
-	{
 		abort_terminal_mode(player_index);
-	}
 }
 
 short player_identifier_to_player_index(short player_identifier)
 {
-	player_data *player;
 	ix player_index;
-	
-	for (player_index=0;player_index<dynamic_world->player_count;++player_index)
+	for(player_index = 0; player_index < dynamic_world->player_count;++player_index)
 	{
-		player= get_player_data(player_index);
+		const player_data* player = get_player_data(player_index);
 		
-		if (player->identifier==player_identifier) break;
+		if( player->identifier == player_identifier ) 
+			break;
 	}
-	assert(player_index!=dynamic_world->player_count);
+	
+	assert( player_index != dynamic_world->player_count );
 	
 	return player_index;
 }
@@ -920,8 +915,9 @@ void mark_player_collections(bool loading)
 	mark_collection(player_shapes.collection, loading);
 	// LP change: unload player shapes for single-player game only if
 	// a chase cam cannot exist;
-	if (!ChaseCam_CanExist())
-		if (dynamic_world->player_count==1&&loading) strip_collection(player_shapes.collection);
+	if( !ChaseCam_CanExist() )
+		if( dynamic_world->player_count == 1 && loading ) 
+			strip_collection( player_shapes.collection );
 
 	mark_weapon_collections(loading);
 	mark_item_collections(loading);
@@ -935,172 +931,177 @@ player_shape_definitions* get_player_shape_definitions()
 
 void set_local_player_index(short player_index)
 {
-	local_player_index= player_index;
-	local_player= get_player_data(player_index);
+	local_player_index = player_index;
+	local_player = get_player_data( player_index );
 }
 
 void set_current_player_index(short player_index)
 {
-	current_player_index= player_index;
-	current_player= get_player_data(player_index);
+	current_player_index = player_index;
+	current_player = get_player_data( player_index );
 }
 
 /* We just teleported in as it were-> recreate all the players..  */
 void recreate_players_for_new_level()
 {
 	/* Recreate all of the players for the new level.. */	
-	for(ix player_index = 0; player_index < dynamic_world->player_count; ++player_index)
-		recreate_player(player_index);
+	for( ix player_index = 0; player_index < dynamic_world->player_count; ++player_index )
+		recreate_player( player_index );
 }
 
-void team_damage_from_player_data(void)
+void team_damage_from_player_data()
 {
-	for (ix player_index = 0; player_index < dynamic_world->player_count; player_index++) 
+	for( ix player_index = 0; player_index < dynamic_world->player_count; player_index++ ) 
 	{
-		player_data *player = get_player_data(player_index);
+		const player_data *player = get_player_data( player_index );
+		auto team = player->team;
 		
-		team_damage_given[player->team].damage 		+= player->total_damage_given.damage;
-		team_damage_given[player->team].kills 		+= player->total_damage_given.kills;
-		team_monster_damage_given[player->team].damage 	+= player->monster_damage_given.damage;
-		team_monster_damage_given[player->team].kills 	+= player->monster_damage_given.kills;
-		team_monster_damage_taken[player->team].damage 	+= player->monster_damage_taken.damage;
-		team_monster_damage_taken[player->team].kills 	+= player->monster_damage_taken.kills; 
+		team_damage_given[ team ].damage 	 += player->total_damage_given.damage;
+		team_damage_given[ team ].kills 	 += player->total_damage_given.kills;
+		team_monster_damage_given[ team ].damage += player->monster_damage_given.damage;
+		team_monster_damage_given[ team ].kills  += player->monster_damage_given.kills;
+		team_monster_damage_taken[ team ].damage += player->monster_damage_taken.damage;
+		team_monster_damage_taken[ team ].kills  += player->monster_damage_taken.kills; 
 		
-		for (ix opponent_index = 0; opponent_index < dynamic_world->player_count; opponent_index++) 
+		for( ix opponent_index = 0; opponent_index < dynamic_world->player_count; opponent_index++ ) 
 		{
-			player_data *opponent = get_player_data(player_index);
-			team_damage_taken[player->team].damage 	+= player->damage_taken[opponent_index].damage;
-			team_damage_taken[player->team].kills 	+= player->damage_taken[opponent_index].kills;
+			const player_data *opponent = get_player_data( player_index );
+			team_damage_taken[ team ].damage 	+= player->damage_taken[ opponent_index ].damage;
+			team_damage_taken[ team ].kills 	+= player->damage_taken[ opponent_index ].kills;
 			
-			if (player->team == opponent->team) 
+			if( team == opponent->team ) 
 			{
-				team_friendly_fire[player->team].damage	+= player->damage_taken[opponent_index].damage;
-				team_friendly_fire[player->team].kills	+= player->damage_taken[opponent_index].kills;
+				team_friendly_fire[ team ].damage += player->damage_taken[ opponent_index ].damage;
+				team_friendly_fire[ team ].kills  += player->damage_taken[ opponent_index ].kills;
 			}
 			
 		}
 	}
 }   
 
-short monster_index_to_player_index(
-	short monster_index)
+short monster_index_to_player_index(short monster_index)
 {
-	struct player_data *player;
-	short player_index;
-	
-	for (player_index=0;player_index<dynamic_world->player_count;++player_index)
+	ix player_index;
+	for( player_index = 0; player_index < dynamic_world->player_count; ++player_index )
 	{
-		player= get_player_data(player_index);
-		if (player->monster_index==monster_index) break;
+		const player_data* player = get_player_data( player_index );
+		if( player->monster_index == monster_index ) 
+			break;
 	}
-	assert(player_index!=dynamic_world->player_count);
+	assert( player_index != dynamic_world->player_count );
 	
 	return player_index;
 }
 
-short get_polygon_index_supporting_player(
-	short monster_index)
+short get_polygon_index_supporting_player(short monster_index)
 {
-	short player_index= monster_index_to_player_index(monster_index);
-	struct player_data *player= get_player_data(player_index);
+	auto player_index = monster_index_to_player_index( monster_index );
+	const player_data *player = get_player_data( player_index );
 	
 	return player->supporting_polygon_index;
 }
 
 bool legal_player_powerup(short player_index, short item_index)
 {
-	player_data *player = get_player_data(player_index);
+	player_data *player = get_player_data( player_index );
 	bool legal = true;
 
-	if (item_index == player_powerups.Powerup_Invincibility)
+	if( item_index == player_powerups.Powerup_Invincibility )
 	{
-		if (player->invincibility_duration) 
+		if( player->invincibility_duration ) 
 			legal = false;
 	}
-	else if (item_index == player_powerups.Powerup_Invisibility)
+	else if( item_index == player_powerups.Powerup_Invisibility )
 	{
-		if (player->invisibility_duration>kINVISIBILITY_DURATION) legal= false;
+		if( player->invisibility_duration > kINVISIBILITY_DURATION ) 
+			legal = false;
 	}
-	else if (item_index == player_powerups.Powerup_Infravision)
+	else if( item_index == player_powerups.Powerup_Infravision )
 	{
-		if (player->infravision_duration) legal= false;
+		if( player->infravision_duration ) 
+			legal = false;
 	}
-	else if (item_index == player_powerups.Powerup_Extravision)
+	else if( item_index == player_powerups.Powerup_Extravision )
 	{
-		if (player->extravision_duration) legal= false;
+		if( player->extravision_duration ) 
+			legal= false;
 	}
-	else if (item_index == player_powerups.Powerup_TripleEnergy)
+	else if( item_index == player_powerups.Powerup_TripleEnergy )
 	{
-		if (player->suit_energy>=player_settings.TripleEnergy) legal = false;
+		if( player->suit_energy >= player_settings.TripleEnergy ) 
+			legal = false;
 	}
-	else if (item_index == player_powerups.Powerup_DoubleEnergy)
+	else if( item_index == player_powerups.Powerup_DoubleEnergy )
 	{
-		if (player->suit_energy>=player_settings.DoubleEnergy) legal = false;
+		if(player->suit_energy >= player_settings.DoubleEnergy ) 
+			legal = false;
 	}
-	else if (item_index == player_powerups.Powerup_Energy)
+	else if( item_index == player_powerups.Powerup_Energy )
 	{
-		if (player->suit_energy>=player_settings.SingleEnergy) legal = false;
+		if( player->suit_energy >= player_settings.SingleEnergy ) 
+			legal = false;
 	}
-	else if (item_index == player_powerups.Powerup_Oxygen)
+	else if( item_index == player_powerups.Powerup_Oxygen )
 	{
 		if (player->suit_oxygen >= 5 * PLAYER_MAXIMUM_SUIT_OXYGEN / 6) 
 			legal = false;
 	}
-
 	return legal;
 }
 
-void process_player_powerup(
-	short player_index,
-	short item_index)
+void process_player_powerup(short player_index, short item_index)
 {
-	struct player_data *player= get_player_data(player_index);
+	player_data *player = get_player_data( player_index );
 	
-	if (item_index == player_powerups.Powerup_Invincibility)
+	if( item_index == player_powerups.Powerup_Invincibility )
+		player->invincibility_duration += kINVINCIBILITY_DURATION;
+		
+	else if( item_index == player_powerups.Powerup_Invisibility )
+		player->invisibility_duration += kINVISIBILITY_DURATION;
+		
+	else if( item_index == player_powerups.Powerup_Infravision )
+		player->infravision_duration += kINFRAVISION_DURATION;
+		
+	else if( item_index == player_powerups.Powerup_Extravision )
 	{
-		player->invincibility_duration+= kINVINCIBILITY_DURATION;
+		if( player_index == current_player_index ) 
+			start_extravision_effect( true );
+		player->extravision_duration += kEXTRAVISION_DURATION;
 	}
-	else if (item_index == player_powerups.Powerup_Invisibility)
+	else if( item_index == player_powerups.Powerup_TripleEnergy )
 	{
-		player->invisibility_duration+= kINVISIBILITY_DURATION;
-	}
-	else if (item_index == player_powerups.Powerup_Infravision)
-	{
-		player->infravision_duration+= kINFRAVISION_DURATION;
-	}
-	else if (item_index == player_powerups.Powerup_Extravision)
-	{
-		if (player_index==current_player_index) start_extravision_effect(true);
-		player->extravision_duration+= kEXTRAVISION_DURATION;
-	}
-	else if (item_index == player_powerups.Powerup_TripleEnergy)
-	{
-		if (player->suit_energy<player_settings.TripleEnergy)
+		if( player->suit_energy < player_settings.TripleEnergy )
 		{
-			player->suit_energy= player_settings.TripleEnergy;
-			if (player_index==current_player_index) mark_shield_display_as_dirty();
+			player->suit_energy = player_settings.TripleEnergy;
+			if( player_index == current_player_index ) 
+				mark_shield_display_as_dirty();
 		}
 	}
-	else if (item_index == player_powerups.Powerup_DoubleEnergy)
+	else if( item_index == player_powerups.Powerup_DoubleEnergy )
 	{
-		if (player->suit_energy<player_settings.DoubleEnergy)
+		if( player->suit_energy < player_settings.DoubleEnergy )
 		{
-			player->suit_energy= player_settings.DoubleEnergy;
-			if (player_index==current_player_index) mark_shield_display_as_dirty();
+			player->suit_energy = player_settings.DoubleEnergy;
+			if( player_index == current_player_index ) 
+				mark_shield_display_as_dirty();
 		}
 	}
-	else if (item_index == player_powerups.Powerup_Energy)
+	else if( item_index == player_powerups.Powerup_Energy )
 	{
-		if (player->suit_energy<player_settings.SingleEnergy)
+		if( player->suit_energy < player_settings.SingleEnergy )
 		{
-			player->suit_energy= player_settings.SingleEnergy;
-			if (player_index==current_player_index) mark_shield_display_as_dirty();
+			player->suit_energy = player_settings.SingleEnergy;
+			if( player_index == current_player_index ) 
+				mark_shield_display_as_dirty();
 		}
 	}
-	else if (item_index == player_powerups.Powerup_Oxygen)
+	else if( item_index == player_powerups.Powerup_Oxygen )
 	{
-		player->suit_oxygen= CEILING(player->suit_oxygen+PLAYER_MAXIMUM_SUIT_OXYGEN/2, PLAYER_MAXIMUM_SUIT_OXYGEN);
-		if (player_index==current_player_index) mark_oxygen_display_as_dirty();
+		player->suit_oxygen = 
+		CEILING( player->suit_oxygen + PLAYER_MAXIMUM_SUIT_OXYGEN / 2, 
+			PLAYER_MAXIMUM_SUIT_OXYGEN );
+		if( player_index == current_player_index ) 
+			mark_oxygen_display_as_dirty();
 	}
 }
 
@@ -1108,13 +1109,14 @@ world_distance dead_player_minimum_polygon_height(short polygon_index)
 {
 	ix player_index;
 	player_data *player;
-	world_distance minimum_height= 0;
+	auto minimum_height = 0;
 	
-	for (player_index= 0, player= players; player_index<dynamic_world->player_count; ++player_index, ++player)
+	for (player_index = 0, player= players; player_index<dynamic_world->player_count; ++player_index, ++player)
 	{
-		if (polygon_index==player->camera_polygon_index)
+		if (polygon_index == player->camera_polygon_index)
 		{
-			if (PLAYER_IS_DEAD(player)) minimum_height= DEAD_PLAYER_HEIGHT;
+			if (PLAYER_IS_DEAD(player)) 
+				minimum_height = DEAD_PLAYER_HEIGHT;
 			break;
 		}
 	}
@@ -1124,18 +1126,19 @@ world_distance dead_player_minimum_polygon_height(short polygon_index)
 
 bool try_and_subtract_player_item(short player_index, short item_type)
 {
-	player_data *player = get_player_data(player_index);
+	player_data *player = get_player_data( player_index );
 	bool found_one = false;
 
-	assert(item_type>=0 && item_type<NUMBER_OF_ITEMS);
-	if (player->items[item_type]>=0)
-	{
-		if(!(player->items[item_type] -= 1) ) 
-			player->items[item_type] = NONE;
-		mark_player_inventory_as_dirty(player_index, item_type);
-		found_one= true;
-	}
+	assert( item_type >= 0 && item_type < NUMBER_OF_ITEMS );
 	
+	if( player->items[item_type] >= 0 )
+	{
+		if( !--player->items[ item_type ] ) 
+			player->items[ item_type ] = NONE;
+			
+		mark_player_inventory_as_dirty( player_index, item_type );
+		found_one = true;
+	}
 	return found_one;
 }
 
@@ -1144,9 +1147,9 @@ bool try_and_subtract_player_item(short player_index, short item_type)
 // LP change: assumes nonpositive change rate
 static void handle_player_in_vacuum(short player_index, uint32 action_flags)
 {
-	player_data *player= get_player_data(player_index);
+	player_data *player = get_player_data(player_index);
 
-	if (player->suit_oxygen <= 0)
+	if( player->suit_oxygen <= 0 )
 		return;
 	
 	// lolbungie
@@ -1159,9 +1162,11 @@ static void handle_player_in_vacuum(short player_index, uint32 action_flags)
 	switch (dynamic_world->game_information.difficulty_level)
 	{
 		case _total_carnage_level:
-			if (action_flags&_run_dont_walk) oxygenChange+= player_settings.OxygenChange;
+			if (action_flags&_run_dont_walk) 
+				oxygenChange += player_settings.OxygenChange;
 		case _major_damage_level:
-			if (action_flags&(_left_trigger_state|_right_trigger_state)) oxygenChange+= player_settings.OxygenChange;
+			if (action_flags&(_left_trigger_state|_right_trigger_state)) 
+				oxygenChange += player_settings.OxygenChange;
 			break;
 	}
 	
@@ -1194,7 +1199,7 @@ static void ReplenishPlayerOxygen(short player_index, uint32 action_flags)
 {
 	(void)(action_flags);
 	
-	player_data *player= get_player_data(player_index);
+	player_data *player = get_player_data(player_index);
 	
 	// Be careful to avoid short-integer wraparound
 	assert(player_settings.OxygenChange >= 0);
@@ -1209,19 +1214,19 @@ static void ReplenishPlayerOxygen(short player_index, uint32 action_flags)
 
 static void update_player_teleport(short player_index)
 {
-	struct player_data *player= get_player_data(player_index);
-	struct monster_data *monster= get_monster_data(player->monster_index);
-	struct object_data *object= get_object_data(monster->object_index);
-	struct polygon_data *polygon= get_polygon_data(object->polygon);
-	bool player_was_interlevel_teleporting= false;
+	player_data *player 	= get_player_data( player_index );
+	monster_data *monster	= get_monster_data( player->monster_index );
+	object_data *object	= get_object_data( monster->object_index );
+	polygon_data *polygon	= get_polygon_data( object->polygon );
+	
+	bool player_was_interlevel_teleporting = false;
 	
 	/* This is the players that are carried across the teleport unwillingly.. */
 	if(PLAYER_IS_INTERLEVEL_TELEPORTING(player))
 	{
 		player_was_interlevel_teleporting= true;
 		
-		player->interlevel_teleport_phase+= 1;
-		switch(player->interlevel_teleport_phase)
+		switch(++player->interlevel_teleport_phase)
 		{
 			case PLAYER_TELEPORTING_DURATION:
 				monster->action= _monster_is_moving;
@@ -1455,9 +1460,7 @@ static void update_player_media(short player_index)
 	}
 }
 
-static void set_player_shapes(
-	short player_index,
-	bool animate)
+static void set_player_shapes(short player_index, bool animate)
 {
 	struct player_data *player= get_player_data(player_index);
 	struct monster_data *monster= get_monster_data(player->monster_index);
