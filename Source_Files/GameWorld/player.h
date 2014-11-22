@@ -365,11 +365,14 @@ struct player_data
 	int16 get_player_index();
 	_fixed get_forward_velocity_scale();
 	
-	struct monster_data* get_player_monster();
-	struct monster_definition* get_player_monster_definition();
+	struct monster_data* 		get_player_monster();
+	struct monster_definition* 	get_player_monster_definition();
 	
 	bool isTeleporting();
 	bool isInterlevelTeleporting();
+	
+	inline auto getIdentifier()	{	return identifier;	}
+	inline void setIdentifier(auto ni)	{	identifier = ni;	}
 	
 	
 	int16 identifier;
