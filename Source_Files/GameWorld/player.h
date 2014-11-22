@@ -408,7 +408,7 @@ struct player_data
 	__accessordecl(MonsterIndex, int16, monster_index)
 	__accessordecl(ObjectIndex, int16, object_index)
 	
-	__accessordecl(WeaponIntensityDecay, int16, weapon_instensity_decay)
+	__accessordecl(WeaponIntensityDecay, int16, weapon_intensity_decay)
 	
 	__accessordecl(WeaponIntensity, _fixed, weapon_intensity)
 	
