@@ -359,6 +359,8 @@ struct damage_record
 
 struct player_data
 {
+	private static struct player_data* PlayerData;
+	
 	void accelerate(world_distance vertical_velocity, angle direction, world_distance velocity);
 	void get_transfer_mode(int16* transfer_mode, int16* transfer_period);
 	void give_initial_items();
@@ -372,7 +374,7 @@ struct player_data
 	bool isInterlevelTeleporting();
 	
 	inline auto getIdentifier()	{	return identifier;	}
-	inline void setIdentifier(decltype(identifier) ni)	{	identifier = ni;	}
+	inline void setIdentifier(decltype(PlayerData->identifier) ni)	{	identifier = ni;	}
 	
 	
 	int16 identifier;
@@ -458,6 +460,8 @@ struct player_shape_definitions
 	short charging_torsos[PLAYER_TORSO_SHAPE_COUNT]; /* NONE, ..., double pistols */
 	short firing_torsos[PLAYER_TORSO_SHAPE_COUNT]; /* NONE, ..., double pistols */
 };
+
+struct player_data* player_data::PlayerData = nullptr;
 
 // ghs: added these for Lua
 
