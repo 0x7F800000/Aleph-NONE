@@ -373,7 +373,8 @@ struct damage_record
 
 struct player_data
 {
-
+	static struct player_data& Get(const ix index);
+	
 	void accelerate(world_distance vertical_velocity, angle direction, world_distance velocity);
 	void get_transfer_mode(int16* transfer_mode, int16* transfer_period);
 	void give_initial_items();
