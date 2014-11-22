@@ -460,7 +460,7 @@ short new_monster(struct object_location *location, short monster_type)
 		m.object_index = object_index;
 		m.flags = flags;
 		m.exflags = 0;
-		m.death_special = _ds_NONE;
+		m.death_special = DeathSpecial_t::_ds_NONE;
 		m.instance_definition_index = NONE;
 		m.goal_polygon_index = m.activation_bias == _activate_on_goal ?
 			nearest_goal_polygon_index(location->polygon_index) : NONE;
