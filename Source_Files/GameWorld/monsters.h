@@ -329,6 +329,10 @@ public:
 	
 	struct object_data* getObject();
 	
+	
+	void onDeath();
+	
+	
 	uint32 testDefinitionFlags(uint32 flagtest);
 	uint16 testObjectFlags(uint16 flagtest);
 	uint16 testAnimationFlags(uint16 flagtest);
