@@ -746,7 +746,7 @@ void monster_data::onDeath()
 {
 	if( death_special == DeathSpecial_t::_ds_NONE )
 		return;
-	switch(death_special):
+	switch(death_special)
 	{
 		case DeathSpecial_t::_ds_damage_monster:
 			if(!isNONE( _damage_monster_id ) )
