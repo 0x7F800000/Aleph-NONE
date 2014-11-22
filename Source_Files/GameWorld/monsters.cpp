@@ -460,6 +460,7 @@ short new_monster(struct object_location *location, short monster_type)
 		m.object_index = object_index;
 		m.flags = flags;
 		m.exflags = 0;
+		m.death_special = _ds_NONE;
 		m.instance_definition_index = NONE;
 		m.goal_polygon_index = m.activation_bias == _activate_on_goal ?
 			nearest_goal_polygon_index(location->polygon_index) : NONE;
@@ -743,6 +744,40 @@ SkipBecauseObjectIsInvisible:
 	--dynamic_world->civilians_killed_by_players;
 }
 
+void monster_data::onDeath()
+{
+	if( death_special == _ds_NONE )
+		return;
+	switch(death_special):
+	{
+		case _ds_damage_monster:
+			if(!isNONE( _damage_monster_id ) )
+				cause_shrapnel_damage(_damage_monster_id); //lameee
+			break;
+		case _ds_heal_monster:
+			if( isNONE( _heal_monster_id ) )
+				break;
+				
+			monster_data& heal_target = MonsterList[_heal_monster_id];
+			
+			if( !heal_target.slotIsUsed() || heal_target.isDying() || heal_target.isPlayer() )
+				break;
+			heal_target.setVitality( heal_target.getVitality() + _heal_monster_amount);
+			break;
+		case _ds_set_monster_speed:
+			if( isNONE( _hasten_monster_id ) )
+				break;
+			
+			monster_data& hasten_target = MonsterList[_hasten_monster_id];
+			
+			if( !hasten_target.slotIsUsed() || hasten_target.isDying() || hasten_target.isPlayer() )
+				break;
+			hasten_target.getDefinition().speed += _hasten_monster_value;
+			break;
+		default:
+			assert(false);
+	}
+}
 
 /* 
 	when a monster dies, all monsters locked on it need to find something better to do; this
@@ -767,10 +802,13 @@ void monster_died(short target_index)
 		monster->removePath();
 	}
 	
+	/*	handle death special	*/
+	monster->onDeath();
+	
 	/*	best place to do this	*/
 	if( monster->hasInstanceDefinition() )
 		monster_instances::delete_definition_instance( monster->instance_definition_index) ;
-		
+	
 	/* anyone locked on this monster needs a clue */
 	foreach_monster( monster_index, monster )
 	{
