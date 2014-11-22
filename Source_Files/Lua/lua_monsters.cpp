@@ -1195,7 +1195,7 @@ int Lua_Monster_Set_Special(lua_State *L)
 		return 1;
 	}
 	
-	switch(special):
+	switch(special)
 	{
 		case DeathSpecial_t::_ds_damage_monster:
 			if( !lua_isnumber(L, 3) )
