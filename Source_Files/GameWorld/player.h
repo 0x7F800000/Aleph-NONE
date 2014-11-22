@@ -372,7 +372,7 @@ struct player_data
 	bool isTeleporting();
 	bool isInterlevelTeleporting();
 	
-	inline auto getIdentifier()	{	return identifier;	}
+	inline int16 getIdentifier()	{	return identifier;	}
 	inline void setIdentifier(int16 ni)	{	identifier = ni;	}
 	
 	
