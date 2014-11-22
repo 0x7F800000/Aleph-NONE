@@ -726,4 +726,10 @@
 {"_weapon_flamethrower", _weapon_flamethrower},
 {"_weapon_missile_launcher", _weapon_missile_launcher},
 {"_weapon_alien_shotgun", _weapon_alien_shotgun},
-{"_weapon_ball", _weapon_ball}
+{"_weapon_ball", _weapon_ball},
+
+//death specials
+{"_ds_damage_monster", 0},
+{"_ds_heal_monster", 1},
+{"_ds_set_monster_speed", 2},
+{"_ds_NONE", -1}
