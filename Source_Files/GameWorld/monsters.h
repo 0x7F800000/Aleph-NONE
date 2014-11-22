@@ -235,7 +235,17 @@ enum /* monster modes */
 #define		EXFLAGTEST(gettername, settername, chkflag)		inline bool gettername()	{	return exflags & chkflag;	}	\
 	inline void settername(bool set)	{	exflags = (set) ? exflags | chkflag : exflags & (~chkflag);	}
 
-
+enum class DeathSpecial_t : int8
+{
+	_ds_damage_monster,
+	_ds_heal_monster,
+	_ds_set_monster_speed,
+	_ds_raise_platform,
+	_ds_lower_platform,
+	_ds_new_map_object2d,
+	_ds_new_map_object3d,
+	_ds_NONE = -1
+};
 
 struct monster_data 
 {
@@ -360,6 +370,9 @@ public:
 	/*	AM	-	had to make this change. sorry. also changed number of unused shorts to 5 to compensate*/
 	int16 instance_definition_index;
 	int16 exflags;
+	
+	DeathSpecial_t death_special;
+	int8 padding;
 	int16 unused[5];
 };
 const int SIZEOF_monster_data = 64;
