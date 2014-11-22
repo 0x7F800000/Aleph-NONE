@@ -746,6 +746,7 @@ void monster_data::onDeath()
 {
 	if( death_special == DeathSpecial_t::_ds_NONE )
 		return;
+	monster_data& target;
 	switch(death_special)
 	{
 		case DeathSpecial_t::_ds_damage_monster:
@@ -756,21 +757,21 @@ void monster_data::onDeath()
 			if( isNONE( _heal_monster_id ) )
 				break;
 				
-			monster_data& heal_target = MonsterList[_heal_monster_id];
+			target = MonsterList[_heal_monster_id];
 			
-			if( !heal_target.slotIsUsed() || heal_target.isDying() || heal_target.isPlayer() )
+			if( !target.slotIsUsed() || target.isDying() || target.isPlayer() )
 				break;
-			heal_target.setVitality( heal_target.getVitality() + _heal_monster_amount);
+			target.setVitality( target.getVitality() + _heal_monster_amount);
 			break;
 		case DeathSpecial_t::_ds_set_monster_speed:
 			if( isNONE( _hasten_monster_id ) )
 				break;
 			
-			monster_data& hasten_target = MonsterList[_hasten_monster_id];
+			target = MonsterList[_hasten_monster_id];
 			
-			if( !hasten_target.slotIsUsed() || hasten_target.isDying() || hasten_target.isPlayer() )
+			if( !target.slotIsUsed() || target.isDying() || target.isPlayer() )
 				break;
-			hasten_target.getDefinition().speed += _hasten_monster_value;
+			target.getDefinition()->speed += _hasten_monster_value;
 			break;
 		default:
 			assert(false);
