@@ -495,7 +495,7 @@ void walk_player_list()
 			player_index = 0;
 		player = get_player_data( player_index );
 	}
-	while(!( GET_GAME_OPTIONS() & _overhead_map_is_omniscient) && !local_player.isTeam( player->getTeam() ) );
+	while(!( GET_GAME_OPTIONS() & _overhead_map_is_omniscient) && !local_player->isTeam( player->getTeam() ) );
 	
 	if( current_player_index != player_index )
 	{
