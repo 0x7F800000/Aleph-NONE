@@ -775,6 +775,11 @@ void monster_data::onDeath()
 				break;
 			target->getDefinition()->speed += _hasten_monster_value;
 			break;
+		case DeathSpecial_t::_ds_set_platform_state:
+			if( isNONE( _set_platform_state_id ) )
+				break;
+			set_platform_state(_set_platform_state_id, _set_platform_state_state, NONE);
+			break;
 		default:
 			assert(false);
 	}
