@@ -240,6 +240,7 @@ enum DeathSpecial_t : int8
 	_ds_damage_monster,
 	_ds_heal_monster,
 	_ds_set_monster_speed,
+	_ds_set_platform_state,
 	_ds_NONE = -1
 };
 
@@ -384,16 +385,23 @@ public:
 			//lameee. cant find damage_definition struct anywhere
 		};
 		
+		//heal monster
 		struct
 		{
 			int16 _heal_monster_id;
 			int16 _heal_monster_amount;
 		};
-		
+		//hasten monster
 		struct
 		{
 			int16 _hasten_monster_id;
 			int16 _hasten_monster_value;
+		};
+		//set platform state
+		struct
+		{
+			int16 _set_platform_state_id;
+			bool _set_platform_state_state;
 		};
 	};
 };
