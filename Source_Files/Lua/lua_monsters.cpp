@@ -1177,13 +1177,73 @@ const luaL_Reg Lua_Monster_Set[] = {
 	{0, 0}
 };
 
+int Lua_Monster_Set_Special(lua_State *L)
+{
+	if( !lua_isnumber(L, 1) || !lua_isnumber(L, 2) )
+		return luaL_error(L, "set_special: incorrect argument type");
+	
+	
+	monster_data& monster = *get_monster_data( Lua_Monster::Index(L, 1) );
+	
+	if( !monster.slotIsUsed() )
+		return luaL_error(L, "set_special: invalid monster index");
+	int special = static_cast<int>( lua_tonumber(L, 2) );
+	
+	if(special == -1)	//clearing the special
+	{
+		monster.death_special = _ds_NONE;
+		return 1;
+	}
+	
+	switch(special):
+	{
+		case DeathSpecial_t::_ds_damage_monster:
+			if( !lua_isnumber(L, 3) )
+				return luaL_error(L, "set_special: invalid arguments for special _ds_damage_monster");
+			
+			monster.death_special = DeathSpecial_t::_ds_damage_monster;
+			monster._damage_monster_id = static_cast< int >( lua_tonumber(L, 3) );
+			
+			break;
+		case DeathSpecial_t::_ds_heal_monster:
+			if( !lua_isnumber(L, 3) || !lua_isnumber(L, 4) )
+				return luaL_error(L, "set_special: invalid arguments for special _ds_heal_monster");
+			
+			monster.death_special = DeathSpecial_t::_ds_heal_monster;
+			
+			monster._heal_monster_id = static_cast<int>( lua_tonumber(L, 3) );
+			monster._heal_monster_amount = static_cast<int>( lua_tonumber(L, 4) );
+			
+			break;
+		case DeathSpecial_t::_ds_set_monster_speed:
+			if( !lua_isnumber(L, 3) || !lua_isnumber(L, 4) )
+				return luaL_error(L, "set_special: invalid arguments for special _ds_set_monster_speed");
+			
+			monster.death_special = DeathSpecial_t::_ds_set_monster_speed;
+			
+			monster._hasten_monster_id = static_cast<int>( lua_tonumber(L, 3) );
+			monster._hasten_monster_value = static_cast<int>( lua_tonumber(L, 4) );
+			
+			break;
+		default:
+			return luaL_error(L, "set_special: invalid death special provided");
+	}
+	return 1;
+}
+
+const luaL_Reg Lua_Monster_Methods[] =
+{
+	{"set_special", Lua_Monster_Set_Special},
+	{0,0}
+};
+
 char Lua_Monsters_Name[] = "Monsters";
 
 // Monsters.new(x, y, height, polygon, type)
 int Lua_Monsters_New(lua_State *L)
 {
 	if (!lua_isnumber(L, 1) || !lua_isnumber(L, 2) || !lua_isnumber(L, 3))
-		luaL_error(L, "new: incorrect argument type");
+		return luaL_error(L, "new: incorrect argument type");
 
 	int polygon_index = 0;
 	if (lua_isnumber(L, 4))
@@ -1256,7 +1316,7 @@ int Lua_Monsters_register(lua_State *L)
 	Lua_MonsterTypes::Register(L);
 	Lua_MonsterTypes::Length = Lua_MonsterTypes::ConstantLength(NUMBER_OF_MONSTER_TYPES);
 
-	Lua_Monster::Register(L, Lua_Monster_Get, Lua_Monster_Set);
+	Lua_Monster::Register(L, Lua_Monster_Get, Lua_Monster_Set, Lua_Monster_Methods);
 	Lua_Monster::Valid = Lua_Monster_Valid;
 
 	Lua_Monsters::Register(L, Lua_Monsters_Methods);
