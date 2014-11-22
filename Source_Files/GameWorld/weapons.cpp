@@ -1,5 +1,5 @@
 /*
-	weapons.c
+	WEAPONS.CPP
 
 	Copyright (C) 1991-2001 and beyond by Bungie Studios, Inc.
 	and the "Aleph One" developers.
