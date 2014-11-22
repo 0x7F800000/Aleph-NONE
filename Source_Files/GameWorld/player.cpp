@@ -240,19 +240,36 @@ struct player_powerup_definition
 
 /* ---------- globals */
 
-struct player_data *players;
-struct damage_record team_damage_given[NUMBER_OF_TEAM_COLORS];
-struct damage_record team_damage_taken[NUMBER_OF_TEAM_COLORS];
-struct damage_record team_monster_damage_taken[NUMBER_OF_TEAM_COLORS];
-struct damage_record team_monster_damage_given[NUMBER_OF_TEAM_COLORS];
-struct damage_record team_friendly_fire[NUMBER_OF_TEAM_COLORS];
+player_data *players;
+damage_record team_damage_given[NUMBER_OF_TEAM_COLORS];
+damage_record team_damage_taken[NUMBER_OF_TEAM_COLORS];
+damage_record team_monster_damage_taken[NUMBER_OF_TEAM_COLORS];
+damage_record team_monster_damage_given[NUMBER_OF_TEAM_COLORS];
+damage_record team_friendly_fire[NUMBER_OF_TEAM_COLORS];
 
-struct player_data *local_player, *current_player;
-short local_player_index, current_player_index;
+short local_player_index;
+player_data *local_player;
+
+short current_player_index;
+player_data *current_player;
+
+struct player_data& player_data::getLocal()
+{
+	return *local_player;
+}
+
+struct player_data& player_data::getCurrent()
+{
+	return *current_player;	
+}
 
 // ZZZ: Let folks ask for a pointer to the main set of ActionQueues.
 static ActionQueues*   sRealActionQueues = nullptr;
-ActionQueues* GetRealActionQueues() { return sRealActionQueues; }
+
+ActionQueues* GetRealActionQueues() 
+{ 
+	return sRealActionQueues; 
+}
 
 static struct player_shape_definitions player_shapes=
 {
@@ -326,7 +343,8 @@ static struct damage_response_definition damage_response_definitions[]=
 #define NO_TELEPORTATION_DESTINATION INT16_MAX
 
 // These are all configureable with MML.
-struct player_settings_definition player_settings = {
+struct player_settings_definition player_settings = 
+{
 	PLAYER_MAXIMUM_SUIT_ENERGY,    // InitialEnergy
 	PLAYER_MAXIMUM_SUIT_OXYGEN,    // InitialOxygen
 	PLAYER_MAXIMUM_SUIT_ENERGY/4,  // StrippedEnergy
@@ -347,7 +365,8 @@ struct player_settings_definition player_settings = {
 };
 
 // LP: the various powerup item ID's are changeable, but set to appropriate defaults here
-struct player_powerup_definition player_powerups = {
+struct player_powerup_definition player_powerups = 
+{
 	_i_invincibility_powerup,
 	_i_invisibility_powerup,
 	_i_infravision_powerup,
@@ -465,6 +484,8 @@ void walk_player_list()
 	player_data *player;
 	auto player_index = current_player_index;
 	
+	player_data& localPlayer = player_data::getLocal();
+	
 	/* 
 		find the next player in the list we can look at and switch to them 
 	*/
@@ -474,7 +495,7 @@ void walk_player_list()
 			player_index = 0;
 		player = get_player_data( player_index );
 	}
-	while(!( GET_GAME_OPTIONS() & _overhead_map_is_omniscient) && local_player->team != player->team);
+	while(!( GET_GAME_OPTIONS() & _overhead_map_is_omniscient) && !local_player.isTeam( player->getTeam() ) );
 	
 	if( current_player_index != player_index )
 	{
@@ -551,7 +572,7 @@ static int  sLocalPlayerTicksSinceTerminal = 1 * TICKS_PER_MINUTE;
 
 int get_ticks_since_local_player_in_terminal() 
 {
-    return sLocalPlayerTicksSinceTerminal;
+	return sLocalPlayerTicksSinceTerminal;
 }
 
 bool m1_solo_player_in_terminal()
@@ -563,8 +584,10 @@ bool m1_solo_player_in_terminal()
 
 void update_m1_solo_player_in_terminal(ActionQueues* inActionQueuesToUse)
 {
-	update_player_keys_for_terminal(local_player_index, inActionQueuesToUse->dequeueActionFlags(local_player_index));
-	update_player_for_terminal_mode(local_player_index);
+	update_player_keys_for_terminal(	local_player_index, 
+					inActionQueuesToUse->dequeueActionFlags(local_player_index)
+	);
+	update_player_for_terminal_mode( local_player_index );
 	sLocalPlayerTicksSinceTerminal = 0;
 }
 
@@ -582,14 +605,14 @@ void update_players(ActionQueues* inActionQueuesToUse, bool inPredictive)
 			sLocalPlayerTicksSinceTerminal = 0;
 	}
 	
-	for (player_index= 0, player= players; player_index<dynamic_world->player_count; ++player_index, ++player)
+	for( player_index = 0, player= players; player_index<dynamic_world->player_count; ++player_index, ++player)
 	{
-		uint32 action_flags = inActionQueuesToUse->dequeueActionFlags(player_index);
+		auto action_flags = inActionQueuesToUse->dequeueActionFlags( player_index );
 
 		if (action_flags == 0xffffffff)
 		{
 			// net dead
-			if(!player->netdead && !inPredictive)
+			if(!player->isNetdead() && !inPredictive)
 			{
 				if (!PLAYER_IS_DEAD(player))
 				{
@@ -599,23 +622,24 @@ void update_players(ActionQueues* inActionQueuesToUse, bool inPredictive)
 				}
 
 				screen_printf("%s has become disconnected", player->name);
-				player->netdead = true;
+				player->setNetdead( true );
 			}
 
-			action_flags= 0;
+			action_flags = 0;
 		}
 
-		if (PLAYER_IS_TELEPORTING(player)) action_flags= 0;
+		if( PLAYER_IS_TELEPORTING( player ) ) 
+			action_flags = 0;
 		
 		/* Deal with the terminal mode crap. */
-		if (player_in_terminal_mode(player_index))
+		if( player_in_terminal_mode( player_index ) )
 		{
-			if(!inPredictive)
+			if( !inPredictive )
 			{
 				update_player_keys_for_terminal(player_index, action_flags);
 				update_player_for_terminal_mode(player_index);
 			}
-			action_flags= 0;
+			action_flags = 0;
 		}
 		
 		bool IsSwimming = TEST_FLAG(player->variables.flags,_HEAD_BELOW_MEDIA_BIT) && player_settings.CanSwim;
@@ -625,7 +649,8 @@ void update_players(ActionQueues* inActionQueuesToUse, bool inPredictive)
 		// LP change: made it possible to swim under a liquid if one has the ball
 		// START Benad changed oct. 1st (works with ANY ball color, d'uh...)
 		if ((GET_GAME_TYPE()==_game_of_kill_man_with_ball) 
-		 && dynamic_world->game_player_index==player_index && !IsSwimming) action_flags&= ~_run_dont_walk;
+		 && dynamic_world->game_player_index==player_index && !IsSwimming) 
+		 	action_flags&= ~_run_dont_walk;
 		
 		if ((((GET_GAME_TYPE()==_game_of_rugby) || (GET_GAME_TYPE()==_game_of_capture_the_flag)) && (find_player_ball_color(player_index) != NONE))
 			&& !IsSwimming) action_flags&= ~_run_dont_walk;
@@ -633,7 +658,8 @@ void update_players(ActionQueues* inActionQueuesToUse, bool inPredictive)
 		
 
 		// if our head is under media, we canÕt run (that sucks, too)
-		if (IsSwimming && (action_flags&_run_dont_walk)) action_flags&= ~_run_dont_walk, action_flags|= _swim;
+		if (IsSwimming && (action_flags&_run_dont_walk)) 
+			action_flags&= ~_run_dont_walk, action_flags|= _swim;
 		
 		update_player_physics_variables(player_index, action_flags, inPredictive);
 
@@ -654,11 +680,12 @@ void update_players(ActionQueues* inActionQueuesToUse, bool inPredictive)
 						screen_printf("%d...", player->reincarnation_delay / TICKS_PER_SECOND);
 				}
 			}
-			if (player->extravision_duration)
+			if( player->getExtravisionDuration() )
 			{
-				if (!(player->extravision_duration-= 1))
+				if(!(player->extravision_duration-= 1) )
 				{
-					if (player_index==current_player_index) start_extravision_effect(false);
+					if (player_index==current_player_index) 
+						start_extravision_effect(false);
 				}
 			}
 			// LP change: made this code more general;
@@ -793,9 +820,9 @@ void damage_player(short monster_index, short aggressor_index, short aggressor_t
 			
 			if (!PLAYER_IS_DEAD(player))
 			{
-				if (MONSTER_IS_PLAYER(aggressor))
+				if ( aggressor->isPlayer() )
 				{
-					struct player_data *aggressor_player;
+					player_data *aggressor_player;
 					
 					aggressor_player_index= monster_index_to_player_index(aggressor_index);
 					aggressor_player= get_player_data(aggressor_player_index);
@@ -1117,15 +1144,14 @@ void process_player_powerup(short player_index, short item_index)
 
 world_distance dead_player_minimum_polygon_height(short polygon_index)
 {
-	ix player_index;
-	player_data *player;
 	auto minimum_height = 0;
 	
-	for (player_index = 0, player= players; player_index<dynamic_world->player_count; ++player_index, ++player)
+	for( ix i = 0; i < dynamic_world->player_count; ++i )
 	{
-		if (polygon_index == player->camera_polygon_index)
+		player_data& player = player_data::Get(i);
+		if ( player.isCameraPolygonIndex(polygon_index) )
 		{
-			if (PLAYER_IS_DEAD(player)) 
+			if (PLAYER_IS_DEAD(&player)) 
 				minimum_height = DEAD_PLAYER_HEIGHT;
 			break;
 		}
@@ -1600,8 +1626,7 @@ static void revive_player(
 
 /* The player just changed map levels, recreate him, and all of the objects */
 /*  associated with him. */
-static void recreate_player(
-	short player_index)
+static void recreate_player(short player_index)
 {
 	short monster_index;
 	struct monster_data *monster;
