@@ -185,7 +185,7 @@ void allocate_render_memory();
 void initialize_view_data(view_data *view);
 void render_view(view_data *view, struct bitmap_definition *destination);
 
-void start_render_effect(view_data *view, short effect);
+void start_render_effect(view_data *restrict view, const int16 effect);
 
 
 /* ----------- prototypes/SCREEN.CPP */
