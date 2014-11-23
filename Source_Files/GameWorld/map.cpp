@@ -1796,12 +1796,11 @@ int32 point_to_line_distance_squared(world_point2d *p, world_point2d *a, world_p
 
 	/* before squaring numerator we make sure that it is smaller than fifteen bits (and we
 		adjust the denominator to compensate).  if denominator==0 then we make it ==1.  */
-	while( numerator >= 65536 )
-	{
-		numerator /= 2;
-		denominator /= 4;
-	}
-	return SQUARE(numerator) / (denominator ? denominator : 1); //prevent divide by zero
+	while( numerator >= ( 1 << 16) ) 
+		numerator >>= 1, denominator >>= 2;
+	if(!denominator) 
+		denominator = 1;
+	return (numerator * numerator) / denominator; 
 }
 
 struct map_annotation *get_next_map_annotation(short *count)
