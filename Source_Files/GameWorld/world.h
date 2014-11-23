@@ -240,6 +240,8 @@ uint16 global_random(uint16 max);
 uint16 local_random();
 uint16 local_random(uint16 max);
 
+int16 abs_short_local_random();
+
 world_distance guess_distance2d( world_point2d *p0,  world_point2d *p1);
 world_distance distance3d( const world_point3d *restrict p0,  const world_point3d *restrict p1);
 world_distance distance2d( const world_point2d *restrict p0,  const world_point2d *restrict p1); /* calls isqrt() */
