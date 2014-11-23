@@ -2120,9 +2120,9 @@ void set_monster_mode(short monster_index, short new_mode, short target_index)
 	wander randomly or follow a guard path. */
 static void generate_new_path_for_monster(short monster_index)
 {
-	monster_data *monster = get_monster_data(monster_index);
-	object_data *object = get_object_data(monster->object_index);
-	monster_definition *definition = monster->getDefinition();
+	monster_data *monster 		= get_monster_data(monster_index);
+	object_data *object 		= get_object_data(monster->object_index);
+	monster_definition *definition 	= monster->getDefinition();
 	monster_pathfinding_data data;
 	short destination_polygon_index;
 	world_point2d *destination;
@@ -2130,7 +2130,10 @@ static void generate_new_path_for_monster(short monster_index)
 
 	/* delete this monster's old path, if one exists, and clear the need path flag */
 	if (monster->path!=NONE) 
-		delete_path(monster->path), monster->path= NONE;
+	{
+		delete_path(monster->path);
+		monster->path= NONE;
+	}
 	SET_MONSTER_NEEDS_PATH_STATUS(monster, false);
 
 	switch (monster->mode)
@@ -2173,19 +2176,14 @@ static void generate_new_path_for_monster(short monster_index)
 		case _monster_unlocked:
 			/* if we're unlocked and need a new path, follow our guard path if we have one and
 				run around randomly if we don't */
-			if ((destination_polygon_index= monster->goal_polygon_index)!=NONE)
-			{
+			if ((destination_polygon_index= monster->goal_polygon_index) != NONE)
 				destination= &get_polygon_data(destination_polygon_index)->center;
-			}
 			else
-			{	
-				destination= (world_point2d *) NULL;
-			}
+				destination = nullptr;
 			break;
 		
 		default:
 			assert(false);
-			break;
 	}
 
 
