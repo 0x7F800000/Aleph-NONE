@@ -70,8 +70,10 @@ Jul 1, 2000 (Loren Petrich):
 /* ---------- types */
 
 typedef int16 angle;
+typedef int32 long_angle;
 typedef int16 world_distance;
 typedef float _real;
+
 
 /* ---------- macros */
 
