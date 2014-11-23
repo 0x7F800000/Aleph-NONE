@@ -634,3 +634,12 @@ world_point2d *transform_overflow_point2d(
 	
 	return point;
 }
+
+void rotate_point2d_long(int * restrict px, int * restrict py, const int ox, const int oy, const long_angle theta)
+{
+	const int32 dx = *px - ox;
+	const int32 dy = *py - oy;
+	const int32 theta_integral = FIXED_INTEGERAL_PART(theta);
+	*px = ox + (sine_table[theta_integral] * dy >> TRIG_SHIFT) + (cosine_table[theta_integral] * dx >> TRIG_SHIFT);
+	*py = oy + (cosine_table[theta_integral] * dy >> TRIG_SHIFT) - (dx * sine_table[theta_integral] >> TRIG_SHIFT);
+}
