@@ -83,7 +83,7 @@ static uint16 local_random_seed = 1;
 /* remember this is not wholly accurate, both distance or the sine/cosine values could be
 	negative, and the shift canÕt make negative numbers zero; this is probably ok because
 	weÕll have -1/1024th instead of zero, which is basically our margin for error anyway ... */
-world_point2d *translate_point2d(world_point2d *point, world_distance distance, angle theta)
+world_point2d *translate_point2d(world_point2d *restrict point, const world_distance distance, angle theta)
 {
 	// LP change: idiot-proofed this
 	theta = normalize_angle(theta);
@@ -96,15 +96,13 @@ world_point2d *translate_point2d(world_point2d *point, world_distance distance, 
 }
 
 /* same comment as above */
-world_point3d *translate_point3d(world_point3d *point, world_distance distance, angle theta, angle phi)
+world_point3d *translate_point3d(world_point3d *restrict point, const world_distance distance, angle theta, angle phi)
 {
-	world_distance transformed_distance;
-	
 	// LP change: idiot-proofed this
 	theta = normalize_angle(theta);
 	phi = normalize_angle(phi);
 	
-	transformed_distance = (distance*cosine_table[phi]) >> TRIG_SHIFT;
+	const world_distance transformed_distance = (distance*cosine_table[phi]) >> TRIG_SHIFT;
 	point->x += (transformed_distance*cosine_table[theta]) >> TRIG_SHIFT;
 	point->y += (transformed_distance*sine_table[theta]) >> TRIG_SHIFT;
 	point->z += (distance*sine_table[phi]) >> TRIG_SHIFT;
@@ -112,7 +110,7 @@ world_point3d *translate_point3d(world_point3d *point, world_distance distance, 
 	return point;
 }
 
-world_point2d *rotate_point2d(world_point2d *point, world_point2d *origin, angle theta)
+world_point2d *rotate_point2d(world_point2d *restrict point, const world_point2d *restrict origin, angle theta)
 {
 	// LP change: lengthening the values for more precise calculations
 	long_vector2d temp;
@@ -131,7 +129,7 @@ world_point2d *rotate_point2d(world_point2d *point, world_point2d *origin, angle
 	return point;
 }
 
-world_point2d *transform_point2d(world_point2d *point, world_point2d *origin, angle theta)
+world_point2d *transform_point2d(world_point2d *restrict point, const world_point2d *restrict origin, angle theta)
 {
 	// LP change: lengthening the values for more precise calculations
 	long_vector2d temp;
@@ -148,7 +146,8 @@ world_point2d *transform_point2d(world_point2d *point, world_point2d *origin, an
 	return point;
 }
 
-world_point3d *transform_point3d(world_point3d *point, world_point3d *origin, angle theta, angle phi)
+world_point3d *transform_point3d(world_point3d *restrict point, 
+	const world_point3d *restrict origin, const angle theta, const angle phi)
 {
 	// LP change: lengthening the values for more precise calculations
 	long_vector3d temporary;
@@ -419,7 +418,7 @@ world_distance guess_distance2d(world_point2d *p0, world_point2d *p1)
 	return distance>INT16_MAX ? INT16_MAX : distance;
 }
 
-world_distance distance3d(world_point3d *p0, world_point3d *p1)
+world_distance distance3d(const world_point3d *restrict p0, const world_point3d *restrict p1)
 {
 	int32 dx= (int32)p0->x - p1->x;
 	int32 dy= (int32)p0->y - p1->y;
@@ -429,12 +428,12 @@ world_distance distance3d(world_point3d *p0, world_point3d *p1)
 	return distance > INT16_MAX ? INT16_MAX : distance;
 }
 
-static world_distance m2_distance2d(world_point2d *p0, world_point2d *p1)
+static world_distance m2_distance2d(const world_point2d *restrict p0, const world_point2d *restrict p1)
 {
         return isqrt((p0->x-p1->x)*(p0->x-p1->x)+(p0->y-p1->y)*(p0->y-p1->y));
 }
 
-static world_distance a1_distance2d(world_point2d *p0, world_point2d *p1)
+static world_distance a1_distance2d(const world_point2d *restrict p0, const world_point2d *restrict p1)
 {
 	// LP change: lengthening the values for more precise calculations;
 	// code cribbed from the previous function
@@ -445,7 +444,7 @@ static world_distance a1_distance2d(world_point2d *p0, world_point2d *p1)
 	return distance > INT16_MAX ? INT16_MAX : distance;
 }
 
-world_distance distance2d(world_point2d *p0, world_point2d *p1)
+world_distance distance2d(const world_point2d *restrict p0, const world_point2d *restrict p1)
 {
 	if (film_profile.long_distance_physics)
 	{
