@@ -1,5 +1,4 @@
-#ifndef __RENDER_H
-#define __RENDER_H
+#pragma once
 
 /*
 RENDER.H
@@ -153,11 +152,11 @@ struct view_data
 #define SET_RENDER_FLAG(index, flag) render_flags[index]|= (flag)
 
 #define RENDER_FLAGS_BUFFER_SIZE MAX(MAX(MAXIMUM_ENDPOINTS_PER_MAP,MAXIMUM_LINES_PER_MAP),MAX(MAXIMUM_SIDES_PER_MAP,MAXIMUM_POLYGONS_PER_MAP))
-//#define RENDER_FLAGS_BUFFER_SIZE (8*KILO)
+
 enum /* render flags */
 {
 	_polygon_is_visible_bit, /* some part of this polygon is horizontally in the view cone */
-	_endpoint_has_been_visited_bit, /* we’ve already tried to cast a ray out at this endpoint */
+	_endpoint_has_been_visited_bit, /* we√ïve already tried to cast a ray out at this endpoint */
 	_endpoint_is_visible_bit, /* this endpoint is horizontally in the view cone */
 	_side_is_visible_bit, /* this side was crossed while building the tree and should be drawn */
 	_line_has_clip_data_bit, /* this line has a valid clip entry */
@@ -179,21 +178,19 @@ enum /* render flags */
 extern vector<uint16> RenderFlagList;
 #define render_flags (&RenderFlagList[0])
 
-// extern uint16 *render_flags;
+/* ---------- prototypes/RENDER.CPP */
 
-/* ---------- prototypes/RENDER.C */
+void allocate_render_memory();
 
-void allocate_render_memory(void);
+void initialize_view_data(view_data *view);
+void render_view(view_data *view, struct bitmap_definition *destination);
 
-void initialize_view_data(struct view_data *view);
-void render_view(struct view_data *view, struct bitmap_definition *destination);
-
-void start_render_effect(struct view_data *view, short effect);
+void start_render_effect(view_data *view, short effect);
 
 
-/* ----------- prototypes/SCREEN.C */
-void render_overhead_map(struct view_data *view);
-void render_computer_interface(struct view_data *view);
+/* ----------- prototypes/SCREEN.CPP */
+void render_overhead_map(view_data *view);
+void render_computer_interface(view_data *view);
 
 #include "scottish_textures.h"
 
@@ -210,5 +207,3 @@ void instantiate_polygon_transfer_mode(view_data *view,
 // In overhead_map.cpp:
 
 void ResetOverheadMap();
-
-#endif
