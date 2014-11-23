@@ -312,11 +312,11 @@ static void position_sprite_axis(short *x0, short *x1, short scale_width, short 
 
 void allocate_render_memory()
 {
-	static_assert( NUMBER_OF_RENDER_FLAGS <= 16 );
+	static_assert( NUMBER_OF_RENDER_FLAGS <= 16, "NUMBER_OF_RENDER_FLAGS is not less than or equal to 16");
 	RenderFlagList.resize( RENDER_FLAGS_BUFFER_SIZE );
 	
 	// LP addition: check out pointer-arithmetic hack
-	static_assert( sizeof( void * ) == sizeof( POINTER_DATA ) );
+	static_assert( sizeof( void * ) == sizeof( POINTER_DATA ), "POINTER_DATA is not sizeof(void*)!");
 	
 	// LP change: do max allocation
 	RenderVisTree.Resize( MAXIMUM_ENDPOINTS_PER_MAP,MAXIMUM_LINES_PER_MAP );
