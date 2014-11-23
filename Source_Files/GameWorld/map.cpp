@@ -1783,16 +1783,16 @@ int32 point_to_line_segment_distance_squared(
 
 int32 point_to_line_distance_squared(world_point2d *p, world_point2d *a, world_point2d *b)
 {
-	auto abx = b->x - a->x;
-	auto aby = b->y - a->y;
-	auto apx = p->x - a->x;
-	auto apy = p->y - a->y;
+	world_distance abx= b->x-a->x, aby= b->y-a->y;
+	world_distance apx= p->x-a->x, apy= p->y-a->y;
+	int32 signed_numerator;
+	uint32 numerator, denominator; 
 	
 	/* numerator is absolute value of the cross product of AB and AP, denominator is the
 		magnitude of AB squared */
-	auto signed_numerator = apx * aby - apy * abx;
-	auto numerator = 		ABS(signed_numerator);
-	auto denominator = 		SQUARE(abx) + SQUARE(aby);
+	signed_numerator = apx * aby - apy * abx;
+	numerator = 	ABS(signed_numerator);
+	denominator = 	SQUARE(abx) + SQUARE(aby);
 
 	/* before squaring numerator we make sure that it is smaller than fifteen bits (and we
 		adjust the denominator to compensate).  if denominator==0 then we make it ==1.  */
