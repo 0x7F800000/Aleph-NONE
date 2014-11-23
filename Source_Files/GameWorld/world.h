@@ -221,6 +221,9 @@ world_point3d *rotate_point3d(world_point3d *restrict point, world_point3d *orig
 void rotate_point2d_long(int * restrict px, int * restrict py, const int ox, const int oy, const long_angle theta);
 
 world_point2d *translate_point2d(world_point2d *restrict point, const world_distance distance, angle theta);
+
+world_point2d *translate_point2d_clipped(world_point2d *point, world_distance distance, angle theta);
+
 world_point3d *translate_point3d(world_point3d *restrict point, const world_distance distance, angle theta, angle phi);
 
 world_point2d *transform_point2d(world_point2d *restrict point, const world_point2d *restrict origin, angle theta);
