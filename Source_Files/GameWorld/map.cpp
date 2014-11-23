@@ -2608,6 +2608,6 @@ XML_ElementParser *TextureLoading_GetParser()
 {
 	TextureLoadingParser.AddChild(&TextureEnvironmentParser);
 	
-	return &TextureLoadingParser;
+	return &TextureLoadingParser; 
 }
 
