@@ -198,12 +198,8 @@ Jan 17, 2001 (Loren Petrich):
 */
 
 
-#ifdef QUICKDRAW_DEBUG
-#include "macintosh_cseries.h"
-#else
-#include "cseries.h"
-#endif
 
+#include "cseries.h"
 #include "map.h"
 #include "render.h"
 #include "interface.h"
@@ -214,13 +210,9 @@ Jan 17, 2001 (Loren Petrich):
 // LP additions
 #include "dynamic_limits.h"
 #include "AnimatedTextures.h"
-#ifdef HAVE_OPENGL
-#include "OGL_Render.h"
-#endif
 
-#ifdef QUICKDRAW_DEBUG
-#include "shell.h"
-extern WindowPtr screen_window;
+#ifdef HAVE_OPENGL
+	#include "OGL_Render.h"
 #endif
 
 #include <math.h>
@@ -233,21 +225,20 @@ extern WindowPtr screen_window;
 #include "RenderPlaceObjs.h"
 #include "RenderRasterize.h"
 #include "Rasterizer_SW.h"
+
 #ifdef HAVE_OPENGL
-#include "Rasterizer_OGL.h"
-#include "RenderRasterize_Shader.h"
-#include "Rasterizer_Shader.h"
+	#include "Rasterizer_OGL.h"
+	#include "RenderRasterize_Shader.h"
+	#include "Rasterizer_Shader.h"
 #endif
+
 #include "preferences.h"
 #include "screen.h"
 
-#ifdef env68k
-#pragma segment render
-#endif
 
 /* use native alignment */
 #if defined (powerc) || defined (__powerc)
-#pragma options align=power
+	#pragma options align=power
 #endif
 
 /*
@@ -283,8 +274,6 @@ whitespace results when two adjacent polygons are clipped to different vertical 
 
 vector<uint16> RenderFlagList;
 
-// uint16 *render_flags;
-
 // LP additions: decomposition of the rendering code into various objects
 
 static RenderVisTreeClass RenderVisTree;			// Visibility-tree object
@@ -299,55 +288,52 @@ static Rasterizer_Shader_Class Rasterizer_Shader;   // Shader rasterizer
 static RenderRasterize_Shader Render_Shader;       // Shader clipping and rasterization class
 #endif
 
-void OGL_Rasterizer_Init() {
-	
-#ifdef HAVE_OPENGL
-	if (graphics_preferences->screen_mode.acceleration == _shader_acceleration)
-		Render_Shader.setupGL();
-#endif
+void OGL_Rasterizer_Init() 
+{
+	#ifdef HAVE_OPENGL
+		if (graphics_preferences->screen_mode.acceleration == _shader_acceleration)
+			Render_Shader.setupGL();
+	#endif
 }
 
 /* ---------- private prototypes */
 
-static void update_view_data(struct view_data *view);
-static void update_render_effect(struct view_data *view);
-static void shake_view_origin(struct view_data *view, world_distance delta);
+static void update_view_data(view_data *view);
+static void update_render_effect(view_data *view);
+static void shake_view_origin(view_data *restrict view, const world_distance delta);
 
 static void render_viewer_sprite_layer(view_data *view, RasterizerClass *RasPtr);
 static void position_sprite_axis(short *x0, short *x1, short scale_width, short screen_width,
 	short positioning_mode, _fixed position, bool flip, world_distance world_left, world_distance world_right);
 
 
-#ifdef QUICKDRAW_DEBUG
-static void debug_flagged_points(flagged_world_point2d *points, short count);
-static void debug_flagged_points3d(flagged_world_point3d *points, short count);
-static void debug_vector(world_vector2d *v);
-static void debug_x_line(world_distance x);
-#endif
 
 /* ---------- code */
 
 void allocate_render_memory()
 {
-	assert(NUMBER_OF_RENDER_FLAGS <= 16);
-	RenderFlagList.resize(RENDER_FLAGS_BUFFER_SIZE);
+	static_assert( NUMBER_OF_RENDER_FLAGS <= 16 );
+	RenderFlagList.resize( RENDER_FLAGS_BUFFER_SIZE );
 	
 	// LP addition: check out pointer-arithmetic hack
-	static_assert(sizeof(void *) == sizeof(POINTER_DATA));
+	static_assert( sizeof( void * ) == sizeof( POINTER_DATA ) );
 	
 	// LP change: do max allocation
-	RenderVisTree.Resize(MAXIMUM_ENDPOINTS_PER_MAP,MAXIMUM_LINES_PER_MAP);
-	RenderSortPoly.Resize(MAXIMUM_POLYGONS_PER_MAP);
+	RenderVisTree.Resize( MAXIMUM_ENDPOINTS_PER_MAP,MAXIMUM_LINES_PER_MAP );
+	RenderSortPoly.Resize( MAXIMUM_POLYGONS_PER_MAP );
 	
 	// LP change: set up pointers
-	RenderSortPoly.RVPtr = &RenderVisTree;
-	RenderPlaceObjs.RVPtr = &RenderVisTree;
-	RenderPlaceObjs.RSPtr = &RenderSortPoly;
-#ifdef HAVE_OPENGL	
-	Render_Classic.RSPtr = Render_Shader.RSPtr = &RenderSortPoly;
-#else
-	Render_Classic.RSPtr = &RenderSortPoly;	
-#endif	
+	RenderSortPoly.RVPtr 	= &RenderVisTree;
+	RenderPlaceObjs.RVPtr 	= &RenderVisTree;
+	RenderPlaceObjs.RSPtr 	= &RenderSortPoly;
+	
+	#ifdef HAVE_OPENGL	
+		Render_Classic.RSPtr = Render_Shader.RSPtr = &RenderSortPoly;
+		
+	#else
+		Render_Classic.RSPtr = &RenderSortPoly;	
+		
+	#endif	
 }
 
 /* just in case anyone was wondering, standard_screen_width will usually be the same as
@@ -357,9 +343,9 @@ void allocate_render_memory()
 	only grow and shrink while maintaining a constant aspect ratio, but to also change in
 	geometry without effecting the image being projected onto it.  if you don't understand
 	this, pass standard_width==width */
-void initialize_view_data(struct view_data *view)
+void initialize_view_data(view_data *view)
 {
-	double two_pi = 8.0*atan(1.0);
+	const double two_pi = 8.0*atan(1.0);
 	double half_cone= view->field_of_view*(two_pi/360.0)/2;
  	/* half_cone needs to be extended for non oblique perspective projection (gluPerspective).
 	 this is required because the viewing angle is different for about the same field of view */
@@ -405,9 +391,7 @@ void initialize_view_data(struct view_data *view)
 }
 
 /* origin,origin_polygon_index,yaw,pitch,roll,etc. have probably changed since last call */
-void render_view(
-	struct view_data *view,
-	struct bitmap_definition *destination)
+void render_view(view_data *view, struct bitmap_definition *destination)
 {
 	update_view_data(view);
 
@@ -420,81 +404,83 @@ void render_view(
 	{
 		/* Render the computer interface. */
 		render_computer_interface(view);
+		return;
 	}
-	else
-	{
-		// LP: the render objects have a pointer to the current view in them,
-		// so that one can get rid of redundant references to it in them.
-		
-		// LP: now from the visibility-tree class
-		/* build the render tree, regardless of map mode, so the automap updates while active */
-		RenderVisTree.view = view;
-		RenderVisTree.build_render_tree();
-		
-		/* do something complicated and difficult to explain */
-		if (!view->overhead_map_active || map_is_translucent())
-		{			
-			// LP: now from the polygon-sorter class
-			/* sort the render tree (so we have a depth-ordering of polygons) and accumulate
-				clipping information for each polygon */
-			RenderSortPoly.view = view;
-			RenderSortPoly.sort_render_tree();
-			
-			// LP: now from the object-placement class
-			/* build the render object list by looking at the sorted render tree */
-			RenderPlaceObjs.view = view;
-			RenderPlaceObjs.build_render_object_list();
-			
-			// LP addition: set the current rasterizer to whichever is appropriate here
-			RasterizerClass *RasPtr;
-#ifdef HAVE_OPENGL
-			if (OGL_IsActive())
-				RasPtr = (graphics_preferences->screen_mode.acceleration == _shader_acceleration) ? &Rasterizer_Shader : &Rasterizer_OGL;
-			else
-			{
-#endif
-				// The software renderer needs this but the OpenGL one doesn't...
-				Rasterizer_SW.screen = destination;
-				RasPtr = &Rasterizer_SW;
-#ifdef HAVE_OPENGL
-			}
-#endif
-			
-			// Set its view:
-			RasPtr->SetView(*view);
-			
-			// Start rendering main view
-			RasPtr->Begin();
-			
-			// LP: now from the clipping/rasterizer class
-#ifdef HAVE_OPENGL			
-			RenderRasterizerClass *RenPtr = (graphics_preferences->screen_mode.acceleration == _shader_acceleration) ? &Render_Shader : &Render_Classic;
-#else
-			RenderRasterizerClass *RenPtr = &Render_Classic;
-#endif
-			/* render the object list, back to front, doing clipping on each surface before passing
-				it to the texture-mapping code */
-			RenPtr->view = view;
-			RenPtr->RasPtr = RasPtr;
-			RenPtr->render_tree();
-			
-			// LP: won't put this into a separate class
-			/* render the playerÕs weapons, etc. */		
-			render_viewer_sprite_layer(view, RasPtr);
-			
-			// Finish rendering main view
-			RasPtr->End();
-		}
 
-		if (view->overhead_map_active)
+
+	// LP: the render objects have a pointer to the current view in them,
+	// so that one can get rid of redundant references to it in them.
+	
+	// LP: now from the visibility-tree class
+	/* build the render tree, regardless of map mode, so the automap updates while active */
+	RenderVisTree.view = view;
+	RenderVisTree.build_render_tree();
+	
+	/* do something complicated and difficult to explain */
+	if (!view->overhead_map_active || map_is_translucent())
+	{			
+		// LP: now from the polygon-sorter class
+		/* sort the render tree (so we have a depth-ordering of polygons) and accumulate
+			clipping information for each polygon */
+		RenderSortPoly.view = view;
+		RenderSortPoly.sort_render_tree();
+		
+		// LP: now from the object-placement class
+		/* build the render object list by looking at the sorted render tree */
+		RenderPlaceObjs.view = view;
+		RenderPlaceObjs.build_render_object_list();
+		
+		// LP addition: set the current rasterizer to whichever is appropriate here
+		RasterizerClass *RasPtr;
+#ifdef HAVE_OPENGL
+		if (OGL_IsActive())
+			RasPtr = (graphics_preferences->screen_mode.acceleration == _shader_acceleration) ? &Rasterizer_Shader : &Rasterizer_OGL;
+		else
 		{
-			/* if the overhead map is active, render it */
-			render_overhead_map(view);
+#endif
+			// The software renderer needs this but the OpenGL one doesn't...
+			Rasterizer_SW.screen = destination;
+			RasPtr = &Rasterizer_SW;
+#ifdef HAVE_OPENGL
 		}
+#endif
+		
+		// Set its view:
+		RasPtr->SetView( *view );
+		
+		// Start rendering main view
+		RasPtr->Begin();
+		
+		// LP: now from the clipping/rasterizer class
+#ifdef HAVE_OPENGL			
+		RenderRasterizerClass *RenPtr = 
+		graphics_preferences->screen_mode.acceleration == _shader_acceleration
+		? &Render_Shader : &Render_Classic;
+#else
+		RenderRasterizerClass *RenPtr = &Render_Classic;
+#endif
+		/* 
+			render the object list, back to front, doing clipping on each surface before passing
+			it to the texture-mapping code 
+		*/
+		RenPtr->view = view;
+		RenPtr->RasPtr = RasPtr;
+		RenPtr->render_tree();
+		
+		// LP: won't put this into a separate class
+		
+		/* render the player's weapons, etc. */		
+		render_viewer_sprite_layer( view, RasPtr );
+		
+		// Finish rendering main view
+		RasPtr->End();
 	}
+
+	if( view->overhead_map_active )
+		render_overhead_map( view ); /* if the overhead map is active, render it */
 }
 
-void start_render_effect(struct view_data *view, short effect)
+void start_render_effect(view_data *restrict view, const int16 effect)
 {
 	view->effect 		= effect;
 	view->effect_phase	= NONE;
@@ -502,7 +488,7 @@ void start_render_effect(struct view_data *view, short effect)
 
 /* ---------- private code */
 
-static void update_view_data(struct view_data *view)
+static void update_view_data(view_data *view)
 {
 	angle theta;
 
@@ -597,56 +583,67 @@ static void update_view_data(struct view_data *view)
 		view->under_media_boundary = false;
 }
 
-static void update_render_effect(struct view_data *view)
+static void update_render_effect(view_data *view)
 {
-	short effect= view->effect;
-	short phase= view->effect_phase==NONE ? 0 : (view->effect_phase+view->ticks_elapsed);
-	short period;
+	const auto effect = view->effect;
+	const int16 phase = isNONE( view->effect_phase ) ? 0 : view->effect_phase + view->ticks_elapsed;
+	int16 period;
 
-	view->effect_phase= phase;
+	view->effect_phase = phase;
 
 	switch (effect)
 	{
 		// LP change: suppressed all the FOV changes
-		case _render_effect_fold_in: case _render_effect_fold_out: period= TICKS_PER_SECOND/2; break;
-		case _render_effect_explosion: period= TICKS_PER_SECOND; break;
+		case _render_effect_fold_in: 
+		case _render_effect_fold_out: 
+			period = TICKS_PER_SECOND / 2; 
+			break;
+		case _render_effect_explosion: 
+			period = TICKS_PER_SECOND; 
+			break;
 		default:
 			assert(false);
-			break;
 	}
 	
-	if (phase>period)
+	if( phase > period )
 	{
-		view->effect= NONE;
+		view->effect = NONE;
+		return;
 	}
-	else
+
+	switch (effect)
 	{
-		switch (effect)
-		{
-			case _render_effect_explosion:
-				shake_view_origin(view, EXPLOSION_EFFECT_RANGE - ((EXPLOSION_EFFECT_RANGE/2)*phase)/period);
-				break;
+		case _render_effect_explosion:
+			shake_view_origin(
+				view, 
+				EXPLOSION_EFFECT_RANGE - ( ( EXPLOSION_EFFECT_RANGE / 2 ) * phase) / period 
+				);
+			break;
+		
+		case _render_effect_fold_in:
+			phase = period - phase;
+		case _render_effect_fold_out:
+			/* calculate world_to_screen based on phase */
+			view->world_to_screen_x = 
+				view->real_world_to_screen_x + ( 4 * view->real_world_to_screen_x * phase ) / period;
 			
-			case _render_effect_fold_in:
-				phase= period-phase;
-			case _render_effect_fold_out:
-				/* calculate world_to_screen based on phase */
-				view->world_to_screen_x= view->real_world_to_screen_x + (4*view->real_world_to_screen_x*phase)/period;
-				view->world_to_screen_y= view->real_world_to_screen_y - (view->real_world_to_screen_y*phase)/(period+period/4);
-				break;
-		}
+			view->world_to_screen_y = 
+				view->real_world_to_screen_y - 
+				( view->real_world_to_screen_y * phase )
+				/
+				( period + period / 4 );
+			break;
 	}
 }
 
 
 /* ---------- transfer modes */
 
-/* given a transfer mode and phase, cause whatever changes it should cause to a rectangle_definition
-	structure */
-void instantiate_rectangle_transfer_mode(
-	view_data *view,
-	rectangle_definition *rectangle,
-	short transfer_mode,
+/* 
+	given a transfer mode and phase, cause whatever changes it should cause to a rectangle_definition
+	structure 
+*/
+void instantiate_rectangle_transfer_mode(view_data *view, rectangle_definition *rectangle, int16 transfer_mode,
 	_fixed transfer_phase)
 {
 	// For the 3D-model code
@@ -656,94 +653,78 @@ void instantiate_rectangle_transfer_mode(
 	{
 		case _xfer_invisibility:
 		case _xfer_subtle_invisibility:
-			if (view->shading_mode!=_shading_infravision)
+			if( view->shading_mode != _shading_infravision )
 			{
-				rectangle->transfer_mode= _tinted_transfer;
-				rectangle->shading_tables= get_global_shading_table();
-				rectangle->transfer_data= (transfer_mode==_xfer_invisibility) ? 0x000f : 0x0018;
+				rectangle->transfer_mode	= _tinted_transfer;
+				rectangle->shading_tables	= get_global_shading_table();
+				rectangle->transfer_data	= transfer_mode == _xfer_invisibility ? 0xF : 0x18;
 				break;
 			}
 			/* if we have infravision, fall through to _textured_transfer (i see you...) */
 		case _xfer_normal:
-			rectangle->transfer_mode= _textured_transfer;
+			rectangle->transfer_mode = _textured_transfer;
 			break;
 		
 		case _xfer_static:
 		case _xfer_50percent_static:
-			rectangle->transfer_mode= _static_transfer;
-			rectangle->transfer_data= (transfer_mode==_xfer_static) ? 0x0000 : 0x8000;
+			rectangle->transfer_mode = _static_transfer;
+			rectangle->transfer_data = transfer_mode == _xfer_static ? 0 : 0x8000;
 			break;
 
 		case _xfer_fade_out_static:
-			rectangle->transfer_mode= _static_transfer;
-			rectangle->transfer_data= transfer_phase;
+			rectangle->transfer_mode = _static_transfer;
+			rectangle->transfer_data = transfer_phase;
 			break;
 			
 		case _xfer_pulsating_static:
-			rectangle->transfer_mode= _static_transfer;
-			rectangle->transfer_data= 0x8000+((0x6000*sine_table[FIXED_INTEGERAL_PART(transfer_phase*NUMBER_OF_ANGLES)])>>TRIG_SHIFT);
+			rectangle->transfer_mode = _static_transfer;
+			rectangle->transfer_data = 0x8000 + 
+			TRIG_LEFT_SHIFT(0x6000 * sine_table[ FIXED_INTEGERAL_PART( transfer_phase * NUMBER_OF_ANGLES ) ] );
 			break;
 
 		case _xfer_fold_in:
-			transfer_phase= FIXED_ONE-transfer_phase; /* do everything backwards */
+			transfer_phase = FIXED_ONE - transfer_phase; /* do everything backwards */
 		case _xfer_fold_out:
 			if (View_DoStaticEffect())
 			{
-				// Corrected the teleport shrinkage so that the sprite/object
-				// shrinks to its object position and not to its sprite center
-				short delta0= FIXED_INTEGERAL_PART(((rectangle->xc-rectangle->x0)-1)*transfer_phase);
-				short delta1= FIXED_INTEGERAL_PART(((rectangle->x1-rectangle->xc)-1)*transfer_phase);
-				// short delta= FIXED_INTEGERAL_PART((((rectangle->x1-rectangle->x0)>>1)-1)*transfer_phase);
-					
-				rectangle->transfer_mode= _static_transfer;
-				rectangle->transfer_data= (transfer_phase>>1);
-				rectangle->x0+= delta0;
-				rectangle->x1-= delta1;
-				rectangle->HorizScale = 1 - float(transfer_phase)/float(FIXED_ONE);
-			}
-			else
-				rectangle->transfer_mode= _textured_transfer;
-			break;
+				/*
+					Corrected the teleport shrinkage so that the sprite/object
+					shrinks to its object position and not to its sprite center
+				*/
+				const int16 delta0 = 
+					FIXED_INTEGERAL_PART( ( ( rectangle->xc - rectangle->x0 ) - 1 ) * transfer_phase );
+				const int16 delta1 = 
+					FIXED_INTEGERAL_PART( ( ( rectangle->x1 - rectangle->xc ) - 1) * transfer_phase );
 
-#if 0		
-		case _xfer_fade_out_to_black:
-			rectangle->shading_tables= get_global_shading_table();
-			if (transfer_phase<FIXED_ONE_HALF)
-			{
-				/* fade to black */
-				rectangle->ambient_shade= (rectangle->ambient_shade*(transfer_phase-FIXED_ONE_HALF))>>(FIXED_FRACTIONAL_BITS-1);
-				rectangle->transfer_mode= _textured_transfer;
+				rectangle->transfer_mode = _static_transfer;
+				rectangle->transfer_data = transfer_phase / 2;
+				rectangle->x0 += delta0;
+				rectangle->x1 -= delta1;
+				rectangle->HorizScale = 1 - float( transfer_phase ) / float( FIXED_ONE );
 			}
 			else
-			{
-				/* vanish */
-				rectangle->transfer_mode= _tinted_transfer;
-				rectangle->transfer_data= 0x1f - ((0x1f*(FIXED_ONE_HALF-transfer_phase))>>(FIXED_FRACTIONAL_BITS-1));
-			}
+				rectangle->transfer_mode = _textured_transfer;
 			break;
-#endif
 		
 		// LP change: made an unrecognized mode act like normal
 		default:
-			rectangle->transfer_mode= _textured_transfer;
+			rectangle->transfer_mode = _textured_transfer;
 			break;
 	}
 }
 
-/* given a transfer mode and phase, cause whatever changes it should cause to a polygon_definition
-	structure (unfortunately we need to know whether this is a horizontal or vertical polygon) */
-void instantiate_polygon_transfer_mode(
-	struct view_data *view,
-	struct polygon_definition *polygon,
-	short transfer_mode,
-	bool horizontal)
+/* 
+	given a transfer mode and phase, cause whatever changes it should cause to a polygon_definition
+	structure (unfortunately we need to know whether this is a horizontal or vertical polygon) 
+*/
+void instantiate_polygon_transfer_mode(view_data *view, polygon_definition *polygon, int16 transfer_mode, bool horizontal)
 {
 	world_distance x0, y0;
 	world_distance vector_magnitude;
-	short alternate_transfer_phase;
-	short transfer_phase = view->tick_count;
+	int16 alternate_transfer_phase;
+	int16 transfer_phase = view->tick_count;
 
-	polygon->transfer_mode= _textured_transfer;
+	polygon->transfer_mode = _textured_transfer;
 	switch (transfer_mode)
 	{
 		case _xfer_fast_horizontal_slide:
@@ -752,86 +733,102 @@ void instantiate_polygon_transfer_mode(
 		case _xfer_fast_vertical_slide:
 		case _xfer_wander:
 		case _xfer_fast_wander:
-			x0= y0= 0;
+			x0 = y0 = 0;
 			switch (transfer_mode)
 			{
-				case _xfer_fast_horizontal_slide: transfer_phase<<= 1;
-				case _xfer_horizontal_slide: x0= (transfer_phase<<2)&(WORLD_ONE-1); break;
+				case _xfer_fast_horizontal_slide: 
+					transfer_phase *= 2;
+				case _xfer_horizontal_slide: 
+					x0 = ( transfer_phase * 4 ) & ( WORLD_ONE - 1); 
+					break;
 				
-				case _xfer_fast_vertical_slide: transfer_phase<<= 1;
-				case _xfer_vertical_slide: y0= (transfer_phase<<2)&(WORLD_ONE-1); break;
+				case _xfer_fast_vertical_slide: 
+					transfer_phase *= 2;
+				case _xfer_vertical_slide: 
+					y0 = ( transfer_phase * 4 ) & ( WORLD_ONE - 1 );
+					break;
 				
-				case _xfer_fast_wander: transfer_phase<<= 1;
+				case _xfer_fast_wander: 
+					transfer_phase *= 2;
 				case _xfer_wander:
-					alternate_transfer_phase= transfer_phase%(10*FULL_CIRCLE);
-					transfer_phase= transfer_phase%(6*FULL_CIRCLE);
-					x0= (cosine_table[NORMALIZE_ANGLE(alternate_transfer_phase)] +
-						(cosine_table[NORMALIZE_ANGLE(2*alternate_transfer_phase)]>>1) +
-						(cosine_table[NORMALIZE_ANGLE(5*alternate_transfer_phase)]>>1))>>(WORLD_FRACTIONAL_BITS-TRIG_SHIFT+2);
-					y0= (sine_table[NORMALIZE_ANGLE(transfer_phase)] +
-						(sine_table[NORMALIZE_ANGLE(2*transfer_phase)]>>1) +
-						(sine_table[NORMALIZE_ANGLE(3*transfer_phase)]>>1))>>(WORLD_FRACTIONAL_BITS-TRIG_SHIFT+2);
+					//i have no idea what's going on here...
+					alternate_transfer_phase = transfer_phase % ( 10 * FULL_CIRCLE );
+					transfer_phase = transfer_phase % ( 6 * FULL_CIRCLE );
+					x0 = 
+						(cosine_table[ NORMALIZE_ANGLE( alternate_transfer_phase ) ] +
+						(cosine_table[ NORMALIZE_ANGLE( 2 * alternate_transfer_phase ) ] / 2) +
+						(cosine_table[ NORMALIZE_ANGLE( 5 * alternate_transfer_phase ) ] / 2))
+						>> ( WORLD_FRACTIONAL_BITS - TRIG_SHIFT + 2 );
+					y0 = 
+						( sine_table[ NORMALIZE_ANGLE( transfer_phase ) ] +
+						(sine_table[ NORMALIZE_ANGLE( 2 * transfer_phase ) ] / 2) +
+						(sine_table[ NORMALIZE_ANGLE( 3 * transfer_phase ) ] / 2))
+						>> ( WORLD_FRACTIONAL_BITS - TRIG_SHIFT + 2 );
 					break;
 			}
 			if (horizontal)
 			{
-				polygon->origin.x+= x0;
-				polygon->origin.y+= y0;
+				polygon->origin.x += x0;
+				polygon->origin.y += y0;
 			}
 			else
 			{
-				vector_magnitude= isqrt(polygon->vector.i*polygon->vector.i + polygon->vector.j*polygon->vector.j);
-				polygon->origin.x+= (polygon->vector.i*x0)/vector_magnitude;
-				polygon->origin.y+= (polygon->vector.j*x0)/vector_magnitude;
-				polygon->origin.z-= y0;
+				vector_magnitude = isqrt( SQUARE( polygon->vector.i ) + SQUARE( polygon->vector.j ) );
+				polygon->origin.x += (polygon->vector.i * x0) / vector_magnitude;
+				polygon->origin.y += (polygon->vector.j * x0) / vector_magnitude;
+				polygon->origin.z -= y0;
 			}
 			break;
 		
 		case _xfer_pulsate:
 		case _xfer_wobble:
 		case _xfer_fast_wobble:
-			if (transfer_mode==_xfer_fast_wobble) transfer_phase*= 15;
-			transfer_phase&= WORLD_ONE/16-1;
-			transfer_phase= (transfer_phase>=WORLD_ONE/32) ? (WORLD_ONE/32+WORLD_ONE/64 - transfer_phase) : (transfer_phase - WORLD_ONE/64);
+			if( transfer_mode == _xfer_fast_wobble ) 
+				transfer_phase *= 15;
+			transfer_phase &= WORLD_ONE / 16-1;
+			transfer_phase = transfer_phase >= WORLD_ONE/32
+			? ( WORLD_ONE/32 + WORLD_ONE/64 - transfer_phase) 
+			: ( transfer_phase - WORLD_ONE/64 );
 			if (horizontal)
 			{
 				polygon->origin.z+= transfer_phase;
+				break;
 			}
-			else
+			
+			if( transfer_mode == _xfer_pulsate ) /* translate .origin perpendicular to .vector */
 			{
-				if (transfer_mode==_xfer_pulsate) /* translate .origin perpendicular to .vector */
-				{
-					world_vector2d offset;
-					world_distance vector_magnitude= isqrt(polygon->vector.i*polygon->vector.i + polygon->vector.j*polygon->vector.j);
-	
-					offset.i= (polygon->vector.j*transfer_phase)/vector_magnitude;
-					offset.j= (polygon->vector.i*transfer_phase)/vector_magnitude;
-	
-					polygon->origin.x+= offset.i;
-					polygon->origin.y+= offset.j;
-				}
-				else /* ==_xfer_wobble, wobble .vector */
-				{
-					polygon->vector.i+= transfer_phase;
-					polygon->vector.j+= transfer_phase;
-				}
+				world_vector2d offset;
+				const world_distance vector_magnitude = 
+				isqrt( SQUARE(polygon->vector.i) + SQUARE(polygon->vector.j) );
+
+				offset.i = ( polygon->vector.j * transfer_phase ) / vector_magnitude;
+				offset.j = ( polygon->vector.i * transfer_phase ) / vector_magnitude;
+
+				polygon->origin.x += offset.i;
+				polygon->origin.y += offset.j;
 			}
+			else /* ==_xfer_wobble, wobble .vector */
+			{
+				polygon->vector.i += transfer_phase;
+				polygon->vector.j += transfer_phase;
+			}
+		
 			break;
 
 		case _xfer_normal:
 			break;
 		
 		case _xfer_smear:
-			polygon->transfer_mode= _solid_transfer;
+			polygon->transfer_mode = _solid_transfer;
 			break;
 			
 		case _xfer_static:
-			polygon->transfer_mode= _static_transfer;
-			polygon->transfer_data= 0x0000;
+			polygon->transfer_mode = _static_transfer;
+			polygon->transfer_data = 0;
 			break;
 		
 		case _xfer_landscape:
-			polygon->transfer_mode= _big_landscaped_transfer;
+			polygon->transfer_mode = _big_landscaped_transfer;
 			break;
 		default:
 			// LP change: made an unrecognized mode act like normal
@@ -849,13 +846,14 @@ static void render_viewer_sprite_layer(view_data *view, RasterizerClass *RasPtr)
 	short count;
 
 	// LP change: bug out if weapons-in-hand are not to be displayed
-	if (!view->show_weapons_in_hand) return;
+	if( !view->show_weapons_in_hand ) 
+		return;
 	
 	// Need to set this...
 	RasPtr->SetForeground();
 	
 	// No models here, and completely opaque
-	textured_rectangle.ModelPtr = NULL;
+	textured_rectangle.ModelPtr = nullptr;
 	textured_rectangle.Opacity = 1;
 
 	/* get_weapon_display_information() returns true if there is a weapon to be drawn.  it
@@ -1004,21 +1002,24 @@ static void position_sprite_axis(
 	}
 }
 
-static void shake_view_origin(struct view_data *view, world_distance delta)
+static void shake_view_origin(view_data *restrict view, const world_distance delta)
 {
-	world_point3d new_origin= view->origin;
-	short half_delta= delta>>1;
+	world_point3d new_origin = view->origin;
+	const int16 half_delta = delta / 2;
 	
-	new_origin.x+= half_delta - ((delta*sine_table[NORMALIZE_ANGLE((view->tick_count&~3)*(7*FULL_CIRCLE))])>>TRIG_SHIFT);
-	new_origin.y+= half_delta - ((delta*sine_table[NORMALIZE_ANGLE(((view->tick_count+5*TICKS_PER_SECOND)&~3)*(7*FULL_CIRCLE))])>>TRIG_SHIFT);
-	new_origin.z+= half_delta - ((delta*sine_table[NORMALIZE_ANGLE(((view->tick_count+7*TICKS_PER_SECOND)&~3)*(7*FULL_CIRCLE))])>>TRIG_SHIFT);
+	new_origin.x += half_delta - 
+	((delta*sine_table[NORMALIZE_ANGLE((view->tick_count&~3)*(7*FULL_CIRCLE))])>>TRIG_SHIFT);
+	
+	new_origin.y += half_delta - 
+	((delta*sine_table[NORMALIZE_ANGLE(((view->tick_count+5*TICKS_PER_SECOND)&~3)*(7*FULL_CIRCLE))])>>TRIG_SHIFT);
+	
+	new_origin.z += half_delta - 
+	((delta*sine_table[NORMALIZE_ANGLE(((view->tick_count+7*TICKS_PER_SECOND)&~3)*(7*FULL_CIRCLE))])>>TRIG_SHIFT);
 
 	/* only use the new origin if we didnÕt cross a polygon boundary */
 	if (find_line_crossed_leaving_polygon(view->origin_polygon_index, (world_point2d *) &view->origin,
 		(world_point2d *) &new_origin)==NONE)
-	{
-		view->origin= new_origin;
-	}
+		view->origin = new_origin;
 }
 
 
