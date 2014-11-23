@@ -586,7 +586,7 @@ static void update_view_data(view_data *view)
 static void update_render_effect(view_data *view)
 {
 	const auto effect = view->effect;
-	const int16 phase = isNONE( view->effect_phase ) ? 0 : view->effect_phase + view->ticks_elapsed;
+	int16 phase = isNONE( view->effect_phase ) ? 0 : view->effect_phase + view->ticks_elapsed;
 	int16 period;
 
 	view->effect_phase = phase;
