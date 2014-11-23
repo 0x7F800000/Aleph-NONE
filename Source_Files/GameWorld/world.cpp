@@ -635,6 +635,11 @@ world_point2d *transform_overflow_point2d(
 	return point;
 }
 
+/*	here the code pulled from Damage Inc begins		*/
+
+/*
+	this one is suspicious...I'm beginning to think long_angle might not exist
+*/
 void rotate_point2d_long(int * restrict px, int * restrict py, const int ox, const int oy, const long_angle theta)
 {
 	const int32 dx = *px - ox;
@@ -644,6 +649,9 @@ void rotate_point2d_long(int * restrict px, int * restrict py, const int ox, con
 	*py = oy + (cosine_table[theta_integral] * dy >> TRIG_SHIFT) - (dx * sine_table[theta_integral] >> TRIG_SHIFT);
 }
 
+/*
+	Same as local_random, but returns the absolute value of the generated number
+*/
 int16 abs_short_local_random()
 {
 	int16 seed; 
@@ -657,4 +665,70 @@ int16 abs_short_local_random()
 	if ( seed < 0 )
 		seed = -seed;
 	return seed;
+}
+
+/*
+	this one needs to be cleaned up
+*/
+world_point2d *translate_point2d_clipped(world_point2d *point, world_distance distance, angle theta)
+{
+
+	int16 v6; 
+	int16 v7; 
+	int16 v8; 
+	int16 v9; 
+	int32 v10; 
+	int32 v11; 
+	int32 v12; 
+	world_point2d *point__;
+	world_distance v14; 
+	
+	world_distance v4 = (distance * cosine_table[theta] >> TRIG_SHIFT) + point->x;
+	world_distance v5 = (distance * sine_table[theta] >> TRIG_SHIFT) + point->y;
+	
+	if ( v4 > 32767 )
+	{
+		v6 = 32767;
+LABEL_3:
+		v7 = v6 - v4;
+		goto LABEL_4;
+	}
+	if ( v4 < -32767 )
+	{
+		v6 = -32767;
+		goto LABEL_3;
+	}
+	v7 = 0;
+LABEL_4:
+	if ( v5 <= 32767 )
+	{
+		if ( v5 >= -32767 )
+		{
+			v9 = 0;
+			goto LABEL_7;
+		}
+		v8 = -32767;
+	}
+	else
+		v8 = 32767;
+	v9 = v8 - v5;
+LABEL_7:
+	if ( v7 && (v7 < 0 ? (v10 = -v7) : (v10 = v7), v9 < 0 ? (v11 = -v9) : (v11 = v9), v10 > v11) )
+	{
+		v14 = v5 * v7 / v4 + v5;
+		point->x = 32767;
+		point->y = v14;
+	}
+	else
+	{
+		if ( v9 )
+		{
+			v12 = v4 * v9 / v5;
+			v5 = 32767;
+			v4 = v12 + v4;
+		}
+		point->x = v4;
+		point->y = v5;
+	}
+	return point;
 }
