@@ -134,7 +134,7 @@ static bool door_is_obstructed(short permutation)
 
 	while(object_index != NONE)
 	{
-		object_data *object = &objects[object_index];
+		object_data *object = get_object_data(object_index);
 		int flags_masked = object->flags & 7;
 		if(flags_masked != 2 && flags_masked != 1 && flags_masked != 5)	
 		{
@@ -183,4 +183,111 @@ static void adjust_endpoints(short permutation)
 	
 	SET_ENDPOINT_SOLIDITY(		end1,	IS_LINE_SOLID(l0)		||	IS_LINE_SOLID(l2)		||	IS_LINE_SOLID(l4)		);
 	SET_ENDPOINT_TRANSPARENCY(	end1,	IS_LINE_TRANSPARENT(l0)	&&	IS_LINE_TRANSPARENT(l2)	&&	IS_LINE_TRANSPARENT(l4)	);
+}
+
+/*
+	this one had a lot of gotos, so its a bit weird looking.
+*/
+void play_door_sound(ix index, int16 sound_type, int16 def)
+{
+	int16 v2;
+	int16 sound;
+	
+	const swinging_door_data *restrict door = &swinging_doors[index];
+	const swinging_door_definition *restrict definition = &swinging_door_definitions[door->definition_index];
+	
+	auto polygon = get_object_data(door->center_object).polygon;
+	
+	auto playsound = [polygon](int16 s) 
+	{
+		play_polygon_sound(polygon, s);
+		cause_ambient_sound_source_update();
+	};
+	
+	if (sound_type < 1 )
+	{
+		if( !sound_type )
+			def = definition->sound0;
+		if( def == NONE )
+			return;
+		playsound(def);
+		return;
+	}
+	if(sound_type > 1)
+	{
+		if ( sound_type == 2 )
+		{
+			sound = definition->sound1;
+			if ( sound == NONE )
+				return;
+			playsound(sound);
+			return;
+		}
+		if(def == NONE)
+			return;
+		playsound(def);
+		return;
+	}
+	sound = definition->sound2;
+	if(sound != NONE)
+	{
+		playsound(sound);
+		return;
+	}
+}
+
+/*	simple one	*/
+void get_swinging_door_dimensions(const ix swinging_door_index, 
+	world_distance *restrict radius, world_distance *restrict height)
+{
+	const swinging_door_data *restrict swinging_door = &swinging_doors[ swinging_door_index ];
+	*radius = swinging_door->radius;
+	*height = swinging_door->height;
+}
+
+bool polygon_contains_swinging_door(const int16 polygon_index, int16 *restrict door_index)
+{
+	bool contains_swinging_door = false;
+	*door_index = NONE;
+	
+	for( auto i = map_polygons[ polygon_index ].first_object; i != NONE; i = object->next_object )
+	{
+		if( (get_object_data(i)->flags & 7) == 6 )
+		{
+			*door_index = i;
+			contains_swinging_door = true;
+			break;
+		}
+	}
+	return contains_swinging_door;
+}
+
+void reverse_direction_of_door(const ix index)
+{
+	int16 v5; 
+	
+	swinging_door_data *door = &swinging_doors[index];
+	auto direction = door->related_to_direction1;
+
+	if ( direction == 2 )
+		door->related_to_direction1 = 3;
+	else if ( direction == 3 )
+		door->related_to_direction1 = 2;
+	
+	auto v4 = door->related_to_direction2;
+	
+	if(v4)
+		v5 = v4 < 0 ? -1 : 1;
+	else
+		v5 = 0;
+		
+	auto v6 = v5;
+	
+	auto v7 = door->related_to_direction0 < 0 ? -door->related_to_direction0 : door->related_to_direction0;
+	auto v8 = door->related_to_direction2 < 0 ? -door->related_to_direction2 : door->related_to_direction2;
+
+	//absolute value of direction0 - absolute value of direction 2
+	auto v9 = v7 - v8;
+	
+	door->related_to_direction2 = v6 > 0 ? -v9 : v9;
 }
