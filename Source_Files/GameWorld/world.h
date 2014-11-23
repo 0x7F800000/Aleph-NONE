@@ -201,7 +201,7 @@ typedef struct world_location3d world_location3d;
 extern short *cosine_table, *sine_table;
 /* tangent table is for internal use only (during arctangent calls) */
 
-/* ---------- prototypes: WORLD.C */
+/* ---------- prototypes: WORLD.CPP */
 
 void build_trig_tables();
 
@@ -212,14 +212,15 @@ static inline angle normalize_angle(angle theta)
 	return NORMALIZE_ANGLE(theta);
 }
 
-world_point2d *rotate_point2d(world_point2d *point, world_point2d *origin, angle theta);
-world_point3d *rotate_point3d(world_point3d *point, world_point3d *origin, angle theta, angle phi);
+world_point2d *rotate_point2d(world_point2d *restrict point, const world_point2d * restrict origin, angle theta);
+world_point3d *rotate_point3d(world_point3d *restrict point, world_point3d *origin, angle theta, angle phi);
 
-world_point2d *translate_point2d(world_point2d *point, world_distance distance, angle theta);
-world_point3d *translate_point3d(world_point3d *point, world_distance distance, angle theta, angle phi);
+world_point2d *translate_point2d(world_point2d *restrict point, const world_distance distance, angle theta);
+world_point3d *translate_point3d(world_point3d *restrict point, const world_distance distance, angle theta, angle phi);
 
-world_point2d *transform_point2d(world_point2d *point, world_point2d *origin, angle theta);
-world_point3d *transform_point3d(world_point3d *point, world_point3d *origin, angle theta, angle phi);
+world_point2d *transform_point2d(world_point2d *restrict point, const world_point2d *restrict origin, angle theta);
+world_point3d *transform_point3d(world_point3d *restrict point, 
+	const world_point3d *restrict origin, const angle theta, const angle phi);
 
 /* angle is in [0,NUMBER_OF_ANGLES), or, [0,2¹) */
 // LP change: made this long-distance friendly
@@ -235,8 +236,8 @@ uint16 local_random();
 uint16 local_random(uint16 max);
 
 world_distance guess_distance2d( world_point2d *p0,  world_point2d *p1);
-world_distance distance3d( world_point3d *p0,  world_point3d *p1);
-world_distance distance2d( world_point2d *p0,  world_point2d *p1); /* calls isqrt() */
+world_distance distance3d( const world_point3d *restrict p0,  const world_point3d *restrict p1);
+world_distance distance2d( const world_point2d *restrict p0,  const world_point2d *restrict p1); /* calls isqrt() */
 
 
 
