@@ -256,7 +256,7 @@ clipping_window_data *RenderSortPolyClass::build_clipping_windows(node_data *Cha
 	vector<endpoint_clip_data>& 	EndpointClips 			= RVPtr->EndpointClips;
 	vector<line_clip_data>& 	LineClips 			= RVPtr->LineClips;
 	vector<clipping_window_data>& 	ClippingWindows 		= RVPtr->ClippingWindows;
-	vector<short>& 			endpoint_x_coordinate		= RVPtr->endpoint_x_coordinates;
+	vector<short>& 			endpoint_x_coordinates		= RVPtr->endpoint_x_coordinates;
 	
 	/* 
 		calculate x0,x1 (real left and right borders of this node) in case the left and right borders
