@@ -643,3 +643,18 @@ void rotate_point2d_long(int * restrict px, int * restrict py, const int ox, con
 	*px = ox + (sine_table[theta_integral] * dy >> TRIG_SHIFT) + (cosine_table[theta_integral] * dx >> TRIG_SHIFT);
 	*py = oy + (cosine_table[theta_integral] * dy >> TRIG_SHIFT) - (dx * sine_table[theta_integral] >> TRIG_SHIFT);
 }
+
+int16 abs_short_local_random()
+{
+	int16 seed; 
+	
+	if( local_random_seed & 1 )
+		seed = (local_random_seed >> 1) ^ 0xB400;
+	else
+		seed = local_random_seed >> 1;
+		
+	local_random_seed = seed;
+	if ( seed < 0 )
+		seed = -seed;
+	return seed;
+}
