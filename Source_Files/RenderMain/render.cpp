@@ -977,7 +977,6 @@ static void position_sprite_axis(
 		
 		default:
 			assert(false);
-			break;
 	}
 	
 	switch (positioning_mode)
@@ -998,7 +997,6 @@ static void position_sprite_axis(
 		
 		default:
 			assert(false);
-			break;
 	}
 }
 
