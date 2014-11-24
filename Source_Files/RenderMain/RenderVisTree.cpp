@@ -201,7 +201,7 @@ void RenderVisTreeClass::build_render_tree()
 				(we don't have to cast at points outside the cone) 
 			*/
 			const auto ri = view->right_edge.i;
-			const auto rj = view->ridge_edge.j;
+			const auto rj = view->right_edge.j;
 			const int32 crossprod_right = ( ri * _vector.j ) - ( rj * _vector.i );
 			
 			const auto li = view->left_edge.i;
