@@ -1,5 +1,5 @@
 /*
-PHYSICS.C
+PHYSICS.CPP
 
 	Copyright (C) 1991-2001 and beyond by Bungie Studios, Inc.
 	and the "Aleph One" developers.
@@ -57,14 +57,14 @@ May 16, 2002 (Woody Zenfell):
 */
 
 /*
-running backwards shouldn’t mean doom in a fistfight
+running backwards shouldn√ït mean doom in a fistfight
 
 //who decides on the physics model, anyway?  static_world-> or player->
 //falling through gridlines and crapping on elevators has to do with variables->flags being wrong after the player dies
 //absolute (or nearly-absolute) positioning information for yaw, pitch and velocity
 //the physics model is too soft (more noticable at high frame rates)
 //we can continually boot ourselves out of nearly-orthogonal walls by tiny amounts, resulting in a slide
-//it’s fairly obvious that players can still end up in walls
+//it√ïs fairly obvious that players can still end up in walls
 //the recenter key should work faster
 */
 
@@ -220,9 +220,9 @@ void adjust_player_for_polygon_height_change(short monster_index, short polygon_
 	
 	player_data *player = get_player_data(player_index);
 	physics_variables *variables = &player->variables;
-	polygon_data *polygon = get_polygon_data(polygon_index);
+	polygon_data &polygon = polygon_data::Get(polygon_index);
 	
-	auto old_floor_height = polygon->floor_height;
+	auto old_floor_height = polygon.floor_height;
 
 	(void) (new_ceiling_height);
 
@@ -230,7 +230,8 @@ void adjust_player_for_polygon_height_change(short monster_index, short polygon_
 	{
 		if( FIXED_TO_WORLD(variables->position.z) <= old_floor_height ) /* must be <= */
 		{
-			variables->floor_height= variables->position.z= WORLD_TO_FIXED(new_floor_height);
+			variables->floor_height = variables->position.z = WORLD_TO_FIXED(new_floor_height);
+			
 			if (film_profile.fix_sliding_on_platforms && variables->external_velocity.k < 0) 
 				variables->external_velocity.k = 0;
 
@@ -247,7 +248,8 @@ void accelerate_player(short monster_index, world_distance vertical_velocity, an
 
 void get_absolute_pitch_range(_fixed *minimum, _fixed *maximum)	
 {
-	const physics_constants *constants = get_physics_constants_for_model(static_world->physics_model, 0);
+	const physics_constants *restrict constants 
+			= get_physics_constants_for_model(static_world->physics_model, 0);
 	
 	*minimum = -constants->maximum_elevation;
 	*maximum = constants->maximum_elevation;
@@ -257,7 +259,7 @@ void get_absolute_pitch_range(_fixed *minimum, _fixed *maximum)
 	to the maximum for that value */
 uint32 mask_in_absolute_positioning_information(uint32 action_flags, _fixed delta_yaw, _fixed delta_pitch, _fixed delta_position)
 {
-	physics_variables *variables = &local_player->variables;
+	physics_variables *restrict variables = &local_player->variables;
 	short encoded_delta;
 
 	if ((delta_yaw||variables->angular_velocity) && !(action_flags&_override_absolute_yaw))
@@ -279,7 +281,6 @@ uint32 mask_in_absolute_positioning_information(uint32 action_flags, _fixed delt
 
 	if ((delta_pitch||variables->vertical_angular_velocity) && !(action_flags&_override_absolute_pitch))
 	{
-//		if (delta_pitch<0 && delta_pitch>((-1)<<(FIXED_FRACTIONAL_BITS-ABSOLUTE_PITCH_BITS))) delta_pitch= 0;
 		int sign_pitch = 1.0;
 		if (delta_pitch < 0)
 		{
@@ -372,10 +373,11 @@ physics_constants *get_physics_constants_for_model(short physics_model, uint32 a
 void instantiate_physics_variables(struct physics_constants *constants, struct physics_variables *variables, short player_index,
 									bool first_time, bool take_action)
 {
-	player_data *player = get_player_data(player_index);
-	monster_data *monster = get_monster_data(player->monster_index);
-	object_data *legs = get_object_data(monster->object_index);
-	object_data *torso = get_object_data(legs->parasitic_object);
+	player_data *player 		= get_player_data(player_index);
+	monster_data *monster 		= get_monster_data(player->monster_index);
+	object_data *legs 		= get_object_data(monster->object_index);
+	object_data *torso 		= get_object_data(legs->parasitic_object);
+	
 	auto old_polygon_index = legs->polygon;
 	world_point3d new_location;
 	world_distance adjusted_floor_height, adjusted_ceiling_height, object_floor;
@@ -385,13 +387,13 @@ void instantiate_physics_variables(struct physics_constants *constants, struct p
 	_fixed fixed_facing;
 
 	/* convert to world coordinates before doing collision detection */
-	new_location.x= FIXED_TO_WORLD(variables->position.x);
-	new_location.y= FIXED_TO_WORLD(variables->position.y);
-	new_location.z= FIXED_TO_WORLD(variables->position.z);
+	new_location.x	= FIXED_TO_WORLD(variables->position.x);
+	new_location.y	= FIXED_TO_WORLD(variables->position.y);
+	new_location.z	= FIXED_TO_WORLD(variables->position.z);
 
 	/* check for 2d collisions with walls and knock the player back out of the wall (because of
-		the way the physics updates work, we don’t worry about collisions with the floor or
-		ceiling).  ONLY MODIFY THE PLAYER’S FIXED_POINT3D POSITION IF WE HAD A COLLISION */
+		the way the physics updates work, we don√ït worry about collisions with the floor or
+		ceiling).  ONLY MODIFY THE PLAYER√ïS FIXED_POINT3D POSITION IF WE HAD A COLLISION */
 	if (PLAYER_IS_DEAD(player)) 
 		new_location.z+= FIXED_TO_WORLD(DROP_DEAD_HEIGHT);
 		
@@ -408,31 +410,30 @@ void instantiate_physics_variables(struct physics_constants *constants, struct p
 		new_location.z -= FIXED_TO_WORLD(DROP_DEAD_HEIGHT);
 
 	/* check for 2d collisions with solid objects and knock the player back out of the object.
-		ONLY MODIFY THE PLAYER’S FIXED_POINT3D POSITION IF WE HAD A COLLISION. */
+		ONLY MODIFY THE PLAYER√ïS FIXED_POINT3D POSITION IF WE HAD A COLLISION. */
 	object_floor= INT16_MIN;
+	
+	auto obstruction_index = legal_player_move(player->monster_index, &new_location, &object_floor);
+	
+	if (obstruction_index != NONE)
 	{
-		auto obstruction_index = legal_player_move(player->monster_index, &new_location, &object_floor);
+		object_data *object= get_object_data(obstruction_index);
 		
-		if (obstruction_index != NONE)
+		switch (GET_OBJECT_OWNER(object))
 		{
-			object_data *object= get_object_data(obstruction_index);
+			case _object_is_monster:
+				if(take_action)
+					bump_monster(player->monster_index, object->permutation);
+			case _object_is_scenery:
+				new_location.x= legs->location.x, new_location.y= legs->location.y;
+				clipped = true;
+				break;
 			
-			switch (GET_OBJECT_OWNER(object))
-			{
-				case _object_is_monster:
-					if(take_action)
-						bump_monster(player->monster_index, object->permutation);
-				case _object_is_scenery:
-					new_location.x= legs->location.x, new_location.y= legs->location.y;
-					clipped = true;
-					break;
-				
-				default:
-					assert(false);
-					break;
-			}
+			default:
+				assert(false);
 		}
 	}
+
 
 	/* translate_map_object will handle crossing polygon boundaries */
 	if (translate_map_object(monster->object_index, &new_location, NONE))
@@ -465,31 +466,38 @@ void instantiate_physics_variables(struct physics_constants *constants, struct p
 	player->camera_polygon_index = legs->polygon;
 
 	/* shadow facing in player structure and object structure */
-	fixed_facing= variables->direction+variables->head_direction;
-	facing= FIXED_INTEGERAL_PART(fixed_facing), facing= NORMALIZE_ANGLE(facing);
-	elevation= FIXED_INTEGERAL_PART(variables->elevation), elevation= NORMALIZE_ANGLE(elevation);
-	legs->location.z= player->location.z;
-	legs->facing= NORMALIZE_ANGLE(FIXED_INTEGERAL_PART(variables->direction)), torso->facing= player->facing= facing;
-	player->elevation= elevation;
+	fixed_facing		= variables->direction + variables->head_direction;
+	
+	facing			= FIXED_INTEGERAL_PART(fixed_facing);
+	facing			= NORMALIZE_ANGLE(facing);
+	
+	elevation		= FIXED_INTEGERAL_PART(variables->elevation);
+	elevation		= NORMALIZE_ANGLE(elevation);
+	
+	legs->location.z	= player->location.z;
+	legs->facing		= NORMALIZE_ANGLE(FIXED_INTEGERAL_PART(variables->direction));
+	torso->facing		= player->facing = facing;
+	player->elevation	= elevation;
 
 	/* initialize floor_height and ceiling_height for next call to physics_update() */
-	variables->floor_height= WORLD_TO_FIXED(MAX(adjusted_floor_height, object_floor));
-	variables->ceiling_height= WORLD_TO_FIXED(adjusted_ceiling_height);
-	{
-		auto media_index = get_polygon_data(legs->polygon)->media_index;
-		// LP change: idiot-proofing
-		const media_data *media = get_media_data(media_index);
-		auto media_height = (media_index == NONE || !media) ? INT16_MIN : media->height;
+	variables->floor_height		= WORLD_TO_FIXED(	MAX(adjusted_floor_height, object_floor) );
+	variables->ceiling_height	= WORLD_TO_FIXED(	adjusted_ceiling_height );
+	
+	auto media_index = get_polygon_data(legs->polygon)->media_index;
+	// LP change: idiot-proofing
+	const media_data *restrict media = get_media_data(media_index);
+	
+	auto media_height = (media_index == NONE || !media) ? INT16_MIN : media->height;
 
-		if (player->location.z < media_height) 
-			variables->flags |= _FEET_BELOW_MEDIA_BIT; 
-		else 
-			variables->flags &= (uint16)~_FEET_BELOW_MEDIA_BIT;
-		if (player->camera_location.z < media_height) 
-			variables->flags |= _HEAD_BELOW_MEDIA_BIT; 
-		else 
-			variables->flags &= (uint16)~_HEAD_BELOW_MEDIA_BIT;
-	}
+	if (player->location.z < media_height) 
+		variables->flags |= _FEET_BELOW_MEDIA_BIT; 
+	else 
+		variables->flags &= (uint16)~_FEET_BELOW_MEDIA_BIT;
+	if (player->camera_location.z < media_height) 
+		variables->flags |= _HEAD_BELOW_MEDIA_BIT; 
+	else 
+		variables->flags &= (uint16)~_HEAD_BELOW_MEDIA_BIT;
+
 
 	// so our sounds come from the right place
 	monster->sound_location = player->camera_location;
@@ -504,7 +512,7 @@ static void physics_update(struct physics_constants *constants, struct physics_v
 	fixed_point3d new_position;
 	short sine, cosine;
 	_fixed delta_z;
-	_fixed delta; /* used as a scratch ‘change’ variable */
+	_fixed delta; /* used as a scratch √îchange√ï variable */
 	
 	auto testActionFlags = [&action_flags](uint32 test){	return action_flags & test != 0;	};
 
@@ -553,7 +561,7 @@ static void physics_update(struct physics_constants *constants, struct physics_v
 		action_flags &= ~_absolute_pitch_mode;
 	}
 
-	/* handle turning left or right; if we’ve exceeded our maximum velocity lock out user actions
+	/* handle turning left or right; if we√ïve exceeded our maximum velocity lock out user actions
 		until we return to a legal range */
 	if (action_flags&_absolute_yaw_mode)
 		variables->angular_velocity= (GET_ABSOLUTE_YAW(action_flags)-MAXIMUM_ABSOLUTE_YAW/2)<<(FIXED_FRACTIONAL_BITS); // !!!!!!!!!!
@@ -612,13 +620,13 @@ static void physics_update(struct physics_constants *constants, struct physics_v
 			action_flags |= variables->elevation < 0 ? _looking_up : _looking_down;
 		}
 	
-		/* handle looking up and down; if we’re moving at our terminal velocity forward or backward,
+		/* handle looking up and down; if we√ïre moving at our terminal velocity forward or backward,
 			without any side-to-side motion, recenter our head vertically */
 
         // ZZZ: only do auto-recentering if the user wants it
         if(!PLAYER_DOESNT_AUTO_RECENTER(player)) 
         {
-            if (!(action_flags&FLAGS_WHICH_PREVENT_RECENTERING)) /* can’t recenter if any of these are true */
+            if (!(action_flags&FLAGS_WHICH_PREVENT_RECENTERING)) /* can√ït recenter if any of these are true */
 		    {
 			    if ((action_flags & _moving_forward && (variables->velocity == constants->maximum_forward_velocity)) ||
 				    (action_flags & _moving_backward && (variables->velocity == -constants->maximum_backward_velocity)))
@@ -650,8 +658,8 @@ static void physics_update(struct physics_constants *constants, struct physics_v
 		}
 	}
 
-	/* if we’re on the ground (or rising up from it), allow movement; if we’re flying through
-		the air, don’t let the player adjust his velocity in any way */
+	/* if we√ïre on the ground (or rising up from it), allow movement; if we√ïre flying through
+		the air, don√ït let the player adjust his velocity in any way */
 	if (delta_z <= 0 || variables->flags & _HEAD_BELOW_MEDIA_BIT)
 	{
 		if(action_flags & _absolute_position_mode)
@@ -665,7 +673,7 @@ static void physics_update(struct physics_constants *constants, struct physics_v
 		}
 		else
 		{
-			/* handle moving forward or backward; if we’ve exceeded our maximum velocity lock out user actions
+			/* handle moving forward or backward; if we√ïve exceeded our maximum velocity lock out user actions
 				until we return to a legal range */
 			if (variables->velocity<-constants->maximum_backward_velocity||variables->velocity>constants->maximum_forward_velocity) action_flags&= ~_moving;
 			switch (action_flags&_moving)
@@ -687,7 +695,7 @@ static void physics_update(struct physics_constants *constants, struct physics_v
 			}
 		}
 		
-		/* handle sidestepping left or right; if we’ve exceeded our maximum velocity lock out user actions
+		/* handle sidestepping left or right; if we√ïve exceeded our maximum velocity lock out user actions
 			until we return to a legal range */
 		if (variables->perpendicular_velocity < -constants->maximum_perpendicular_velocity||
 			variables->perpendicular_velocity > constants->maximum_perpendicular_velocity	) 
@@ -738,7 +746,7 @@ static void physics_update(struct physics_constants *constants, struct physics_v
 	if ( action_flags & _swim && variables->flags & _HEAD_BELOW_MEDIA_BIT && variables->external_velocity.k < 10 * constants->climbing_acceleration)
 		variables->external_velocity.k += constants->climbing_acceleration;
 
-	/* change the player’s elevation based on his vertical angular velocity; if we’re recentering and
+	/* change the player√ïs elevation based on his vertical angular velocity; if we√ïre recentering and
 		have recentered clear the recentering bit */
 	variables->elevation += variables->vertical_angular_velocity;
 	variables->elevation = PIN(variables->elevation, -constants->maximum_elevation, constants->maximum_elevation);
@@ -751,7 +759,7 @@ static void physics_update(struct physics_constants *constants, struct physics_v
 		}
 	}
 
-	/* change the player’s heading based on his angular velocities */
+	/* change the player√ïs heading based on his angular velocities */
 	variables->last_direction= variables->direction;
 	variables->direction+= variables->angular_velocity;
 	if (variables->direction<0) 
@@ -759,7 +767,7 @@ static void physics_update(struct physics_constants *constants, struct physics_v
 	if (variables->direction>=INTEGER_TO_FIXED(FULL_CIRCLE)) 
 		variables->direction-= INTEGER_TO_FIXED(FULL_CIRCLE);
 	
-	/* change the player’s x,y position based on his direction and velocities (parallel and perpendicular)  */
+	/* change the player√ïs x,y position based on his direction and velocities (parallel and perpendicular)  */
 	new_position= variables->position;
 	cosine= cosine_table[FIXED_INTEGERAL_PART(variables->direction)], sine= sine_table[FIXED_INTEGERAL_PART(variables->direction)];
 	new_position.x+= (variables->velocity*cosine-variables->perpendicular_velocity*sine)>>TRIG_SHIFT;
@@ -777,7 +785,7 @@ static void physics_update(struct physics_constants *constants, struct physics_v
 		variables->flags&= (uint16)~_ABOVE_GROUND_BIT;
 
 	/* if we just landed on the ground, or we just came up through the ground, absorb some of
-		the player’s external_velocity.k (and in the case of hitting the ground, reflect it) */
+		the player√ïs external_velocity.k (and in the case of hitting the ground, reflect it) */
 	if (variables->external_velocity.k>0 && (variables->old_flags&_BELOW_GROUND_BIT) && !(variables->flags&_BELOW_GROUND_BIT))
 		variables->external_velocity.k/= 2*COEFFICIENT_OF_ABSORBTION; /* slow down */
 		
@@ -808,7 +816,7 @@ static void physics_update(struct physics_constants *constants, struct physics_v
 		variables->flags&= ~(_BELOW_GROUND_BIT|_ABOVE_GROUND_BIT);
 	}
 
-	/* change the player’s z position based on his vertical velocity (if we hit the ground coming down
+	/* change the player√ïs z position based on his vertical velocity (if we hit the ground coming down
 		then bounce and absorb most of the blow */
 	new_position.x+= variables->external_velocity.i;
 	new_position.y+= variables->external_velocity.j;
@@ -828,7 +836,7 @@ static void physics_update(struct physics_constants *constants, struct physics_v
 			variables->external_velocity.i = variables->external_velocity.j= 0;
 	}
 
-	/* lower the player’s externally-induced angular velocity */
+	/* lower the player√ïs externally-induced angular velocity */
 	variables->external_angular_velocity= (variables->external_angular_velocity>=0) ?
 		FLOOR(variables->external_angular_velocity-constants->external_angular_deceleration, 0) :
 		CEILING(variables->external_angular_velocity+constants->external_angular_deceleration, 0);
@@ -837,8 +845,8 @@ static void physics_update(struct physics_constants *constants, struct physics_v
 	variables->last_position= variables->position;
 	variables->position= new_position;
 
-	/* if the player is moving, adjust step_phase by step_delta (if the player isn’t moving
-		continue to adjust step_phase until it is zero)  if the player is in the air, don’t
+	/* if the player is moving, adjust step_phase by step_delta (if the player isn√ït moving
+		continue to adjust step_phase until it is zero)  if the player is in the air, don√ït
 		update phase until he lands. */
 	variables->flags&= (uint16)~_STEP_PERIOD_BIT;
 	if (constants->maximum_forward_velocity)
