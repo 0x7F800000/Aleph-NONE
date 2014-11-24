@@ -1721,7 +1721,7 @@ static bool RenderAsRealWall(polygon_definition& RenderPolygon, bool IsVertical)
 				PolygonSplit = true;
 				// Find the split location
 				int SplitLoc = NONE;
-				for (int k=0; k<NumVertices; k++)
+				for (ix k=0; k<NumVertices; k++)
 				{
 					if (VertexSource[k] == Split)
 					{
@@ -1733,7 +1733,7 @@ static bool RenderAsRealWall(polygon_definition& RenderPolygon, bool IsVertical)
 				
 				// Move up all those past the split;
 				// be sure to go backwards so as to move them correctly.
-				for (int k=NumVertices-1; k>SplitLoc; k--)
+				for (ix k=NumVertices-1; k>SplitLoc; k--)
 					VertexSource[k+1] = VertexSource[k];
 				
 				// Put the split one into place
@@ -1747,7 +1747,7 @@ static bool RenderAsRealWall(polygon_definition& RenderPolygon, bool IsVertical)
 			if (PolygonSplit)
 			{
 				// Go backwards, since the vertices have been pushed upwards
-				for (int k=NumVertices-1; k>=0; k--)
+				for (ix k=NumVertices-1; k>=0; k--)
 				{
 					int Src = VertexSource[k];
 					if (Src >= 0)
