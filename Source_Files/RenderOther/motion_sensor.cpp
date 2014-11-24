@@ -1,5 +1,5 @@
 /*
-MOTION_SENSOR.C
+MOTION_SENSOR.CPP
 
 	Copyright (C) 1991-2001 and beyond by Bungie Studios, Inc.
 	and the "Aleph One" developers.
@@ -54,10 +54,6 @@ Sep 2, 2000 (Loren Petrich):
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
-
-#ifdef env68k
-#pragma segment texture
-#endif
 
 static short MonsterDisplays[NUMBER_OF_MONSTER_TYPES] =
 {
@@ -164,8 +160,8 @@ struct motion_sensor_definition motion_sensor_settings = {
 
 /* ---------- structures */
 
-/* an entity can’t just be jerked from the array, because his signal should fade out, so we
-	mark him as ‘being removed’ and wait until his last signal fades away to actually remove
+/* an entity can√ït just be jerked from the array, because his signal should fade out, so we
+	mark him as √îbeing removed√ï and wait until his last signal fades away to actually remove
 	him */
 #define SLOT_IS_BEING_REMOVED_BIT 0x4000
 #define SLOT_IS_BEING_REMOVED(e) ((e)->flags&(uint16)SLOT_IS_BEING_REMOVED_BIT)
@@ -225,27 +221,22 @@ static void unclipped_solid_sprite_copy(struct bitmap_definition *source,
 
 /* ---------- code */
 
-void initialize_motion_sensor(
-	shape_descriptor mount,
-	shape_descriptor virgin_mounts,
-	shape_descriptor aliens,
-	shape_descriptor friends,
-	shape_descriptor enemies,
-	shape_descriptor compasses,
-	short side_length)
+void initialize_motion_sensor(shape_descriptor mount, shape_descriptor virgin_mounts, shape_descriptor aliens,
+		shape_descriptor friends, shape_descriptor enemies, shape_descriptor compasses, short side_length)
 {
-	mount_shape= mount;
-	virgin_mount_shapes= virgin_mounts;
-	enemy_shapes= enemies;
-	friendly_shapes= friends;
-	alien_shapes= aliens;
-	compass_shapes= compasses;
+	mount_shape		= mount;
+	virgin_mount_shapes	= virgin_mounts;
+	enemy_shapes		= enemies;
+	friendly_shapes		= friends;
+	alien_shapes		= aliens;
+	compass_shapes		= compasses;
 	
-	entities= new entity_data[MAXIMUM_MOTION_SENSOR_ENTITIES];
+	entities	= new entity_data[MAXIMUM_MOTION_SENSOR_ENTITIES];
 	assert(entities);
-	for (int i = 0; i < MAXIMUM_MOTION_SENSOR_ENTITIES; i++) {
+	
+	for (ix i = 0; i < MAXIMUM_MOTION_SENSOR_ENTITIES; i++) 
 	  entities[i].flags = 0;
-	}
+	
 
 	sensor_region= new region_data[side_length];
 	assert(sensor_region);
@@ -253,34 +244,35 @@ void initialize_motion_sensor(
 	/* precalculate the sensor region */
 	precalculate_sensor_region(side_length);	
 
-	/* reset_motion_sensor() should be called before the motion sensor is used, but after it’s
+	/* reset_motion_sensor() should be called before the motion sensor is used, but after it√ïs
 		shapes are loaded (because it will do bitmap copying) */
 }
 
 extern bool shapes_file_is_m1();
 
-void reset_motion_sensor(
-	short player_index)
+void reset_motion_sensor(int16 player_index)
 {
-	struct bitmap_definition *mount, *virgin_mount;
-	short i;
+	bitmap_definition *mount, *virgin_mount;
 
-	motion_sensor_player_index= player_index;
-	ticks_since_last_update= ticks_since_last_rescan= 0;
+	motion_sensor_player_index	= player_index;
+	ticks_since_last_update		= ticks_since_last_rescan = 0;
 
 	if (!shapes_file_is_m1())
 	{
-		get_shape_bitmap_and_shading_table(mount_shape, &mount, (void **) NULL, NONE);
-		if (!mount) return;
-		get_shape_bitmap_and_shading_table(virgin_mount_shapes, &virgin_mount, (void **) NULL, NONE);
-		if (!virgin_mount) return;
+		get_shape_bitmap_and_shading_table(mount_shape, &mount, nullptr, NONE);
+		if (!mount) 
+			return;
+		get_shape_bitmap_and_shading_table(virgin_mount_shapes, &virgin_mount, nullptr, NONE);
+		if (!virgin_mount) 
+			return;
 		
-		assert(mount->width==virgin_mount->width);
-		assert(mount->height==virgin_mount->height);
+		assert(mount->width	==	virgin_mount->width);
+		assert(mount->height	==	virgin_mount->height);
 		bitmap_window_copy(virgin_mount, mount, 0, 0, mount->width, mount->height);
 	}
 
-	for (i= 0; i<MAXIMUM_MOTION_SENSOR_ENTITIES; ++i) MARK_SLOT_AS_FREE(entities+i);
+	for (ix i = 0; i < MAXIMUM_MOTION_SENSOR_ENTITIES; ++i) 
+		MARK_SLOT_AS_FREE(entities + i);
 	
 	network_compass_state= _network_compass_all_off;
 }
@@ -290,35 +282,32 @@ void reset_motion_sensor(
 /* ticks_elapsed==NONE means force rescan now.. */
 void HUD_Class::motion_sensor_scan(short ticks_elapsed)
 {
-	if (m1_solo_player_in_terminal()) {
+	if (m1_solo_player_in_terminal()) 
 		return;
-	}
+	
 
-	struct object_data *owner_object= get_object_data(get_player_data(motion_sensor_player_index)->object_index);
+	object_data *owner_object = get_object_data(get_player_data(motion_sensor_player_index)->object_index);
 
 	/* if we need to scan for new objects, flood around the owner monster looking for other,
 		visible monsters within our range */
 	if ((ticks_since_last_rescan-= ticks_elapsed)<0 || ticks_elapsed==NONE)
 	{
-		struct monster_data *monster;
+		monster_data *monster;
 		short monster_index;
 		
 		for (monster_index=0,monster=monsters;monster_index<MAXIMUM_MONSTERS_PER_MAP;++monster,++monster_index)
 		{
-			if (SLOT_IS_USED(monster)&&(MONSTER_IS_PLAYER(monster)||MONSTER_IS_ACTIVE(monster)))
+			if (SLOT_IS_USED(monster) && (MONSTER_IS_PLAYER(monster) || MONSTER_IS_ACTIVE(monster)))
 			{
-				struct object_data *object= get_object_data(monster->object_index);
-				world_distance distance= guess_distance2d((world_point2d *) &object->location, (world_point2d *) &owner_object->location);
+				object_data *object	= get_object_data(monster->object_index);
+				auto distance		= guess_distance2d((world_point2d *) &object->location, (world_point2d *) &owner_object->location);
 				
-				if (distance<MOTION_SENSOR_RANGE && OBJECT_IS_VISIBLE_TO_MOTION_SENSOR(object))
-				{
-//					dprintf("found valid monster #%d", monster_index);
+				if( distance < MOTION_SENSOR_RANGE && OBJECT_IS_VISIBLE_TO_MOTION_SENSOR(object) )
 					find_or_add_motion_sensor_entity(object->permutation);
-				}
 			}
 		}
 		
-		ticks_since_last_rescan= MOTION_SENSOR_RESCAN_FREQUENCY;
+		ticks_since_last_rescan = MOTION_SENSOR_RESCAN_FREQUENCY;
 	}
 
 	render_motion_sensor(ticks_elapsed);
@@ -369,7 +358,7 @@ void HUD_Lua_Class::render_motion_sensor(short ticks_elapsed)
 
 
 /* the interface code will call this function and only draw the motion sensor if we return true */
-bool motion_sensor_has_changed(void)
+bool motion_sensor_has_changed()
 {
 	bool changed = motion_sensor_changed;
 	motion_sensor_changed = false;
@@ -377,13 +366,11 @@ bool motion_sensor_has_changed(void)
 }
 
 /* toggle through the ranges */
-void adjust_motion_sensor_range(void)
-{
-}
+void adjust_motion_sensor_range(){}
 
 /* ---------- private code */
 
-void HUD_Class::draw_network_compass(void)
+void HUD_Class::draw_network_compass()
 {
 #if !defined(DISABLE_NETWORKING)
 	short new_state= get_network_compass_state(motion_sensor_player_index);
@@ -395,7 +382,7 @@ void HUD_Class::draw_network_compass(void)
 	if (difference&_network_compass_sw) draw_or_erase_unclipped_shape(36, 61, compass_shapes+2, (new_state&_network_compass_sw) != 0);
 	
 	network_compass_state= new_state;
-#endif // !defined(DISABLE_NETWORKING)
+#endif 
 }
 
 void HUD_Class::erase_all_entity_blips(void)
@@ -405,33 +392,28 @@ void HUD_Class::erase_all_entity_blips(void)
 	short entity_index;
 
 	/* first erase all locations where the entity changed locations and then did not change
-		locations, and erase it’s last location */
+		locations, and erase it√ïs last location */
 	for (entity_index=0,entity=entities;entity_index<MAXIMUM_MOTION_SENSOR_ENTITIES;++entity_index,++entity)
 	{
 		if (SLOT_IS_USED(entity))
 		{
-//			dprintf("entity #%d (%p) valid", entity_index, entity);
 			/* see if our monster slot is free; if it is mark this entity as being removed; of
-				course this isn’t wholly accurate and we might start tracking a new monster
-				which has been placed in our old monster’s slot, but we eat that chance
+				course this isn√ït wholly accurate and we might start tracking a new monster
+				which has been placed in our old monster√ïs slot, but we eat that chance
 				without remorse */
 			if (SLOT_IS_USED(monsters+entity->monster_index))
 			{
-				struct object_data *object= get_object_data(get_monster_data(entity->monster_index)->object_index);
+				object_data *object= get_object_data(get_monster_data(entity->monster_index)->object_index);
 				world_distance distance= guess_distance2d((world_point2d *) &object->location, (world_point2d *) &owner_object->location);
 				
-				/* verify that we’re still in range (and mark us as being removed if we’re not */
+				/* verify that we√ïre still in range (and mark us as being removed if we√ïre not */
 				if (distance>MOTION_SENSOR_RANGE || !OBJECT_IS_VISIBLE_TO_MOTION_SENSOR(object))
 				{
-//					dprintf("removed2");
 					MARK_SLOT_AS_BEING_REMOVED(entity);
 				}
 			}
 			else
-			{
-//				dprintf("removed1");
 				MARK_SLOT_AS_BEING_REMOVED(entity);
-			}
 
 			/* erase the blip specified by NUMBER_OF_PREVIOUS_LOCATIONS-1 */
 			if (entity->visible_flags[NUMBER_OF_PREVIOUS_LOCATIONS-1]) erase_entity_blip(&entity->previous_points[NUMBER_OF_PREVIOUS_LOCATIONS-1], entity->shape);
@@ -441,11 +423,11 @@ void HUD_Class::erase_all_entity_blips(void)
 			memmove(entity->previous_points+1, entity->previous_points, (NUMBER_OF_PREVIOUS_LOCATIONS-1)*sizeof(point2d));
 			entity->visible_flags[0]= false;
 				
-			/* if we’re not being removed, make room for a new location and calculate it */
+			/* if we√ïre not being removed, make room for a new location and calculate it */
 			if (!SLOT_IS_BEING_REMOVED(entity))
 			{
-				struct monster_data *monster= get_monster_data(entity->monster_index);
-				struct object_data *object= get_object_data(monster->object_index);
+				monster_data *monster= get_monster_data(entity->monster_index);
+				object_data *object= get_object_data(monster->object_index);
 				
 				/* remember if this entity is visible or not */
 				if (object->transfer_mode!=_xfer_invisibility && object->transfer_mode!=_xfer_subtle_invisibility &&
@@ -464,9 +446,7 @@ void HUD_Class::erase_all_entity_blips(void)
 				/* calculate the 2d position on the motion sensor */
 				entity->previous_points[0]= *(point2d *)&object->location;
 				transform_point2d((world_point2d *)&entity->previous_points[0], (world_point2d *)&owner_object->location, NORMALIZE_ANGLE(owner_object->facing+QUARTER_CIRCLE));
-				//entity->previous_points[0].x>>= MOTION_SENSOR_SCALE;
 				entity->previous_points[0].x /= MOTION_SENSOR_SCALE;
-			//	entity->previous_points[0].y>>= MOTION_SENSOR_SCALE;
 				entity->previous_points[0].y /= MOTION_SENSOR_SCALE;
 			}
 			else
@@ -486,27 +466,23 @@ void HUD_Class::erase_all_entity_blips(void)
 
 void HUD_Class::draw_all_entity_blips(void)
 {
-	struct entity_data *entity;
+	entity_data *entity;
 	short entity_index, intensity;
 
 	for (intensity=NUMBER_OF_PREVIOUS_LOCATIONS-1;intensity>=0;--intensity)
 	{
 		for (entity_index=0,entity=entities;entity_index<MAXIMUM_MOTION_SENSOR_ENTITIES;++entity_index,++entity)
 		{
-			if (SLOT_IS_USED(entity))
-			{
-				if (entity->visible_flags[intensity])
-				{
-					draw_entity_blip(&entity->previous_points[intensity], entity->shape + intensity);
-				}
-			}
+			if (!SLOT_IS_USED(entity) || !entity->visible_flags[intensity])
+				continue;
+			draw_entity_blip(&entity->previous_points[intensity], entity->shape + intensity);
 		}
 	}
 }
 
-void HUD_Lua_Class::draw_all_entity_blips(void)
+void HUD_Lua_Class::draw_all_entity_blips()
 {
-	struct entity_data *entity;
+	entity_data *entity;
 	short entity_index, intensity;
 	
 	clear_entity_blips();
@@ -514,20 +490,16 @@ void HUD_Lua_Class::draw_all_entity_blips(void)
 	{
 		for (entity_index=0,entity=entities;entity_index<MAXIMUM_MOTION_SENSOR_ENTITIES;++entity_index,++entity)
 		{
-			if (SLOT_IS_USED(entity))
-			{
-				if (entity->visible_flags[intensity])
-				{
-					short display_type = MType_Alien;
-					if (entity->shape == friendly_shapes)
-						display_type = MType_Friend;
-					else if (entity->shape == enemy_shapes)
-						display_type = MType_Enemy;
-					add_entity_blip(display_type, intensity,
-													entity->previous_points[intensity].x * MOTION_SENSOR_SCALE,
-													entity->previous_points[intensity].y * MOTION_SENSOR_SCALE);
-				}
-			}
+			if (!SLOT_IS_USED(entity) || !entity->visible_flags[intensity])
+				continue;
+			int16 display_type = MType_Alien;
+			if (entity->shape == friendly_shapes)
+				display_type = MType_Friend;
+			else if (entity->shape == enemy_shapes)
+				display_type = MType_Enemy;
+			add_entity_blip(display_type, intensity, 
+				entity->previous_points[intensity].x * MOTION_SENSOR_SCALE,
+				entity->previous_points[intensity].y * MOTION_SENSOR_SCALE);
 		}
 	}
 }
@@ -536,11 +508,11 @@ void HUD_SW_Class::draw_or_erase_unclipped_shape(short x, short y, shape_descrip
 {
 	struct bitmap_definition *mount, *virgin_mount, *blip;
 
-	get_shape_bitmap_and_shading_table(mount_shape, &mount, (void **) NULL, NONE);
+	get_shape_bitmap_and_shading_table(mount_shape, &mount, nullptr, NONE);
 	if (!mount) return;
-	get_shape_bitmap_and_shading_table(virgin_mount_shapes, &virgin_mount, (void **) NULL, NONE);
+	get_shape_bitmap_and_shading_table(virgin_mount_shapes, &virgin_mount, nullptr, NONE);
 	if (!virgin_mount) return;
-	get_shape_bitmap_and_shading_table(shape, &blip, (void **) NULL, NONE);
+	get_shape_bitmap_and_shading_table(shape, &blip, nullptr, NONE);
 	if (!blip) return;
 	
 	draw ?
@@ -609,8 +581,7 @@ void HUD_OGL_Class::draw_entity_blip(point2d *location, shape_descriptor shape)
 /* if we find an entity that is being removed, we continue with the removal process and ignore
 	the new signal; the new entity will probably not be added to the sensor again for a full
 	second or so (the range should be set so that this is reasonably hard to do) */
-static short find_or_add_motion_sensor_entity(
-	short monster_index)
+static short find_or_add_motion_sensor_entity(short monster_index)
 {
 	struct entity_data *entity;
 	short entity_index, best_unused_index;
@@ -649,7 +620,6 @@ static short find_or_add_motion_sensor_entity(
 			entity->remove_delay= 0;
 			MARK_SLOT_AS_USED(entity);
 			
-//			dprintf("new index, pointer: %d, %p", best_unused_index, entity);
 		}
 		
 		entity_index= best_unused_index;
@@ -658,8 +628,7 @@ static short find_or_add_motion_sensor_entity(
 	return entity_index;
 }
 
-static void precalculate_sensor_region(
-	short side_length)
+static void precalculate_sensor_region(short side_length)
 {
 	double half_side_length= side_length/2.0;
 	double r= half_side_length + 1.0;
@@ -674,7 +643,8 @@ static void precalculate_sensor_region(
 		double y= i - half_side_length;
 		double x= sqrt(r*r-y*y);
 		
-		if (x>=r) x= r-1.0;
+		if (x>=r) 
+			x= r-1.0;
 		sensor_region[i].x0= int16(half_side_length-x);
 		sensor_region[i].x1= int16(x+half_side_length);
 	}
@@ -682,13 +652,8 @@ static void precalculate_sensor_region(
 
 /* (x0,y0) and (x1,y1) specify a window to be copied from the source to (x2,y2) in the destination.
 	pixel index zero is transparent (handles clipping) */
-static void bitmap_window_copy(
-	struct bitmap_definition *source,
-	struct bitmap_definition *destination,
-	short x0,
-	short y0,
-	short x1,
-	short y1)
+static void bitmap_window_copy(struct bitmap_definition *source, struct bitmap_definition *destination,
+	short x0, short y0, short x1, short y1)
 {
 	short count;
 	short y;
@@ -705,28 +670,25 @@ static void bitmap_window_copy(
 	assert(destination->width==motion_sensor_side_length);
 	assert(destination->height==motion_sensor_side_length);
 	
-	for (y=y0;y<y1;++y)
+	for( y = y0; y < y1; ++y )
 	{
-		register pixel8 *read= source->row_addresses[y]+x0;
-		register pixel8 *write= destination->row_addresses[y]+x0;
+		pixel8 *read	= source->row_addresses[y] + x0;
+		pixel8 *write	= destination->row_addresses[y] + x0;
 		
-		for (count=x1-x0;count>0;--count) *write++= *read++;
+		for (count=x1-x0;count>0;--count) 
+			*write++ = *read++;
 	}
 }
 
-static void clipped_transparent_sprite_copy(
-	struct bitmap_definition *source,
-	struct bitmap_definition *destination,
-	struct region_data *region,
-	short x0,
-	short y0)
+static void clipped_transparent_sprite_copy(struct bitmap_definition *source, struct bitmap_definition *destination,
+						struct region_data *region, short x0, short y0)
 {
 	short height, y;
-	
-	assert(destination->width==motion_sensor_side_length);
-	assert(destination->height==motion_sensor_side_length);
 
-	y= 0;
+	assert(destination->width 	== motion_sensor_side_length);
+	assert(destination->height 	== motion_sensor_side_length);
+
+	y = 0;
 	height= source->height;
 	if (y0+height>destination->height) height= destination->height-y0;
 	if (y0<0)
@@ -737,13 +699,15 @@ static void clipped_transparent_sprite_copy(
 
 	while ((height-= 1)>=0)	
 	{
-		register pixel8 pixel, *read, *write;
-		register short width= source->width;
+		pixel8 pixel, *read, *write;
+		short width= source->width;
 		short clip_left= region[y0+y].x0, clip_right= region[y0+y].x1;
 		short offset= 0;
 		
-		if (x0<clip_left) offset= clip_left-x0, width-= offset;
-		if (x0+offset+width>clip_right) width= clip_right-x0-offset;
+		if (x0<clip_left) 
+			offset= clip_left-x0, width-= offset;
+		if (x0+offset+width>clip_right) 
+			width= clip_right-x0-offset;
 
 		assert(y>=0&&y<source->height);
 		assert(y0+y>=0&&y0+y<destination->height);
@@ -764,21 +728,18 @@ static void clipped_transparent_sprite_copy(
 	}
 }
 
-static void unclipped_solid_sprite_copy(
-	struct bitmap_definition *source,
-	struct bitmap_definition *destination,
-	short x0,
-	short y0)
+static void unclipped_solid_sprite_copy(struct bitmap_definition *source, struct bitmap_definition *destination,
+	int16 x0, int16 y0)
 {
-	short height, y;
+	int16 height, y;
 
 	y= 0;
 	height= source->height;
 
-	while ((height-= 1)>=0)	
+	while ( --height >= 0)	
 	{
-		register pixel8 *read, *write;
-		register short width= source->width;
+		pixel8 *read, *write;
+		int16 width = source->width;
 
 		assert(y>=0&&y<source->height);
 		assert(y0+y>=0&&y0+y<destination->height);
@@ -786,48 +747,28 @@ static void unclipped_solid_sprite_copy(
 		read= source->row_addresses[y];
 		write= destination->row_addresses[y0+y]+x0;
 		
-		while ((width-= 1)>=0) *write++= *read++;
+		while (--width-= 1 >= 0) 
+			*write++= *read++;
 
 		y+= 1;
 	}
 }
 
-static shape_descriptor get_motion_sensor_entity_shape(
-	short monster_index)
+static shape_descriptor get_motion_sensor_entity_shape(short monster_index)
 {
 	struct monster_data *monster= get_monster_data(monster_index);
 	shape_descriptor shape;
 	
 	if (MONSTER_IS_PLAYER(monster))
 	{
-		struct player_data *player= get_player_data(monster_index_to_player_index(monster_index));
-		struct player_data *owner= get_player_data(motion_sensor_player_index);
+		player_data *player	= get_player_data(monster_index_to_player_index(monster_index));
+		player_data *owner	= get_player_data(motion_sensor_player_index);
 		
 		shape= ((player->team==owner->team && !(GET_GAME_OPTIONS()&_force_unique_teams)) || GET_GAME_TYPE()==_game_of_cooperative_play) ?
 			friendly_shapes : enemy_shapes;
 	}
 	else
 	{
-		/*
-		switch (monster->type)
-		{
-			case _civilian_crew:
-			case _civilian_science:
-			case _civilian_security:
-			case _civilian_assimilated:
-			// LP additions: the VacBobs
-			case _civilian_fusion_crew:
-			case _civilian_fusion_science:
-			case _civilian_fusion_security:
-			case _civilian_fusion_assimilated:
-				shape= friendly_shapes;
-				break;
-			
-			default:
-				shape= alien_shapes;
-				break;
-		}
-		*/
 		switch(MonsterDisplays[monster->type])
 		{
 		case MType_Friend:
@@ -852,7 +793,7 @@ static shape_descriptor get_motion_sensor_entity_shape(
 // this is a specification of what monster type gets what
 // motion-sensor blip
 
-short *OriginalMonsterDisplays = NULL;
+short *OriginalMonsterDisplays = nullptr;
 
 // This assigns an motion-sensir blip to a monster type
 class XML_MotSensAssignParser: public XML_ElementParser
@@ -929,10 +870,10 @@ bool XML_MotSensAssignParser::AttributesDone()
 bool XML_MotSensAssignParser::ResetValues()
 {
 	if (OriginalMonsterDisplays) {
-		for (int i = 0; i < NUMBER_OF_MONSTER_TYPES; i++)
+		for (ix i = 0; i < NUMBER_OF_MONSTER_TYPES; i++)
 			MonsterDisplays[i] = OriginalMonsterDisplays[i];
 		free(OriginalMonsterDisplays);
-		OriginalMonsterDisplays = NULL;
+		OriginalMonsterDisplays = nullptr;
 	}
 	return true;
 }
@@ -940,7 +881,7 @@ bool XML_MotSensAssignParser::ResetValues()
 static XML_MotSensAssignParser MotSensAssignParser;
 
 
-struct motion_sensor_definition *original_motion_sensor_settings = NULL;
+struct motion_sensor_definition *original_motion_sensor_settings = nullptr;
 // Subclassed to set the color objects appropriately
 class XML_MotSensParser: public XML_ElementParser
 {
@@ -987,7 +928,7 @@ public:
 		if (original_motion_sensor_settings) {
 			motion_sensor_settings = *original_motion_sensor_settings;
 			free(original_motion_sensor_settings);
-			original_motion_sensor_settings = NULL;
+			original_motion_sensor_settings = nullptr;
 		}
 		return true;
 	}
