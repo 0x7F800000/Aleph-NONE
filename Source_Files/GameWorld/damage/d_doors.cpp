@@ -291,3 +291,12 @@ void reverse_direction_of_door(const ix index)
 	
 	door->related_to_direction2 = v6 > 0 ? -v9 : v9;
 }
+
+void swing_points(swinging_door_data* door, angle theta)
+{
+	theta &= 0x1FF;
+	
+	rotate_point2d(&door->p1, &door->p0, theta);
+	rotate_point2d(&door->p2, &door->p0, theta);
+	rotate_point2d(&door->p3, &door->p0, theta);
+}
