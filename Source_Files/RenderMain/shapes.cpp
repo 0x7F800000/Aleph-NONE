@@ -23,7 +23,7 @@ Saturday, September 4, 1993 9:26:41 AM
 Thursday, May 19, 1994 9:06:28 AM
 	unification of wall and object shapes complete, new shading table builder.
 Wednesday, June 22, 1994 11:55:07 PM
-	we now read data from alainﾕs shape extractor.
+	we now read data from alainﾃ不 shape extractor.
 Saturday, July 9, 1994 3:22:11 PM
 	lightening_table removed; we now build darkening tables on a collection-by-collection basis
 	(one 8k darkening table per clut permutation of the given collection)
@@ -118,10 +118,6 @@ Jan 17, 2001 (Loren Petrich):
 
 #include "Plugins.h"
 
-#ifdef env68k
-#pragma segment shell
-#endif
-
 /* ---------- constants */
 
 #define iWHITE 1
@@ -146,7 +142,7 @@ enum /* collection status */
 	markNONE,
 	markLOAD= 1,
 	markUNLOAD= 2,
-	markSTRIP= 4 /* we donﾕt want bitmaps, just high/low-level shape data */,
+	markSTRIP= 4 /* we donﾃ付 want bitmaps, just high/low-level shape data */,
 	markPATCHED = 8 /* force re-load */
 };
 
@@ -568,9 +564,9 @@ static void load_high_level_shape(std::vector<uint8>& shape, SDL_RWops *p)
 	SDL_RWseek(p, 14 * sizeof(int16), SEEK_CUR);
 
 	// Convert low-level shape index list
-	for (int j = 0; j < num_views * d->frames_per_view; j++) {
+	for (ix j = 0; j < num_views * d->frames_per_view; j++) 
 		d->low_level_shape_indexes[j] = SDL_ReadBE16(p);
-	}
+	
 }
 
 static void load_low_level_shape(low_level_shape_definition *d, SDL_RWops *p)
@@ -593,7 +589,6 @@ static void load_low_level_shape(low_level_shape_definition *d, SDL_RWops *p)
 
 static void convert_m1_rle(std::vector<uint8>& bitmap, int scanlines, int scanline_length, SDL_RWops* p)
 {
-//	std::vector<uint8> bitmap;
 	for (int scanline = 0; scanline < scanlines; ++scanline)
 	{
 		std::vector<uint8> scanline_data(scanline_length);
@@ -1582,7 +1577,7 @@ void strip_collection(
 	}
 }
 
-/* returns count, doesnﾕt fill NULL buffer */
+/* returns count, doesnﾃ付 fill NULL buffer */
 short get_shape_descriptors(
 	short shape_type,
 	shape_descriptor *buffer)
@@ -1731,7 +1726,7 @@ struct shape_animation_data *get_shape_animation_data(
 void *get_global_shading_table(
 	void)
 {
-	void *shading_table= (void *) NULL;
+	void *shading_table = nullptr;
 
 	switch (bit_depth)
 	{
@@ -1780,11 +1775,6 @@ void load_collections(
 	struct collection_header *header;
 	short collection_index;
 
-	if (with_progress_bar)
-	{
-//		open_progress_dialog(_loading_collections);
-//		draw_progress_bar(0, 2*MAXIMUM_COLLECTIONS);
-	}
 	precalculate_bit_depth_constants();
 	
 	free_and_unlock_memory(); /* do our best to get a big, unfragmented heap */
@@ -1794,8 +1784,6 @@ void load_collections(
 		will be staying (so the heap can move around) */
 	for (collection_index= 0, header= collection_headers; collection_index<MAXIMUM_COLLECTIONS; ++collection_index, ++header)
 	{
-//		if (with_progress_bar)
-//			draw_progress_bar(collection_index, 2*MAXIMUM_COLLECTIONS);
 		if (((header->status&markUNLOAD) && !(header->status&markLOAD)) || header->status&markPATCHED)
 		{
 			if (collection_loaded(header))
@@ -1818,13 +1806,11 @@ void load_collections(
 	/* ... then go back through the list of collections and load any that we were asked to */
 	for (collection_index= 0, header= collection_headers; collection_index<MAXIMUM_COLLECTIONS; ++collection_index, ++header)
 	{
-//		if (with_progress_bar)
-//			draw_progress_bar(MAXIMUM_COLLECTIONS+collection_index, 2*MAXIMUM_COLLECTIONS);
-		/* donﾕt reload collections which are already in memory, but do lock them */
+
+		/* donﾃ付 reload collections which are already in memory, but do lock them */
 		if (collection_loaded(header))
 		{
 			// In case the substitute images had been changed by some level-specific MML...
-//			OGL_LoadModelsImages(collection_index);
 			lock_collection(header);
 		}
 		else
@@ -1839,7 +1825,6 @@ void load_collections(
 						alert_user(fatalError, strERRORS, outOfMemory, -1);
 					}
 				}
-//				OGL_LoadModelsImages(collection_index);
 			}
 		}
 		
@@ -1871,8 +1856,6 @@ void load_collections(
 			}
 		}
 	}
-//	if (with_progress_bar)
-//		close_progress_dialog();
 }
 
 #ifdef HAVE_OPENGL
@@ -1919,26 +1902,26 @@ static void precalculate_bit_depth_constants(
 		case 8:
 			number_of_shading_tables= 32;
 			shading_table_fractional_bits= 5;
-//			next_shading_table_shift= 8;
+
 			shading_table_size= PIXEL8_MAXIMUM_COLORS*sizeof(pixel8);
 			break;
 		case 16:
 			number_of_shading_tables= 64;
 			shading_table_fractional_bits= 6;
-//			next_shading_table_shift= 9;
+
 			shading_table_size= PIXEL8_MAXIMUM_COLORS*sizeof(pixel16);
 			break;
 		case 32:
 			number_of_shading_tables= 256;
 			shading_table_fractional_bits= 8;
-//			next_shading_table_shift= 10;
+
 			shading_table_size= PIXEL8_MAXIMUM_COLORS*sizeof(pixel32);
 			break;
 	}
 }
 
 /* given a list of RGBColors, find out which one, if any, match the given color.  if there
-	arenﾕt any matches, add a new entry and return that index. */
+	arenﾃ付 any matches, add a new entry and return that index. */
 static short find_or_add_color(
 	struct rgb_color_value *color,
 	register struct rgb_color_value *colors,
@@ -2013,25 +1996,22 @@ static void update_color_environment(
 	colors[0].flags= colors[0].value= 0;
 	color_count= 1;
 
-	/* loop through all collections, only paying attention to the loaded ones.  weﾕre
-		depending on finding the gray run (white to black) first; so itﾕs the responsibility
+	/* loop through all collections, only paying attention to the loaded ones.  weﾃ瓶e
+		depending on finding the gray run (white to black) first; so itﾃ不 the responsibility
 		of the lowest numbered loaded collection to give us this */
 	for (collection_index=0;collection_index<MAXIMUM_COLLECTIONS;++collection_index)
 	{
 		struct collection_definition *collection= get_collection_definition(collection_index);
 
-//		dprintf("collection #%d", collection_index);
-		
+
 		if (collection && collection->bitmap_count)
 		{
 			struct rgb_color_value *primary_colors= get_collection_colors(collection_index, 0)+NUMBER_OF_PRIVATE_COLORS;
 			assert(primary_colors);
 			short color_index, clut_index;
 
-//			if (collection_index==15) dprintf("primary clut %p", primary_colors);
-//			dprintf("primary clut %d entries;dm #%d #%d", collection->color_count, primary_colors, collection->color_count*sizeof(ColorSpec));
 
-			/* add the colors from this collectionﾕs primary color table to the aggregate color
+			/* add the colors from this collectionﾃ不 primary color table to the aggregate color
 				table and build the remapping table */
 			for (color_index=0;color_index<collection->color_count-NUMBER_OF_PRIVATE_COLORS;++color_index)
 			{
@@ -2068,8 +2048,7 @@ static void update_color_environment(
 					
 					memset(shading_remapping_table, 0, PIXEL8_MAXIMUM_COLORS*sizeof(pixel8));
 					
-//					dprintf("alternate clut %d entries;dm #%d #%d", collection->color_count, alternate_colors, collection->color_count*sizeof(ColorSpec));
-					
+
 					/* build a remapping table for the primary shading table which we can use to
 						calculate this alternate shading table */
 					for (color_index= 0; color_index<PIXEL8_MAXIMUM_COLORS; ++color_index) shading_remapping_table[color_index]= static_cast<pixel8>(color_index);
@@ -2078,7 +2057,6 @@ static void update_color_environment(
 						shading_remapping_table[find_or_add_color(&primary_colors[color_index], colors, &color_count, false)]= 
 							find_or_add_color(&alternate_colors[color_index], colors, &color_count);
 					}
-//					shading_remapping_table[iBLACK]= iBLACK; /* make iBLACK==>iBLACK remapping explicit */
 
 					switch (collection_bit_depth)
 					{
@@ -2121,7 +2099,7 @@ static void update_color_environment(
 			/* 8-bit interface, non-8-bit main window; remember interface CLUT separately */
 			if (collection_index==_collection_interface && interface_bit_depth==8 && bit_depth!=interface_bit_depth) _change_clut(change_interface_clut, colors, color_count);
 			
-			/* if weﾕre not in 8-bit, we donﾕt have to carry our colors over into the next collection */
+			/* if weﾃ瓶e not in 8-bit, we donﾃ付 have to carry our colors over into the next collection */
 			if (bit_depth!=8) color_count= 1;
 		}
 	}
@@ -2451,33 +2429,31 @@ static bool get_next_color_run(
 	return not_done;
 }
 
-static bool new_color_run(
-	struct rgb_color_value *_new,
-	struct rgb_color_value *last)
+static bool new_color_run(struct rgb_color_value *_new, struct rgb_color_value *last)
 {
 	if ((int32)last->red+(int32)last->green+(int32)last->blue<(int32)_new->red+(int32)_new->green+(int32)_new->blue)
-	{
 		return true;
-	}
 	else
-	{
 		return false;
-	}
 }
 
-static int32 get_shading_table_size(
-	short collection_code)
+static int32 get_shading_table_size(short collection_code)
 {
 	int32 size;
 	
 	switch (bit_depth)
 	{
-		case 8: size= number_of_shading_tables*shading_table_size; break;
-		case 16: size= number_of_shading_tables*shading_table_size; break;
-		case 32: size= number_of_shading_tables*shading_table_size; break;
+		case 8: 
+			size	= number_of_shading_tables * shading_table_size; 
+			break;
+		case 16: 
+			size	= number_of_shading_tables * shading_table_size; 
+			break;
+		case 32: 
+			size	= number_of_shading_tables * shading_table_size; 
+			break;
 		default:
 			assert(false);
-			break;
 	}
 	
 	return size;
