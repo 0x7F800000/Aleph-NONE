@@ -64,7 +64,7 @@ SmallMessageHelper::deflate() const
 
 
 BigChunkOfDataMessage::BigChunkOfDataMessage(MessageTypeID inType, const byte* inBuffer, size_t inLength)
-	: mType(inType), mLength(0), mBuffer(NULL)
+	: mType(inType), mLength(0), mBuffer(nullptr)
 {
 	copyBufferFrom(inBuffer, inLength);
 }
@@ -102,7 +102,7 @@ BigChunkOfDataMessage::copyBufferFrom(const byte* inBuffer, size_t inLength)
 	}
 	else
 	{
-		mBuffer = NULL;
+		mBuffer = nullptr;
 	}
 }
 
@@ -121,4 +121,4 @@ BigChunkOfDataMessage::~BigChunkOfDataMessage()
 	delete [] mBuffer;
 }
 
-#endif // !defined(DISABLE_NETWORKING)
+#endif
