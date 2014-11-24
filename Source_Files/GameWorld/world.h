@@ -107,9 +107,9 @@ struct world_point2d
 };
 typedef struct world_point2d world_point2d;
 
-struct world_point3d : world_point2d
+struct world_point3d 
 {
-	world_distance z;
+	world_distance x, y, z;
 };
 typedef struct world_point3d world_point3d;
 
