@@ -99,17 +99,17 @@ typedef float _real;
 
 struct world_point2d
 {
-	world_point2d *Translate(world_distance distance, angle theta);
-	world_point2d *Rotate(world_point2d *origin, angle theta);
-	world_point2d *Transform(world_point2d *origin, angle theta);
+	world_point2d *translate2D(world_distance distance, angle theta);
+	world_point2d *rotate2D(world_point2d *origin, angle theta);
+	world_point2d *transform2D(world_point2d *origin, angle theta);
 	
 	world_distance x, y;
 };
 typedef struct world_point2d world_point2d;
 
-struct world_point3d
+struct world_point3d : world_point2d
 {
-	world_distance x, y, z;
+	world_distance z;
 };
 typedef struct world_point3d world_point3d;
 
