@@ -40,15 +40,15 @@ Oct 13, 2000
 
 
 // LP: "recommended" sizes of stuff in growable lists
-#define POLYGON_QUEUE_SIZE 256
-#define MAXIMUM_NODES 512
-#define MAXIMUM_LINE_CLIPS 256
-#define MAXIMUM_ENDPOINT_CLIPS 128
-#define MAXIMUM_CLIPPING_WINDOWS 192
+static const size_t POLYGON_QUEUE_SIZE = 256;
+static const size_t MAXIMUM_NODES = 512;
+static const size_t MAXIMUM_LINE_CLIPS = 256;
+static const size_t MAXIMUM_ENDPOINT_CLIPS = 128;
+static const size_t MAXIMUM_CLIPPING_WINDOWS = 192;
 
 
 
-enum /* cast_render_ray() flags */
+enum  /* cast_render_ray() flags */
 {
 	_split_render_ray = 0x8000
 };
@@ -86,7 +86,7 @@ inline void INITIALIZE_NODE(node_data *node, short node_polygon_index, uint16 no
 
 
 // Inits everything
-RenderVisTreeClass::RenderVisTreeClass()	:view(nullptr)	// Idiot-proofing
+RenderVisTreeClass::RenderVisTreeClass() : view(nullptr)	// Idiot-proofing
 {
 	PolygonQueue.reserve( 		POLYGON_QUEUE_SIZE 		);
 	
@@ -108,17 +108,17 @@ void RenderVisTreeClass::Resize(size_t NumEndpoints, size_t NumLines)
 // Add a polygon to the polygon queue
 void RenderVisTreeClass::PUSH_POLYGON_INDEX(short polygon_index)
 {
-	if (!TEST_RENDER_FLAG(polygon_index, _polygon_is_visible))
-	{
-		// Grow the list only if necessary
-		if (polygon_queue_size < PolygonQueue.size())
-			PolygonQueue[polygon_queue_size]= polygon_index;
-		else
-			PolygonQueue.push_back(polygon_index);
-		polygon_queue_size++;
-		
-		SET_RENDER_FLAG(polygon_index, _polygon_is_visible);
-	}
+	if (TEST_RENDER_FLAG(polygon_index, _polygon_is_visible))
+		return;
+	
+	// Grow the list only if necessary
+	if (polygon_queue_size < PolygonQueue.size())
+		PolygonQueue[polygon_queue_size]= polygon_index;
+	else
+		PolygonQueue.push_back(polygon_index);
+	polygon_queue_size++;
+	
+	SET_RENDER_FLAG(polygon_index, _polygon_is_visible);
 }
 
 // Main routine
@@ -378,15 +378,16 @@ uint16 RenderVisTreeClass::next_polygon_along_line(short * polygon_index,
 	polygon_data *polygon	= get_polygon_data(*polygon_index);
 	short next_polygon_index, crossed_line_index, crossed_side_index;
 	bool passed_through_solid_vertex = false;
-	short vertex_index, vertex_delta;
 	uint16 clip_flags = 0;
-	short state;
+
 
 	ADD_POLYGON_TO_AUTOMAP(*polygon_index);
 	PUSH_POLYGON_INDEX(*polygon_index);
 
-	state = _looking_for_first_nonzero_vertex;
-	vertex_index = 0, vertex_delta = 1; /* start searching clockwise from vertex zero */
+	short state = _looking_for_first_nonzero_vertex;
+	short vertex_index = 0;
+	short vertex_delta = 1; /* start searching clockwise from vertex zero */
+	
 	// LP change: added test for looping around:
 	// will remember the first vertex examined when the state has changed
 	auto initial_vertex_index = vertex_index;
@@ -597,10 +598,9 @@ uint16 RenderVisTreeClass::decide_where_vertex_leads(short *polygon_index, short
 	polygon	= get_polygon_data(*polygon_index);
 	
 	/* locate our endpoint in this polygon */
-	for (index=0;index<polygon->vertex_count && polygon->endpoint_indexes[index]!=endpoint_index;
-			++index)
+	for( index = 0; index < polygon->vertex_count && polygon->endpoint_indexes[index] != endpoint_index; ++index )
 		;
-	vassert(index!=polygon->vertex_count, csprintf(temporary, "endpoint #%d not in polygon #%d", endpoint_index, *polygon_index));
+	vassert(index != polygon->vertex_count, csprintf(temporary, "endpoint #%d not in polygon #%d", endpoint_index, *polygon_index));
 
 	switch (bias)
 	{
@@ -614,7 +614,7 @@ uint16 RenderVisTreeClass::decide_where_vertex_leads(short *polygon_index, short
 			assert(false);
 	}
 	
-	vertex= &get_endpoint_data(polygon->endpoint_indexes[index])->vertex;
+	vertex = &get_endpoint_data(polygon->endpoint_indexes[index])->vertex;
 	// LP change: made more long-distance-friendly
 	
 	cross_product = 
@@ -624,7 +624,7 @@ uint16 RenderVisTreeClass::decide_where_vertex_leads(short *polygon_index, short
 	
 	/* we're leaving this endpoint, set clip flag in case it's solid */
 	if ( (bias == _clockwise_bias && cross_product >= 0) || ( bias == _counterclockwise_bias && cross_product <= 0 ))
-		clip_flags|= (bias==_clockwise_bias) ? _clip_left : _clip_right;
+		clip_flags |= bias == _clockwise_bias ? _clip_left : _clip_right;
 	return clip_flags;
 }
 
@@ -876,7 +876,7 @@ void RenderVisTreeClass::ResetEndpointClips()
 	EndpointClips.clear();
 	endpoint_clip_data Dummy;
 	Dummy.flags = 0;			// Fake initialization to shut up CW
-	for ( int k = 0; k < NUMBER_OF_INITIAL_ENDPOINT_CLIPS; k++ )
+	for ( size_t k = 0; k < NUMBER_OF_INITIAL_ENDPOINT_CLIPS; k++ )
 		EndpointClips.push_back(Dummy);
 }
 
@@ -886,6 +886,6 @@ void RenderVisTreeClass::ResetLineClips()
 	line_clip_data Dummy;
 	Dummy.flags = 0;			// Fake initialization to shut up CW
 	
-	for( int k = 0; k < NUMBER_OF_INITIAL_LINE_CLIPS; k++ )
+	for( size_t k = 0; k < NUMBER_OF_INITIAL_LINE_CLIPS; k++ )
 		LineClips.push_back(Dummy);
 }
