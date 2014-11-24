@@ -1,5 +1,5 @@
 /*
-SCOTTISH_TEXTURES.C
+SCOTTISH_TEXTURES.CPP
 
 	Copyright (C) 1991-2001 and beyond by Bungie Studios, Inc.
 	and the "Aleph One" developers.
@@ -20,8 +20,8 @@ SCOTTISH_TEXTURES.C
 
 Wednesday, April 20, 1994 9:35:36 AM
 
-this is not your father’s texture mapping library.
-(in fact it isn’t yours either, dillweed)
+this is not your father√ïs texture mapping library.
+(in fact it isn√ït yours either, dillweed)
 
 Wednesday, April 20, 1994 3:39:21 PM
 	vertical repeats would be difficult because it would require testing repeats in the
@@ -43,7 +43,7 @@ Wednesday, April 27, 1994 9:49:55 AM
 	i'm just looking for one divine hammer (to bang it all day).  solid polygons are currently
 	unaffected by darkening.  i'm not entirely certain we'll even use them.
 Sunday, May 8, 1994 8:32:11 AM
-	LISP’s lexical contours kick C firmly and painfully in the ass. everything is fast now
+	LISP√ïs lexical contours kick C firmly and painfully in the ass. everything is fast now
 	except the landscape mapper which has just been routed and is in full retreat.
 Friday, May 13, 1994 10:05:08 AM
 	low-level unification of trapezoids and rectangles, transparent runs in shapes are run-length
@@ -54,7 +54,7 @@ Wednesday, May 18, 1994 2:16:26 PM
 Sunday, May 22, 1994 12:32:02 PM
 	drawing things in column order to cached (i.e., non-screen) memory is like crapping in the
 	data cache, right?  maybe drawing rectangles in column-order wasn't such a great idea after all.
-	it also occurs to me that i know nothing about how to order instructions for the ’040 pipelines.
+	it also occurs to me that i know nothing about how to order instructions for the √ï040 pipelines.
 Thursday, June 16, 1994 9:56:14 PM
 	modified _render_textured_polygon_line to handle elevation.
 Thursday, July 7, 1994 1:23:09 PM
@@ -62,14 +62,14 @@ Thursday, July 7, 1994 1:23:09 PM
 	now the problem is floor/ceiling matching with trapezoids, which should fall out with the 
 	rewrite...
 Tuesday, July 26, 1994 3:42:16 PM
-	OBSOLETE’ed nearly the entire file (fixed_pixels are no more).  rewriting texture_rectangle.
+	OBSOLETE√ïed nearly the entire file (fixed_pixels are no more).  rewriting texture_rectangle.
 	will do 16bit mapping, soon.  a while ago i rewrote everything in 68k.
 Friday, September 16, 1994 6:03:11 PM  (Jason')
 	texture_rectangle() now respects top and bottom clips
 Tuesday, September 20, 1994 9:58:30 PM  (Jason')
-	if we’re so close to a rectangle that n>LARGEST_N then we don’t draw anything
+	if we√ïre so close to a rectangle that n>LARGEST_N then we don√ït draw anything
 Wednesday, October 26, 1994 3:18:59 PM (Jason)
-	for non-convex or otherwise weird lines (dx<=0, dy<=0) we don’t draw anything (somebody’ll
+	for non-convex or otherwise weird lines (dx<=0, dy<=0) we don√ït draw anything (somebody√ïll
 	notice that for sure).
 Friday, November 4, 1994 7:35:48 PM  (Jason')
 	pretexture_horizontal_polygon_lines() now respects the (x,y) polygon origin and uses z as height.
@@ -102,7 +102,7 @@ May 16, 2002 (Woody Zenfell):
 rectangle shrinking has vertical error and appears to randomly shear the bitmap
 pretexture_horizontal_polygon_lines() has integer error in large height cases
 
-_static_transfer doesn’t work for ceilings and floors (because they call the wall mapper)
+_static_transfer doesn√ït work for ceilings and floors (because they call the wall mapper)
 build_y_table and build_x_table could both be sped up in nearly-horizontal and nearly-vertical cases (respectively)
 _pretexture_vertical_polygon_lines() takes up to half the time _texture_vertical_polygon_lines() does
 not only that, but texture_horizontal_polygon() is actually faster than texture_vertical_polygon()
@@ -133,14 +133,6 @@ not only that, but texture_horizontal_polygon() is actually faster than texture_
 #include "preferences.h"
 #include "SW_Texture_Extras.h"
 
-
-#ifdef env68k
-#pragma segment texture
-#endif
-
-#ifdef env68k
-#define EXTERNAL
-#endif
 
 /* ---------- constants */
 
@@ -241,11 +233,11 @@ static void calculate_shading_table(void * &result,view_data *view, void *shadin
 
 /* these tables are used by the polygon rasterizer (to store the x-coordinates of the left and
 	right lines of the current polygon), the trapezoid rasterizer (to store the y-coordinates
-	of the top and bottom of the current trapezoid) and the rectangle mapper (for it’s
+	of the top and bottom of the current trapezoid) and the rectangle mapper (for it√ïs
 	vertical and if necessary horizontal distortion tables).  these are not necessary as
 	globals, just as global storage. */
-static short *scratch_table0 = NULL, *scratch_table1 = NULL;
-static void *precalculation_table = NULL;
+static short *scratch_table0 = nullptr, *scratch_table1 = nullptr;
+static void *precalculation_table = nullptr;
 
 static uint16 texture_random_seed= 6906;
 
@@ -275,7 +267,11 @@ static void _prelandscape_horizontal_polygon_lines(struct polygon_definition *po
 inline int NextLowerExponent(int n)
 {
 	int xp = 0;
-	while(n > 1) {n >>= 1; xp++;}
+	while(n > 1) 
+	{
+		n /= 2;
+		xp++;
+	}
 	return xp;
 }
 
@@ -286,9 +282,9 @@ inline int NextLowerExponent(int n)
 void allocate_texture_tables(
 	void)
 {
-	scratch_table0= new short[MAXIMUM_SCRATCH_TABLE_ENTRIES];
-	scratch_table1= new short[MAXIMUM_SCRATCH_TABLE_ENTRIES];
-	precalculation_table= (void*)new char[MAXIMUM_PRECALCULATION_TABLE_ENTRY_SIZE*MAXIMUM_SCRATCH_TABLE_ENTRIES];
+	scratch_table0		= new short[MAXIMUM_SCRATCH_TABLE_ENTRIES];
+	scratch_table1		= new short[MAXIMUM_SCRATCH_TABLE_ENTRIES];
+	precalculation_table	= (void*)new char[MAXIMUM_PRECALCULATION_TABLE_ENTRY_SIZE*MAXIMUM_SCRATCH_TABLE_ENTRIES];
 	assert(scratch_table0&&scratch_table1&&precalculation_table);
 }
 
@@ -328,7 +324,7 @@ void Rasterizer_SW_Class::texture_horizontal_polygon(polygon_definition& texture
 		short *left_table= scratch_table0, *right_table= scratch_table1;
 
 		left_line_count= right_line_count= 0; /* zero counts so the left and right lines get initialized */
-		aggregate_left_line_count= aggregate_right_line_count= 0; /* we’ve precalculated nothing initially */
+		aggregate_left_line_count= aggregate_right_line_count= 0; /* we√ïve precalculated nothing initially */
 		left_vertex= right_vertex= highest_vertex; /* both sides start at the highest vertex */
 		total_line_count= vertices[lowest_vertex].y-vertices[highest_vertex].y; /* calculate vertical line count */
 
@@ -339,7 +335,7 @@ void Rasterizer_SW_Class::texture_horizontal_polygon(polygon_definition& texture
 		while (total_line_count>0)
 		{
 			
-			/* if we’re out of scan lines on the left side, get a new vertex and build a table
+			/* if we√ïre out of scan lines on the left side, get a new vertex and build a table
 				of x-coordinates so we can walk toward the new vertex */
 			if (left_line_count<=0)
 			{
@@ -355,7 +351,7 @@ void Rasterizer_SW_Class::texture_horizontal_polygon(polygon_definition& texture
 				while (!left_line_count);
 			}
 
-			/* if we’re out of scan lines on the right side, get a new vertex and build a table
+			/* if we√ïre out of scan lines on the right side, get a new vertex and build a table
 				of x-coordinates so we can walk toward the new vertex */
 			if (right_line_count<=0)
 			{
@@ -366,7 +362,6 @@ void Rasterizer_SW_Class::texture_horizontal_polygon(polygon_definition& texture
 					if (!build_x_table(right_table+aggregate_right_line_count, vertices[right_vertex].x, vertices[right_vertex].y, vertices[vertex].x, vertices[vertex].y)) return;
 					aggregate_right_line_count+= right_line_count;
 					right_vertex= vertex;
-//					dprintf("add %d right", right_line_count);
 				}
 				while (!right_line_count);
 			}
@@ -374,12 +369,11 @@ void Rasterizer_SW_Class::texture_horizontal_polygon(polygon_definition& texture
 			/* advance by the minimum of left_line_count and right_line_count */
 			short delta= MIN(left_line_count, right_line_count);
 			assert(delta);
-//			dprintf("tc=%d lc=%d rc=%d delta=%d", total_line_count, left_line_count, right_line_count, delta);
 			total_line_count-= delta;
 			left_line_count-= delta;
 			right_line_count-= delta;
 			
-			assert(delta||!total_line_count); /* if our delta is zero, we’d better be out of lines */
+			assert(delta||!total_line_count); /* if our delta is zero, we√ïd better be out of lines */
 		}
 		
 		/* make sure every coordinate is accounted for in our tables */
@@ -475,13 +469,9 @@ void Rasterizer_SW_Class::texture_horizontal_polygon(polygon_definition& texture
 					if (sw_texture && sw_texture->opac_type() && !polygon->VoidPresent)
 					{
 						if (graphics_preferences->software_alpha_blending == _sw_alpha_fast)
-						{
 							texture_horizontal_polygon_lines<pixel32, _sw_alpha_fast>(polygon->texture, screen, view, (struct _horizontal_polygon_line_data *)precalculation_table, vertices[highest_vertex].y, left_table, right_table, aggregate_total_line_count);
-						} 
 						else if (graphics_preferences->software_alpha_blending == _sw_alpha_nice)
-						{
 							texture_horizontal_polygon_lines<pixel32, _sw_alpha_nice>(polygon->texture, screen, view, (struct _horizontal_polygon_line_data *) precalculation_table, vertices[highest_vertex].y, left_table, right_table, aggregate_total_line_count, sw_texture->opac_table());
-						}
 					}
 					else 
 					{
@@ -498,13 +488,11 @@ void Rasterizer_SW_Class::texture_horizontal_polygon(polygon_definition& texture
 					
 					default:
 						assert(false);
-						break;
 				}
 				break;
 
 			default:
 				assert(false);
-				break;
 		}
 	}
 }
@@ -533,116 +521,158 @@ void Rasterizer_SW_Class::texture_vertical_polygon(polygon_definition& textured_
 	for (vertex=0;vertex<polygon->vertex_count;++vertex)
 	{
 		if (!(vertices[vertex].x>=0&&vertices[vertex].x<=screen->width&&vertices[vertex].y>=0&&vertices[vertex].y<=screen->height))
-		{
-//			dprintf("vertex #%d/#%d out of bounds:;dm %x %x;g;", vertex, polygon->vertex_count, polygon->vertices, polygon->vertex_count*sizeof(point2d));
 			return;
-		}
 	}
 
 	/* if this polygon is not a vertical line, draw it */
-	if (highest_vertex!=lowest_vertex)
-	{
-		short left_line_count, right_line_count, total_line_count;
-		short aggregate_left_line_count, aggregate_right_line_count, aggregate_total_line_count;
-		short left_vertex, right_vertex;
-		short *left_table= scratch_table0, *right_table= scratch_table1;
+	if (highest_vertex==lowest_vertex)
+		return;
+	
+	short left_line_count, right_line_count, total_line_count;
+	short aggregate_left_line_count, aggregate_right_line_count, aggregate_total_line_count;
+	short left_vertex, right_vertex;
+	short *left_table= scratch_table0, *right_table= scratch_table1;
 
-		left_line_count= right_line_count= 0; /* zero counts so the left and right lines get initialized */
-		aggregate_left_line_count= aggregate_right_line_count= 0; /* we’ve precalculated nothing initially */
-		left_vertex= right_vertex= highest_vertex; /* both sides start at the highest vertex */
-		total_line_count= vertices[lowest_vertex].x-vertices[highest_vertex].x; /* calculate vertical line count */
+	left_line_count= right_line_count= 0; /* zero counts so the left and right lines get initialized */
+	aggregate_left_line_count= aggregate_right_line_count= 0; /* we√ïve precalculated nothing initially */
+	left_vertex= right_vertex= highest_vertex; /* both sides start at the highest vertex */
+	total_line_count= vertices[lowest_vertex].x-vertices[highest_vertex].x; /* calculate vertical line count */
 
-		assert(total_line_count<MAXIMUM_SCRATCH_TABLE_ENTRIES); /* make sure we have enough scratch space */
-		
-		/* precalculate high and low y-coordinates for every x-coordinate */			
-		aggregate_total_line_count= total_line_count;
-		while (total_line_count>0)
-		{			
-			/* if we’re out of scan lines on the left side, get a new vertex and build a table
-				of y-coordinates so we can walk toward the new vertex */
-			if (left_line_count<=0)
+	assert(total_line_count<MAXIMUM_SCRATCH_TABLE_ENTRIES); /* make sure we have enough scratch space */
+	
+	/* precalculate high and low y-coordinates for every x-coordinate */			
+	aggregate_total_line_count= total_line_count;
+	while (total_line_count>0)
+	{			
+		/* if we√ïre out of scan lines on the left side, get a new vertex and build a table
+			of y-coordinates so we can walk toward the new vertex */
+		if (left_line_count<=0)
+		{
+			do /* clockwise vertex search */
 			{
-				do /* clockwise vertex search */
-				{
-					vertex= (left_vertex==polygon->vertex_count-1) ? 0 : (left_vertex+1);
-					left_line_count= vertices[vertex].x-vertices[left_vertex].x;
-//					dprintf("left line (%d,%d) to (%d,%d) for %d points", vertices[left_vertex].x, vertices[left_vertex].y, vertices[vertex].x, vertices[vertex].y, left_line_count);
-					if (!build_y_table(left_table+aggregate_left_line_count, vertices[left_vertex].x, vertices[left_vertex].y, vertices[vertex].x, vertices[vertex].y)) return;
-					aggregate_left_line_count+= left_line_count;
-					left_vertex= vertex;
-				}
-				while (!left_line_count);
+				vertex= (left_vertex==polygon->vertex_count-1) ? 0 : (left_vertex+1);
+				left_line_count= vertices[vertex].x-vertices[left_vertex].x;
+				if(!build_y_table(left_table+aggregate_left_line_count, vertices[left_vertex].x, vertices[left_vertex].y, vertices[vertex].x, vertices[vertex].y)) 
+					return;
+				aggregate_left_line_count+= left_line_count;
+				left_vertex= vertex;
 			}
+			while (!left_line_count);
+		}
 
-			/* if we’re out of scan lines on the right side, get a new vertex and build a table
-				of y-coordinates so we can walk toward the new vertex */
-			if (right_line_count<=0)
+		/* if we√ïre out of scan lines on the right side, get a new vertex and build a table
+			of y-coordinates so we can walk toward the new vertex */
+		if (right_line_count<=0)
+		{
+			do /* counter-clockwise vertex search */
 			{
-				do /* counter-clockwise vertex search */
-				{
-					vertex= right_vertex ? (right_vertex-1) : (polygon->vertex_count-1);
-					right_line_count= vertices[vertex].x-vertices[right_vertex].x;
-//					dprintf("right line (%d,%d) to (%d,%d) for %d points", vertices[right_vertex].x, vertices[right_vertex].y, vertices[vertex].x, vertices[vertex].y, right_line_count);
-					if (!build_y_table(right_table+aggregate_right_line_count, vertices[right_vertex].x, vertices[right_vertex].y, vertices[vertex].x, vertices[vertex].y)) return;
-					aggregate_right_line_count+= right_line_count;
-					right_vertex= vertex;
-				}
-				while (!right_line_count);
+				vertex= right_vertex ? (right_vertex-1) : (polygon->vertex_count-1);
+				right_line_count= vertices[vertex].x-vertices[right_vertex].x;
+				if (!build_y_table(right_table+aggregate_right_line_count, vertices[right_vertex].x, vertices[right_vertex].y, vertices[vertex].x, vertices[vertex].y)) return;
+				aggregate_right_line_count+= right_line_count;
+				right_vertex= vertex;
 			}
-			
-			/* advance by the minimum of left_line_count and right_line_count */
-			short delta= MIN(left_line_count, right_line_count);
-			assert(delta);
-			total_line_count-= delta;
-			left_line_count-= delta;
-			right_line_count-= delta;
-			
-			assert(delta||!total_line_count); /* if our delta is zero, we’d better be out of lines */
+			while (!right_line_count);
 		}
 		
-		/* make sure every coordinate is accounted for in our tables */
-		assert(aggregate_right_line_count==aggregate_total_line_count);
-		assert(aggregate_left_line_count==aggregate_total_line_count);
+		/* advance by the minimum of left_line_count and right_line_count */
+		short delta= MIN(left_line_count, right_line_count);
+		assert(delta);
+		total_line_count-= delta;
+		left_line_count-= delta;
+		right_line_count-= delta;
+		
+		assert(delta||!total_line_count); /* if our delta is zero, we√ïd better be out of lines */
+	}
+	
+	/* make sure every coordinate is accounted for in our tables */
+	assert(aggregate_right_line_count==aggregate_total_line_count);
+	assert(aggregate_left_line_count==aggregate_total_line_count);
 
-		/* precalculate mode-specific data */
+	/* precalculate mode-specific data */
 
-          if ((polygon->transfer_mode == _textured_transfer) || (polygon->transfer_mode == _static_transfer))
-          {
-              _pretexture_vertical_polygon_lines(polygon, screen, view, (struct _vertical_polygon_data *)precalculation_table, vertices[highest_vertex].x, left_table, right_table, aggregate_total_line_count);
-          }
-          else vhalt(csprintf(temporary, "vertical_polygons dont support mode #%d", polygon->transfer_mode));
-          
-		/* render all lines */
-		switch (bit_depth)
-		{
-			case 8:
-				switch (polygon->transfer_mode)
-				{
-					case _textured_transfer:
-						if (polygon->texture->flags&_TRANSPARENT_BIT)
-							texture_vertical_polygon_lines<pixel8, _sw_alpha_off, true>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table);
-						else
-							texture_vertical_polygon_lines<pixel8, _sw_alpha_off, false>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table);
-						break;
-					case _static_transfer:
-						if (polygon->texture->flags&_TRANSPARENT_BIT)
-							randomize_vertical_polygon_lines<pixel8, true>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table, polygon->transfer_data);
-						else
-							randomize_vertical_polygon_lines<pixel8, false>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table, polygon->transfer_data);
-						break;
-						
-				default:
-					assert(false);
+  if ((polygon->transfer_mode == _textured_transfer) || (polygon->transfer_mode == _static_transfer))
+      _pretexture_vertical_polygon_lines(polygon, screen, view, (struct _vertical_polygon_data *)precalculation_table, vertices[highest_vertex].x, left_table, right_table, aggregate_total_line_count);
+  else 
+  	vhalt(csprintf(temporary, "vertical_polygons dont support mode #%d", polygon->transfer_mode));
+  
+	/* render all lines */
+	switch (bit_depth)
+	{
+		case 8:
+			switch (polygon->transfer_mode)
+			{
+				case _textured_transfer:
+					if (polygon->texture->flags&_TRANSPARENT_BIT)
+						texture_vertical_polygon_lines<pixel8, _sw_alpha_off, true>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table);
+					else
+						texture_vertical_polygon_lines<pixel8, _sw_alpha_off, false>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table);
 					break;
+				case _static_transfer:
+					if (polygon->texture->flags&_TRANSPARENT_BIT)
+						randomize_vertical_polygon_lines<pixel8, true>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table, polygon->transfer_data);
+					else
+						randomize_vertical_polygon_lines<pixel8, false>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table, polygon->transfer_data);
+					break;
+					
+			default:
+				assert(false);
+				break;
+			}
+			break;
+			
+		case 16:
+			switch (polygon->transfer_mode)
+			{
+			case _textured_transfer:
+			{
+				SW_Texture *sw_texture =0 ;
+				if (graphics_preferences->software_alpha_blending)
+					sw_texture = SW_Texture_Extras::instance()->GetTexture(polygon->ShapeDesc);
+				
+				if (sw_texture && !polygon->VoidPresent && sw_texture->opac_type())
+				{
+					if (graphics_preferences->software_alpha_blending == _sw_alpha_fast) {
+						if (polygon->texture->flags & _TRANSPARENT_BIT) {
+							texture_vertical_polygon_lines<pixel16, _sw_alpha_fast, true>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table);
+						} else {
+							texture_vertical_polygon_lines<pixel16, _sw_alpha_fast, false>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table);
+						}
+					} 
+					else if (graphics_preferences->software_alpha_blending == _sw_alpha_nice) {
+						if (polygon->texture->flags & _TRANSPARENT_BIT)  {
+							texture_vertical_polygon_lines<pixel16, _sw_alpha_nice, true>(screen, view, (struct _vertical_polygon_data *) precalculation_table, left_table, right_table, sw_texture->opac_table());
+						} else {
+							texture_vertical_polygon_lines<pixel16, _sw_alpha_nice, false>(screen, view, (struct _vertical_polygon_data *) precalculation_table, left_table, right_table, sw_texture->opac_table());
+						}
+					}
+				} else {
+					if (polygon->texture->flags & _TRANSPARENT_BIT) {
+						texture_vertical_polygon_lines<pixel16, _sw_alpha_off, true>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table);
+					} else {
+						texture_vertical_polygon_lines<pixel16, _sw_alpha_off, false>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table);
+					}
+				}
+			}
+			break;
+			case _static_transfer:
+				if (polygon->texture->flags & _TRANSPARENT_BIT) {
+					randomize_vertical_polygon_lines<pixel16, true>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table, polygon->transfer_data);
+				} else {
+					randomize_vertical_polygon_lines<pixel16, false>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table, polygon->transfer_data);
 				}
 				break;
-				
-			case 16:
-				switch (polygon->transfer_mode)
-				{
+			default:
+				assert(false);
+			}
+			break;
+			
+		case 32:
+			switch (polygon->transfer_mode)
+			{
 				case _textured_transfer:
 				{
-					SW_Texture *sw_texture =0 ;
+					SW_Texture *sw_texture = 0;
 					if (graphics_preferences->software_alpha_blending)
 					{
 						sw_texture = SW_Texture_Extras::instance()->GetTexture(polygon->ShapeDesc);
@@ -650,92 +680,42 @@ void Rasterizer_SW_Class::texture_vertical_polygon(polygon_definition& textured_
 					if (sw_texture && !polygon->VoidPresent && sw_texture->opac_type())
 					{
 						if (graphics_preferences->software_alpha_blending == _sw_alpha_fast) {
-							if (polygon->texture->flags & _TRANSPARENT_BIT) {
-								texture_vertical_polygon_lines<pixel16, _sw_alpha_fast, true>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table);
-							} else {
-								texture_vertical_polygon_lines<pixel16, _sw_alpha_fast, false>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table);
-							}
-						} 
-						else if (graphics_preferences->software_alpha_blending == _sw_alpha_nice) {
-							if (polygon->texture->flags & _TRANSPARENT_BIT)  {
-								texture_vertical_polygon_lines<pixel16, _sw_alpha_nice, true>(screen, view, (struct _vertical_polygon_data *) precalculation_table, left_table, right_table, sw_texture->opac_table());
-							} else {
-								texture_vertical_polygon_lines<pixel16, _sw_alpha_nice, false>(screen, view, (struct _vertical_polygon_data *) precalculation_table, left_table, right_table, sw_texture->opac_table());
-							}
-						}
-					} else {
-						if (polygon->texture->flags & _TRANSPARENT_BIT) {
-							texture_vertical_polygon_lines<pixel16, _sw_alpha_off, true>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table);
-						} else {
-							texture_vertical_polygon_lines<pixel16, _sw_alpha_off, false>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table);
-						}
-					}
-				}
-				break;
-				case _static_transfer:
-					if (polygon->texture->flags & _TRANSPARENT_BIT) {
-						randomize_vertical_polygon_lines<pixel16, true>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table, polygon->transfer_data);
-					} else {
-						randomize_vertical_polygon_lines<pixel16, false>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table, polygon->transfer_data);
-					}
-					break;
-				default:
-					assert(false);
-					break;
-				}
-				break;
-				
-			case 32:
-				switch (polygon->transfer_mode)
-				{
-					case _textured_transfer:
-					{
-						SW_Texture *sw_texture = 0;
-						if (graphics_preferences->software_alpha_blending)
-						{
-							sw_texture = SW_Texture_Extras::instance()->GetTexture(polygon->ShapeDesc);
-						}
-						if (sw_texture && !polygon->VoidPresent && sw_texture->opac_type())
-						{
-							if (graphics_preferences->software_alpha_blending == _sw_alpha_fast) {
-								if (polygon->texture->flags&_TRANSPARENT_BIT)
-									texture_vertical_polygon_lines<pixel32, _sw_alpha_fast, true>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table);
-								else
-									texture_vertical_polygon_lines<pixel32, _sw_alpha_fast, false>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table);
-							}
-							else if (graphics_preferences->software_alpha_blending == _sw_alpha_nice) 
-							{
-								if (polygon->texture->flags & _TRANSPARENT_BIT)
-									texture_vertical_polygon_lines<pixel32, _sw_alpha_nice, true>(screen, view, (struct _vertical_polygon_data *) precalculation_table, left_table, right_table, sw_texture->opac_table());
-								else
-									texture_vertical_polygon_lines<pixel32, _sw_alpha_nice, false>(screen, view, (struct _vertical_polygon_data *) precalculation_table, left_table, right_table, sw_texture->opac_table());
-							}
-						} else {
-							if (polygon->texture->flags & _TRANSPARENT_BIT)
-								texture_vertical_polygon_lines<pixel32, _sw_alpha_off, true>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table);
+							if (polygon->texture->flags&_TRANSPARENT_BIT)
+								texture_vertical_polygon_lines<pixel32, _sw_alpha_fast, true>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table);
 							else
-								texture_vertical_polygon_lines<pixel32, _sw_alpha_off, false>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table);
+								texture_vertical_polygon_lines<pixel32, _sw_alpha_fast, false>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table);
 						}
-						break;
-					}
-					case _static_transfer:
+						else if (graphics_preferences->software_alpha_blending == _sw_alpha_nice) 
+						{
+							if (polygon->texture->flags & _TRANSPARENT_BIT)
+								texture_vertical_polygon_lines<pixel32, _sw_alpha_nice, true>(screen, view, (struct _vertical_polygon_data *) precalculation_table, left_table, right_table, sw_texture->opac_table());
+							else
+								texture_vertical_polygon_lines<pixel32, _sw_alpha_nice, false>(screen, view, (struct _vertical_polygon_data *) precalculation_table, left_table, right_table, sw_texture->opac_table());
+						}
+					} else {
 						if (polygon->texture->flags & _TRANSPARENT_BIT)
-							randomize_vertical_polygon_lines<pixel32, true>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table, polygon->transfer_data);
+							texture_vertical_polygon_lines<pixel32, _sw_alpha_off, true>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table);
 						else
-							randomize_vertical_polygon_lines<pixel32, false>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table, polygon->transfer_data);
-						break;
-						
-				default:
-					assert(false);
+							texture_vertical_polygon_lines<pixel32, _sw_alpha_off, false>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table);
+					}
 					break;
 				}
-				break;
-				
-		default:
-			assert(false);
+				case _static_transfer:
+					if (polygon->texture->flags & _TRANSPARENT_BIT)
+						randomize_vertical_polygon_lines<pixel32, true>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table, polygon->transfer_data);
+					else
+						randomize_vertical_polygon_lines<pixel32, false>(screen, view, (struct _vertical_polygon_data *)precalculation_table, left_table, right_table, polygon->transfer_data);
+					break;
+					
+			default:
+				assert(false);
+			}
 			break;
-		}
+			
+	default:
+		assert(false);
 	}
+
 }
 
 void Rasterizer_SW_Class::texture_rectangle(rectangle_definition& textured_rectangle)
@@ -855,7 +835,7 @@ void Rasterizer_SW_Class::texture_rectangle(rectangle_definition& textured_recta
 					if (FIXED_INTEGERAL_PART(texture_y0)<first)
 					{
 						delta= (INTEGER_TO_FIXED(first) - texture_y0)/texture_dy + 1;
-						vassert(delta>=0, csprintf(temporary, "[%x,%x] ∂=%x (#%d,#%d)", texture_y0, texture_y1, texture_dy, first, last));
+						vassert(delta>=0, csprintf(temporary, "[%x,%x] ¬∂=%x (#%d,#%d)", texture_y0, texture_y1, texture_dy, first, last));
 						
 						y0= MIN(y1, y0+delta);
 						texture_y+= delta*texture_dy;
@@ -864,7 +844,7 @@ void Rasterizer_SW_Class::texture_rectangle(rectangle_definition& textured_recta
 					if (FIXED_INTEGERAL_PART(texture_y1)>last)
 					{
 						delta= (texture_y1 - INTEGER_TO_FIXED(last))/texture_dy + 1;
-						vassert(delta>=0, csprintf(temporary, "[%x,%x] ∂=%x (#%d,#%d)", texture_y0, texture_y1, texture_dy, first, last));
+						vassert(delta>=0, csprintf(temporary, "[%x,%x] ¬∂=%x (#%d,#%d)", texture_y0, texture_y1, texture_dy, first, last));
 						
 						y1= MAX(y0, y1-delta);
 					}
@@ -970,26 +950,6 @@ void Rasterizer_SW_Class::texture_rectangle(rectangle_definition& textured_recta
 
 /* ---------- private code */
 
-#if 0
-
-#define LANDSCAPE_REPEATS 12
-static void preprocess_landscaped_polygon(
-	struct polygon_definition *polygon,
-	struct view_data *view)
-{
-	polygon->origin.x= (world_distance) ((10000*LANDSCAPE_REPEATS*WORLD_ONE)/(2*31415));
-	polygon->origin.y= -(((LANDSCAPE_REPEATS*WORLD_ONE*view->yaw)>>ANGULAR_BITS)&(WORLD_ONE-1));
-	polygon->origin.z= 0;
-	
-	polygon->vector.i= 0;
-	polygon->vector.j= WORLD_ONE;
-	polygon->vector.k= -WORLD_ONE;
-
-	polygon->ambient_shade= FIXED_ONE;
-}
-
-#endif
-
 /* starting at x0 and for line_count vertical lines between *y0 and *y1, precalculate all the
 	information _texture_vertical_polygon_lines will need to work */
 static void _pretexture_vertical_polygon_lines(
@@ -1034,7 +994,7 @@ static void _pretexture_vertical_polygon_lines(
 		_fixed ty, ty_delta;
 
 		/* would our precision be greater here if we shifted the numerator up to $7FFFFFFF and
-			then downshifted only the numerator?  too bad we can’t use BFFFO in 68k */
+			then downshifted only the numerator?  too bad we can√ït use BFFFO in 68k */
 		{
 			int32 adjusted_tx_denominator= tx_denominator;
 			int32 adjusted_tx_numerator= tx_numerator;
@@ -1056,7 +1016,7 @@ static void _pretexture_vertical_polygon_lines(
 		}
 		
 		world_x= polygon->origin.x + ((tx*polygon->vector.i)>>FIXED_FRACTIONAL_BITS);
-		if (world_x<0) world_x= -world_x; /* it is mostly unclear what we’re supposed to do with negative x values */
+		if (world_x<0) world_x= -world_x; /* it is mostly unclear what we√ïre supposed to do with negative x values */
 
 		/* calculate and rescale ty_numerator, ty_denominator and calculate ty */
 		ty_numerator= world_x*screen_y0 - dz0;
@@ -1077,7 +1037,8 @@ static void _pretexture_vertical_polygon_lines(
 		// LP: remember that world_x is always >= 0
 		while(adjusted_world_x > INT16_MAX)
 		{
-			adjusted_world_x >>= 1; adjusted_ty_denominator >>= 1;
+			adjusted_world_x >>= 1; 
+			adjusted_ty_denominator >>= 1;
 		}
 		if (!adjusted_ty_denominator) adjusted_ty_denominator= 1; /* -1 will still be -1 */
 		ty_delta= - INTEGER_TO_FIXED(adjusted_world_x)/adjusted_ty_denominator;
@@ -1086,26 +1047,20 @@ static void _pretexture_vertical_polygon_lines(
 
 		/* calculate the shading table for this column */
 		if (polygon->flags&_SHADELESS_BIT)
-		{
 			line->shading_table= polygon->shading_tables;
-		}
 		else
 		{
 			// LP change: made this more long-distance friendly
 			calculate_shading_table(line->shading_table, view, polygon->shading_tables, (short)MIN(world_x, SHRT_MAX), polygon->ambient_shade);
-			// calculate_shading_table(line->shading_table, view, polygon->shading_tables, world_x, polygon->ambient_shade);
 		}
 
-//		if (ty_delta)
-		{
-			/* calculate texture_y and texture_dy (floor-mapper style) */
-//			data->n= VERTICAL_TEXTURE_DOWNSHIFT;
-			line->texture_y= ty<<VERTICAL_TEXTURE_FREE_BITS;
-			line->texture_dy= ty_delta<<(VERTICAL_TEXTURE_FREE_BITS-8);
-			line->texture= polygon->texture->row_addresses[x0];
-			
-			line+= 1;
-		}
+		/* calculate texture_y and texture_dy (floor-mapper style) */
+
+		line->texture_y= ty<<VERTICAL_TEXTURE_FREE_BITS;
+		line->texture_dy= ty_delta<<(VERTICAL_TEXTURE_FREE_BITS-8);
+		line->texture= polygon->texture->row_addresses[x0];
+		
+		line+= 1;
 		
 		tx_numerator+= tx_numerator_delta;
 		tx_denominator+= tx_denominator_delta;
@@ -1199,7 +1154,7 @@ static void _pretexture_horizontal_polygon_lines(
 }
 
 
-// height must be determined emperically (texture is vertically centered at 0°)
+// height must be determined emperically (texture is vertically centered at 0¬°)
 // #define LANDSCAPE_REPEAT_BITS 1
 static void _prelandscape_horizontal_polygon_lines(
 	struct polygon_definition *polygon,
@@ -1322,7 +1277,7 @@ static short *build_x_table(
 	}
 	else
 	{
-		/* can’t build a table for negative dy */
+		/* can√ït build a table for negative dy */
 		if (dy<0) return NULL;
 	}
 	
@@ -1388,8 +1343,8 @@ static short *build_y_table(
 	}
 	else
 	{
-		/* can’t build a table for a negative dx */
-		return NULL;
+		/* can√ït build a table for a negative dx */
+		return nullptr;
 	}
 	
 	return table;
