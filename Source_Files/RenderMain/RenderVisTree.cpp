@@ -211,7 +211,7 @@ void RenderVisTreeClass::build_render_tree()
 			if( crossprod_right <= 0 && crossprod_left >= 0 )
 			{
 				//it's in our view, cast at it
-				short endpoint_;
+				int16 endpoint_;
 				
 				if( ENDPOINT_IS_TRANSPARENT(endpoint) )
 					endpoint_ = NONE;
@@ -230,15 +230,15 @@ void RenderVisTreeClass::build_render_tree()
 
 // LP change: make it better able to do long-distance views
 // Using parent index instead of pointer to avoid stale-pointer bug
-void RenderVisTreeClass::cast_render_ray(long_vector2d *_vector, short endpoint_index,
-	node_data* parent, short bias) /* _clockwise or _counterclockwise for walking endpoints */
+void RenderVisTreeClass::cast_render_ray(long_vector2d *_vector, int16 endpoint_index,
+	node_data* parent, int16 bias) /* _clockwise or _counterclockwise for walking endpoints */
 {
 	auto polygon_index = parent->polygon_index;
 
 	do
 	{
 		auto clipping_endpoint_index = endpoint_index;
-		short clipping_line_index;
+		int16 clipping_line_index;
 		auto clip_flags = next_polygon_along_line(&polygon_index,
 		(world_point2d *) &view->origin, _vector, &clipping_endpoint_index, &clipping_line_index, bias);
 		
@@ -368,15 +368,15 @@ void RenderVisTreeClass::initialize_polygon_queue()
 
 
 // LP change: make it better able to do long-distance views
-uint16 RenderVisTreeClass::next_polygon_along_line(short * polygon_index,
+uint16 RenderVisTreeClass::next_polygon_along_line(int16 * polygon_index,
 	world_point2d *origin, /* not necessairly in polygon_index */
 	long_vector2d *_vector, // world_vector2d *vector,
-	short *clipping_endpoint_index, /* if non-NONE on entry this is the solid endpoint weÕre shooting for */
-	short *clipping_line_index, /* NONE on exit if this polygon transition wasnÕt accross an elevation line */
-	short bias)
+	int16 *clipping_endpoint_index, /* if non-NONE on entry this is the solid endpoint weÕre shooting for */
+	int16 *clipping_line_index, /* NONE on exit if this polygon transition wasnÕt accross an elevation line */
+	int16 bias)
 {
 	polygon_data *polygon	= get_polygon_data(*polygon_index);
-	short next_polygon_index, crossed_line_index, crossed_side_index;
+	int16 next_polygon_index, crossed_line_index, crossed_side_index;
 	bool passed_through_solid_vertex = false;
 	uint16 clip_flags = 0;
 
@@ -384,9 +384,9 @@ uint16 RenderVisTreeClass::next_polygon_along_line(short * polygon_index,
 	ADD_POLYGON_TO_AUTOMAP(*polygon_index);
 	PUSH_POLYGON_INDEX(*polygon_index);
 
-	short state = _looking_for_first_nonzero_vertex;
-	short vertex_index = 0;
-	short vertex_delta = 1; /* start searching clockwise from vertex zero */
+	int16 state = _looking_for_first_nonzero_vertex;
+	int16 vertex_index = 0;
+	int16 vertex_delta = 1; /* start searching clockwise from vertex zero */
 	
 	// LP change: added test for looping around:
 	// will remember the first vertex examined when the state has changed
@@ -554,9 +554,9 @@ uint16 RenderVisTreeClass::next_polygon_along_line(short * polygon_index,
 }
 
 // LP change: make it better able to do long-distance views
-uint16 RenderVisTreeClass::decide_where_vertex_leads(short *polygon_index, short *line_index,
-	short *side_index, short endpoint_index_in_polygon_list, world_point2d *origin,
-	long_vector2d *_vector, uint16 clip_flags, short bias)
+uint16 RenderVisTreeClass::decide_where_vertex_leads(int16 *polygon_index, int16 *line_index,
+	int16 *side_index, int16 endpoint_index_in_polygon_list, world_point2d *origin,
+	long_vector2d *_vector, uint16 clip_flags, int16 bias)
 {
 	polygon_data *polygon	= get_polygon_data(*polygon_index);
 	auto endpoint_index	= polygon->endpoint_indexes[endpoint_index_in_polygon_list];
@@ -584,7 +584,7 @@ uint16 RenderVisTreeClass::decide_where_vertex_leads(short *polygon_index, short
 	
 	line_data *line;
 	world_point2d *vertex;
-	CROSSPROD_TYPE cross_product;
+	
 
 	*line_index	= polygon->line_indexes[index];
 	*side_index	= polygon->side_indexes[index];
@@ -617,7 +617,7 @@ uint16 RenderVisTreeClass::decide_where_vertex_leads(short *polygon_index, short
 	vertex = &get_endpoint_data(polygon->endpoint_indexes[index])->vertex;
 	// LP change: made more long-distance-friendly
 	
-	cross_product = 
+	CROSSPROD_TYPE cross_product = 
 		CROSSPROD_TYPE(int32(vertex->x)-int32(origin->x))*_vector->j 
 		- 
 		CROSSPROD_TYPE(int32(vertex->y)-int32(origin->y))*_vector->i;
@@ -835,7 +835,7 @@ short RenderVisTreeClass::calculate_endpoint_clipping_information(short endpoint
 	assert(Length <= 32767);
 	assert(Length >= 1);
 	
-	size_t LastIndex = Length-1;
+	const size_t LastIndex = Length - 1;
 
 	endpoint_data *endpoint		= get_endpoint_data(endpoint_index);
 	endpoint_clip_data *data	= &EndpointClips[LastIndex];
