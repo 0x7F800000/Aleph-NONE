@@ -414,7 +414,7 @@ bool player_killed_player(short dead_player_index, short aggressor_player_index)
 	
 	if(game_type == _game_of_tag )
 	{
-		const bool killedByIt 	= agressor_player_index == game_player_index;
+		const bool killedByIt 	= aggressor_player_index == game_player_index;
 		const bool suicide 	= dead_player_index == aggressor_player_index;
 		
 		/*	if they were killed by it, killed themselves, or died without an it	*/
