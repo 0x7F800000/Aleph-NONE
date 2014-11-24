@@ -72,23 +72,23 @@ inline void INITIALIZE_NODE(node_data *node, short node_polygon_index, uint16 no
 	node->clipping_line_count= 0;
 	node->parent= node_parent;
 	node->reference= node_reference;
-	node->siblings= NULL;
-	node->children= NULL;
-	node->PS_Greater = NULL;
-	node->PS_Less = NULL;
-	node->PS_Shared = NULL;
+	node->siblings= nullptr;
+	node->children= nullptr;
+	node->PS_Greater = nullptr;
+	node->PS_Less = nullptr;
+	node->PS_Shared = nullptr;
 	// LP addition above: polygon-sort tree data
 }
 
 
 // Inits everything
 RenderVisTreeClass::RenderVisTreeClass():
-	view(NULL)	// Idiot-proofing
+	view(nullptr)	// Idiot-proofing
 {
-	PolygonQueue.reserve(POLYGON_QUEUE_SIZE);
-	EndpointClips.reserve(MAXIMUM_ENDPOINT_CLIPS);
-	LineClips.reserve(MAXIMUM_LINE_CLIPS);
-	ClippingWindows.reserve(MAXIMUM_CLIPPING_WINDOWS);
+	PolygonQueue.reserve( POLYGON_QUEUE_SIZE );
+	EndpointClips.reserve( MAXIMUM_ENDPOINT_CLIPS );
+	LineClips.reserve( MAXIMUM_LINE_CLIPS );
+	ClippingWindows.reserve( MAXIMUM_CLIPPING_WINDOWS );
 }
 
 
@@ -111,7 +111,6 @@ void RenderVisTreeClass::PUSH_POLYGON_INDEX(short polygon_index)
 			PolygonQueue.push_back(polygon_index);
 		polygon_queue_size++;
 		
-		// polygon_queue[polygon_queue_size++]= polygon_index;
 		SET_RENDER_FLAG(polygon_index, _polygon_is_visible);
 	}
 }
@@ -142,16 +141,16 @@ void RenderVisTreeClass::build_render_tree()
 	/* pull polygons off the queue, fire at all their new endpoints, building the tree as we go */
 	while (polygon_queue_size)
 	{
-		short vertex_index;
-		short polygon_index= PolygonQueue[--polygon_queue_size];
-		polygon_data *polygon= get_polygon_data(polygon_index);
+		ix vertex_index;
+		auto polygon_index = PolygonQueue[--polygon_queue_size];
+		polygon_data *polygon = get_polygon_data(polygon_index);
 		
 		assert(!POLYGON_IS_DETACHED(polygon));
 		
-		for (vertex_index=0;vertex_index<polygon->vertex_count;++vertex_index)
+		for( vertex_index = 0; vertex_index < polygon->vertex_count; ++vertex_index )
 		{
-			short endpoint_index= polygon->endpoint_indexes[vertex_index];
-			endpoint_data *endpoint= get_endpoint_data(endpoint_index);
+			auto endpoint_index	= polygon->endpoint_indexes[vertex_index];
+			endpoint_data *endpoint	= get_endpoint_data(endpoint_index);
 			
 			if (!TEST_RENDER_FLAG(endpoint_index, _endpoint_has_been_visited))
 			{
@@ -170,18 +169,19 @@ void RenderVisTreeClass::build_render_tree()
 				// LP change: compose a true transformed point to replace endpoint->transformed,
 				// and use it in the upcoming code
 				long_vector2d transformed_endpoint;
-				overflow_short_to_long_2d(endpoint->transformed,endpoint->flags,transformed_endpoint);
+				overflow_short_to_long_2d( endpoint->transformed,endpoint->flags, transformed_endpoint );
 				
-				if (transformed_endpoint.i>0)
+				if (transformed_endpoint.i > 0)
 				{
-					int32 x= view->half_screen_width + (transformed_endpoint.j*view->world_to_screen_x)/transformed_endpoint.i;
+					int32 x = view->half_screen_width + 
+					( transformed_endpoint.j * view->world_to_screen_x ) / transformed_endpoint.i;
 					
 					endpoint_x_coordinates[endpoint_index]= static_cast<int16>(PIN(x, INT16_MIN, INT16_MAX));
 					SET_RENDER_FLAG(endpoint_index, _endpoint_has_been_transformed);
 				}
 				
 				/* do two cross products to determine whether this endpoint is in our view cone or not
-					(we don’t have to cast at points outside the cone) */
+					(we don√ït have to cast at points outside the cone) */
 				if ((view->right_edge.i*_vector.j - view->right_edge.j*_vector.i)<=0 && (view->left_edge.i*_vector.j - view->left_edge.j*_vector.i)>=0)
 				{
 					cast_render_ray(&_vector, ENDPOINT_IS_TRANSPARENT(endpoint) ? NONE : endpoint_index, &Nodes.front(), _no_bias);
@@ -197,21 +197,17 @@ void RenderVisTreeClass::build_render_tree()
 
 // LP change: make it better able to do long-distance views
 // Using parent index instead of pointer to avoid stale-pointer bug
-void RenderVisTreeClass::cast_render_ray(
-	long_vector2d *_vector, // world_vector2d *vector,
-	short endpoint_index,
-	node_data* parent,
-	short bias) /* _clockwise or _counterclockwise for walking endpoints */
+void RenderVisTreeClass::cast_render_ray(long_vector2d *_vector, short endpoint_index,
+	node_data* parent, short bias) /* _clockwise or _counterclockwise for walking endpoints */
 {
-	short polygon_index= parent->polygon_index;
+	auto polygon_index = parent->polygon_index;
 
-//	dprintf("shooting at e#%d of p#%d", endpoint_index, polygon_index);
-	
 	do
 	{
-		short clipping_endpoint_index= endpoint_index;
+		auto clipping_endpoint_index = endpoint_index;
 		short clipping_line_index;
-		uint16 clip_flags= next_polygon_along_line(&polygon_index, (world_point2d *) &view->origin, _vector, &clipping_endpoint_index, &clipping_line_index, bias);
+		auto clip_flags = next_polygon_along_line(&polygon_index,
+		(world_point2d *) &view->origin, _vector, &clipping_endpoint_index, &clipping_line_index, bias);
 		
 		if (polygon_index==NONE)
 		{
@@ -220,152 +216,148 @@ void RenderVisTreeClass::cast_render_ray(
 				cast_render_ray(_vector, endpoint_index, parent, _clockwise_bias);
 				cast_render_ray(_vector, endpoint_index, parent, _counterclockwise_bias);
 			}
+			continue;
 		}
-		else
+		
+		node_data **node_reference, *node;
+		
+		/* find the old node referencing this polygon transition or build one */
+		for( node_reference = &parent->children; *node_reference && (*node_reference)->polygon_index != polygon_index;
+				node_reference = &(*node_reference)->siblings)
+			;
+		node = *node_reference;
+		if (!node)
 		{
-			node_data **node_reference, *node;
+			// LP change: using growable list
+			// Contents get swapped when the length starts to exceed the capacity.
+			// When they are not NULL,
+			// "parent", "siblings" and "children" are pointers to members,
+			// "reference" is a pointer to a member with an offset.
+			// Cast the pointers to whatever size of integer the system uses.
+			const size_t Length = Nodes.size();
 			
-			/* find the old node referencing this polygon transition or build one */
-			for (node_reference= &parent->children;
-					*node_reference && (*node_reference)->polygon_index!=polygon_index;
-					node_reference= &(*node_reference)->siblings)
-				;
-			node= *node_reference;
-			if (!node)
+			node_data Dummy;
+			Dummy.flags = 0;				// Fake initialization to shut up CW
+			Nodes.push_back(Dummy);
+			node = &Nodes[Length];		// The length here is the "old" length
+			
+			*node_reference = node;
+			INITIALIZE_NODE(node, polygon_index, 0, parent, node_reference);
+			
+			// Place new node in tree if it has gotten rooted
+			if (Length > 0)
 			{
-				// LP change: using growable list
-				// Contents get swapped when the length starts to exceed the capacity.
-				// When they are not NULL,
-				// "parent", "siblings" and "children" are pointers to members,
-				// "reference" is a pointer to a member with an offset.
-				// Cast the pointers to whatever size of integer the system uses.
-				size_t Length = Nodes.size();
-				
-				node_data Dummy;
-				Dummy.flags = 0;				// Fake initialization to shut up CW
-				Nodes.push_back(Dummy);
-				node = &Nodes[Length];		// The length here is the "old" length
-				
-				*node_reference= node;
-				INITIALIZE_NODE(node, polygon_index, 0, parent, node_reference);
-				
-				// Place new node in tree if it has gotten rooted
-				if (Length > 0)
+				node_data *CurrNode = &Nodes.front();
+			while(true)
+			{
+				const int32 PolyDiff = int32(polygon_index) - int32(CurrNode->polygon_index);
+				if (PolyDiff > 0)
 				{
-					node_data *CurrNode = &Nodes.front();
-				while(true)
-				{
-					int32 PolyDiff = int32(polygon_index) - int32(CurrNode->polygon_index);
-					if (PolyDiff > 0)
+					node_data *NextNode = CurrNode->PS_Greater;
+					if (NextNode)
+						// Advance
+						CurrNode = NextNode;
+					else
 					{
-						node_data *NextNode = CurrNode->PS_Greater;
-						if (NextNode)
-							// Advance
-							CurrNode = NextNode;
-						else
-						{
-							// Attach to end
-							CurrNode->PS_Greater = node;
-							break;
-						}
-					}
-					else if (PolyDiff < 0)
-					{
-						node_data *NextNode = CurrNode->PS_Less;
-						if (NextNode)
-							// Advance
-							CurrNode = NextNode;
-						else
-						{
-							// Attach to end
-							CurrNode->PS_Less = node;
-							break;
-						}
-					}
-					else // Equal
-					{
-						node_data *NextNode = CurrNode->PS_Shared;
-						if (NextNode)
-							// Splice node into shared-polygon chain
-							node->PS_Shared = NextNode;
-						CurrNode->PS_Shared = node;
+						// Attach to end
+						CurrNode->PS_Greater = node;
 						break;
 					}
 				}
-				}
-			}
-
-			/* update the line clipping information, if necessary, for this node (don’t add
-				duplicates */
-			if (clipping_line_index!=NONE)
-			{
-				short i;
-				
-				if (!TEST_RENDER_FLAG(clipping_line_index, _line_has_clip_data))
-					calculate_line_clipping_information(clipping_line_index, clip_flags);
-				clipping_line_index= line_clip_indexes[clipping_line_index];
-				
-				for (i=0;
-						i<node->clipping_line_count&&node->clipping_lines[i]!=clipping_line_index;
-						++i)
-					;
-				if (i==node->clipping_line_count)
+				else if (PolyDiff < 0)
 				{
-					assert(node->clipping_line_count<MAXIMUM_CLIPPING_LINES_PER_NODE);
-					node->clipping_lines[node->clipping_line_count++]= clipping_line_index;
+					node_data *NextNode = CurrNode->PS_Less;
+					if (NextNode)
+						// Advance
+						CurrNode = NextNode;
+					else
+					{
+						// Attach to end
+						CurrNode->PS_Less = node;
+						break;
+					}
 				}
-			}
-			
-			/* update endpoint clipping information for this node if we have a valid endpoint with clip */
-			if (clipping_endpoint_index!=NONE && (clip_flags&(_clip_left|_clip_right)))
-			{
-				clipping_endpoint_index= calculate_endpoint_clipping_information(clipping_endpoint_index, clip_flags);
-				
-				// Be sure it's valid
-				if (clipping_endpoint_index != NONE)
+				else // Equal
 				{
-					if (node->clipping_endpoint_count<MAXIMUM_CLIPPING_ENDPOINTS_PER_NODE)
-						node->clipping_endpoints[node->clipping_endpoint_count++]= clipping_endpoint_index;
+					node_data *NextNode = CurrNode->PS_Shared;
+					if (NextNode)
+						// Splice node into shared-polygon chain
+						node->PS_Shared = NextNode;
+					CurrNode->PS_Shared = node;
+					break;
 				}
 			}
-			
-			parent= node;
+			}
 		}
+
+		/* update the line clipping information, if necessary, for this node (don't add
+			duplicates */
+		if (clipping_line_index != NONE)
+		{
+			ix i;
+			
+			if (!TEST_RENDER_FLAG(clipping_line_index, _line_has_clip_data))
+				calculate_line_clipping_information(clipping_line_index, clip_flags);
+			clipping_line_index= line_clip_indexes[clipping_line_index];
+			
+			for( i = 0; i < node->clipping_line_count && node->clipping_lines[i] != clipping_line_index; ++i)
+				;
+			if (i == node->clipping_line_count)
+			{
+				assert(node->clipping_line_count < MAXIMUM_CLIPPING_LINES_PER_NODE);
+				node->clipping_lines[ node->clipping_line_count++ ] = clipping_line_index;
+			}
+		}
+		
+		/* update endpoint clipping information for this node if we have a valid endpoint with clip */
+		if (clipping_endpoint_index != NONE && (clip_flags&(_clip_left|_clip_right)))
+		{
+			clipping_endpoint_index = calculate_endpoint_clipping_information(clipping_endpoint_index, clip_flags);
+			
+			// Be sure it's valid
+			if (clipping_endpoint_index != NONE && node->clipping_endpoint_count < MAXIMUM_CLIPPING_ENDPOINTS_PER_NODE)
+				node->clipping_endpoints[ node->clipping_endpoint_count++ ] = clipping_endpoint_index;
+		}
+		
+		parent = node;
+	
 	}
-	while (polygon_index!=NONE);
+	while (polygon_index != NONE);
 }
 
 void RenderVisTreeClass::initialize_polygon_queue()
 {
-	polygon_queue_size= 0;
+	polygon_queue_size = 0;
 }
 
 
 // LP change: make it better able to do long-distance views
 uint16 RenderVisTreeClass::next_polygon_along_line(
-	short *polygon_index,
+	short * polygon_index,
 	world_point2d *origin, /* not necessairly in polygon_index */
 	long_vector2d *_vector, // world_vector2d *vector,
-	short *clipping_endpoint_index, /* if non-NONE on entry this is the solid endpoint we’re shooting for */
-	short *clipping_line_index, /* NONE on exit if this polygon transition wasn’t accross an elevation line */
+	short *clipping_endpoint_index, /* if non-NONE on entry this is the solid endpoint we√ïre shooting for */
+	short *clipping_line_index, /* NONE on exit if this polygon transition wasn√ït accross an elevation line */
 	short bias)
 {
-	polygon_data *polygon= get_polygon_data(*polygon_index);
+	polygon_data *polygon	= get_polygon_data(*polygon_index);
 	short next_polygon_index, crossed_line_index, crossed_side_index;
-	bool passed_through_solid_vertex= false;
+	bool passed_through_solid_vertex = false;
 	short vertex_index, vertex_delta;
-	uint16 clip_flags= 0;
+	uint16 clip_flags = 0;
 	short state;
 
 	ADD_POLYGON_TO_AUTOMAP(*polygon_index);
 	PUSH_POLYGON_INDEX(*polygon_index);
 
-	state= _looking_for_first_nonzero_vertex;
-	vertex_index= 0, vertex_delta= 1; /* start searching clockwise from vertex zero */
+	state = _looking_for_first_nonzero_vertex;
+	vertex_index = 0, vertex_delta = 1; /* start searching clockwise from vertex zero */
 	// LP change: added test for looping around:
 	// will remember the first vertex examined when the state has changed
-	short initial_vertex_index = vertex_index;
+	auto initial_vertex_index = vertex_index;
+	
 	bool changed_state = true;
+	
 	do
 	{
 		// Jump out of loop?
@@ -380,20 +372,23 @@ uint16 RenderVisTreeClass::next_polygon_along_line(
 			break;
 		}
 			
-		short endpoint_index= polygon->endpoint_indexes[vertex_index];
-		world_point2d *vertex= &get_endpoint_data(endpoint_index)->vertex;
+		auto endpoint_index = polygon->endpoint_indexes[vertex_index];
+		world_point2d *vertex = &get_endpoint_data(endpoint_index)->vertex;
 		// LP change to make it more long-distance-friendly
-		CROSSPROD_TYPE cross_product= CROSSPROD_TYPE(int32(vertex->x)-int32(origin->x))*_vector->j - CROSSPROD_TYPE(int32(vertex->y)-int32(origin->y))*_vector->i;
 		
-//		dprintf("p#%d, e#%d:#%d, SGN(cp)=#%d, state=#%d", *polygon_index, vertex_index, polygon->endpoint_indexes[vertex_index], SGN(cross_product), state);
+		//urghhhhhhhhhhh
+		CROSSPROD_TYPE cross_product
+		= CROSSPROD_TYPE(
+int32(vertex->x)-int32(origin->x))*_vector->j - CROSSPROD_TYPE(int32(vertex->y)-int32(origin->y))*_vector->i;
+		
 		if (cross_product < 0)
 		{
 		    switch (state)
 		    {
 			case _looking_for_first_nonzero_vertex:
 			    /* search counterclockwise for transition (right to left) */
-			    state= _looking_counterclockwise_for_left_vertex;
-			    vertex_delta= -1;
+			    state = _looking_counterclockwise_for_left_vertex;
+			    vertex_delta = -1;
 			    // LP change: resetting loop test
 			    initial_vertex_index = vertex_index;
 			    changed_state = true;
@@ -401,13 +396,13 @@ uint16 RenderVisTreeClass::next_polygon_along_line(
 
 			case _looking_clockwise_for_right_vertex: /* found the transition we were looking for */
 			{
-			    short i= WRAP_LOW(vertex_index, polygon->vertex_count-1);
-			    next_polygon_index= polygon->adjacent_polygon_indexes[i];
-			    crossed_line_index= polygon->line_indexes[i];
-			    crossed_side_index= polygon->side_indexes[i];
+			    short i = WRAP_LOW(vertex_index, polygon->vertex_count-1);
+			    next_polygon_index = polygon->adjacent_polygon_indexes[i];
+			    crossed_line_index = polygon->line_indexes[i];
+			    crossed_side_index = polygon->side_indexes[i];
 			}
 			case _looking_for_next_nonzero_vertex: /* next_polygon_index already set */
-			    state= NONE;
+			    state = NONE;
 			    break;
 		    }
 		} else if (cross_product > 0)
@@ -423,11 +418,11 @@ uint16 RenderVisTreeClass::next_polygon_along_line(
 			    break;
 
 			case _looking_counterclockwise_for_left_vertex: /* found the transition we were looking for */
-			    next_polygon_index= polygon->adjacent_polygon_indexes[vertex_index];
-			    crossed_line_index= polygon->line_indexes[vertex_index];
-			    crossed_side_index= polygon->side_indexes[vertex_index];
+			    next_polygon_index = polygon->adjacent_polygon_indexes[vertex_index];
+			    crossed_line_index = polygon->line_indexes[vertex_index];
+			    crossed_side_index = polygon->side_indexes[vertex_index];
 			case _looking_for_next_nonzero_vertex: /* next_polygon_index already set */
-			    state= NONE;
+			    state = NONE;
 			    break;
 		    }
 		} else
@@ -436,10 +431,10 @@ uint16 RenderVisTreeClass::next_polygon_along_line(
 		    {
 			if (endpoint_index==*clipping_endpoint_index) passed_through_solid_vertex= true;
 
-			/* if we think we know what’s on the other side of this zero (these zeros)
-			change the state: if we don’t find what we’re looking for then the polygon
+			/* if we think we know what√ïs on the other side of this zero (these zeros)
+			change the state: if we don√ït find what we√ïre looking for then the polygon
 			is entirely on one side of the line or the other (except for this vertex),
-			in any case we need to call decide_where_vertex_leads() to find out what’s
+			in any case we need to call decide_where_vertex_leads() to find out what√ïs
 			on the other side of this vertex */
 			switch (state)
 			{
@@ -448,7 +443,7 @@ uint16 RenderVisTreeClass::next_polygon_along_line(
 				next_polygon_index= *polygon_index;
 				clip_flags|= decide_where_vertex_leads(&next_polygon_index, &crossed_line_index, &crossed_side_index,
 					   vertex_index, origin, _vector, clip_flags, bias);
-				state= _looking_for_next_nonzero_vertex;
+				state = _looking_for_next_nonzero_vertex;
 				// LP change: resetting loop test
 				initial_vertex_index = vertex_index;
 				changed_state = true;
@@ -457,50 +452,61 @@ uint16 RenderVisTreeClass::next_polygon_along_line(
 		    }
 		}
 		/* adjust vertex_index (clockwise or counterclockwise, depending on vertex_delta) */
-		vertex_index= (vertex_delta<0) ? WRAP_LOW(vertex_index, polygon->vertex_count-1) :
-			WRAP_HIGH(vertex_index, polygon->vertex_count-1);
+		vertex_index = vertex_delta < 0 ? WRAP_LOW(vertex_index, polygon->vertex_count - 1) :
+			WRAP_HIGH(vertex_index, polygon->vertex_count - 1);
 	}
 	while (state!=NONE);
 
-//	dprintf("exiting, cli=#%d, npi=#%d", crossed_line_index, next_polygon_index);
 
-	/* if we didn’t pass through the solid vertex we were aiming for, set clipping_endpoint_index to NONE,
-		we assume the line we passed through doesn’t clip, and set clipping_line_index to NONE
-		(this will be corrected in a few moments if we chose poorly) */
-	if (!passed_through_solid_vertex) *clipping_endpoint_index= NONE;
-	*clipping_line_index= NONE;
+	/* 
+		if we didn't pass through the solid vertex we were aiming for, set clipping_endpoint_index to NONE,
+		we assume the line we passed through doesn't clip, and set clipping_line_index to NONE
+		(this will be corrected in a few moments if we chose poorly) 
+	*/
+	if (!passed_through_solid_vertex) 
+		*clipping_endpoint_index = NONE;
+		
+	*clipping_line_index = NONE;
 	
-	if (crossed_line_index!=NONE)
+	if (crossed_line_index==NONE)
 	{
-		line_data *line= get_line_data(crossed_line_index);
-
-		/* add the line we crossed to the automap */
-		ADD_LINE_TO_AUTOMAP(crossed_line_index);
-
-		/* if the line has a side facing this polygon, mark the side as visible */
-		if (crossed_side_index!=NONE) SET_RENDER_FLAG(crossed_side_index, _side_is_visible);
-
-		/* if this line is transparent we need to check for a change in elevation for clipping,
-			if it’s not transparent then we can’t pass through it */
-		// LP change: added test for there being a polygon on the other side
-		if (LINE_IS_TRANSPARENT(line) && next_polygon_index != NONE)
-		{
-			polygon_data *next_polygon= get_polygon_data(next_polygon_index);
-			
-			if (line->highest_adjacent_floor>next_polygon->floor_height ||
-				line->highest_adjacent_floor>polygon->floor_height) clip_flags|= _clip_down; /* next polygon floor is lower */
-			if (line->lowest_adjacent_ceiling<next_polygon->ceiling_height ||
-				line->lowest_adjacent_ceiling<polygon->ceiling_height) clip_flags|= _clip_up; /* next polygon ceiling is higher */
-			if (clip_flags&(_clip_up|_clip_down)) *clipping_line_index= crossed_line_index;
-		}
-		else
-		{
-			next_polygon_index= NONE;
-		}
+		*polygon_index = next_polygon_index;
+		return clip_flags;
 	}
 
+	const line_data *restrict line = get_line_data(crossed_line_index);
+
+	/* add the line we crossed to the automap */
+	ADD_LINE_TO_AUTOMAP(crossed_line_index);
+
+	/* if the line has a side facing this polygon, mark the side as visible */
+	if (crossed_side_index!=NONE) 
+		SET_RENDER_FLAG(crossed_side_index, _side_is_visible);
+
+	/* if this line is transparent we need to check for a change in elevation for clipping,
+		if it√ïs not transparent then we can√ït pass through it */
+	// LP change: added test for there being a polygon on the other side
+	if (LINE_IS_TRANSPARENT(line) && next_polygon_index != NONE)
+	{
+		const polygon_data *restrict next_polygon = get_polygon_data(next_polygon_index);
+		
+		if (line->highest_adjacent_floor > next_polygon->floor_height ||
+			line->highest_adjacent_floor > polygon->floor_height) 
+				clip_flags |= _clip_down; /* next polygon floor is lower */
+				
+		if (line->lowest_adjacent_ceiling < next_polygon->ceiling_height ||
+			line->lowest_adjacent_ceiling < polygon->ceiling_height) 
+				clip_flags |= _clip_up; /* next polygon ceiling is higher */
+				
+		if ( clip_flags&(_clip_up|_clip_down) ) 
+			*clipping_line_index = crossed_line_index;
+	}
+	else
+		next_polygon_index = NONE;
+
+
 	/* tell the caller what polygon we ended up in */
-	*polygon_index= next_polygon_index;
+	*polygon_index = next_polygon_index;
 	
 	return clip_flags;
 }
@@ -580,7 +586,7 @@ uint16 RenderVisTreeClass::decide_where_vertex_leads(
 			
 			if ((bias==_clockwise_bias&&cross_product>=0) || (bias==_counterclockwise_bias&&cross_product<=0))
 			{
-				/* we’re leaving this endpoint, set clip flag in case it’s solid */
+				/* we√ïre leaving this endpoint, set clip flag in case it√ïs solid */
 				clip_flags|= (bias==_clockwise_bias) ? _clip_left : _clip_right;
 			}
 		}
@@ -659,7 +665,7 @@ void RenderVisTreeClass::calculate_line_clipping_information(
 	// LP addition: place for new line data
 	line_clip_data *data= &LineClips[LastIndex];
 
-	/* it’s possible (in fact, likely) that this line’s endpoints have not been transformed yet,
+	/* it√ïs possible (in fact, likely) that this line√ïs endpoints have not been transformed yet,
 		so we have to do it ourselves */
 	// LP change: making the operation long-distance friendly
 	uint16 p0_flags = 0, p1_flags = 0;
@@ -710,7 +716,7 @@ void RenderVisTreeClass::calculate_line_clipping_information(
 				if (y0<y1) y= y0, p= &p0; else y= y1, p= &p1;
 				y= PIN(y, 0, view->screen_height);
 				
-				/* if we’re not useless (clipping up off the top of the screen) set up top-clip information) */
+				/* if we√ïre not useless (clipping up off the top of the screen) set up top-clip information) */
 				if (y<=0)
 				{
 					clip_flags&= ~_clip_up;
@@ -735,7 +741,7 @@ void RenderVisTreeClass::calculate_line_clipping_information(
 				if (y0>y1) y= y0, p= &p0; else y= y1, p= &p1;
 				y= PIN(y, 0, view->screen_height);
 				
-				/* if we’re not useless (clipping up off the bottom of the screen) set up top-clip information) */
+				/* if we√ïre not useless (clipping up off the bottom of the screen) set up top-clip information) */
 				if (y>=view->screen_height)
 				{
 					clip_flags&= ~_clip_down;
@@ -754,7 +760,7 @@ void RenderVisTreeClass::calculate_line_clipping_information(
 }
 
 /* we can actually rely on the given endpoint being transformed because we only set clipping
-	information for endpoints we’re aiming at, and we transform endpoints before firing at them */
+	information for endpoints we√ïre aiming at, and we transform endpoints before firing at them */
 // Returns NONE of it does not have valid clip info
 short RenderVisTreeClass::calculate_endpoint_clipping_information(
 	short endpoint_index,
@@ -779,7 +785,7 @@ short RenderVisTreeClass::calculate_endpoint_clipping_information(
 	int32 x;
 
 	assert((clip_flags&(_clip_left|_clip_right))); /* must have a clip flag */
-	assert((clip_flags&(_clip_left|_clip_right))!=(_clip_left|_clip_right)); /* but can’t have both */
+	assert((clip_flags&(_clip_left|_clip_right))!=(_clip_left|_clip_right)); /* but can√ït have both */
 	assert(!TEST_RENDER_FLAG(endpoint_index, _endpoint_has_clip_data));
 	
 	// LP change: compose a true transformed point to replace endpoint->transformed,
