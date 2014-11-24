@@ -66,17 +66,21 @@ enum /* cast_render_ray(), next_polygon_along_line() biases */
 inline void INITIALIZE_NODE(node_data *node, short node_polygon_index, uint16 node_flags,
 	node_data *node_parent, node_data **node_reference)
 {
-	node->flags= node_flags;
-	node->polygon_index= node_polygon_index;
-	node->clipping_endpoint_count= 0;
-	node->clipping_line_count= 0;
-	node->parent= node_parent;
-	node->reference= node_reference;
-	node->siblings= nullptr;
-	node->children= nullptr;
-	node->PS_Greater = nullptr;
-	node->PS_Less = nullptr;
-	node->PS_Shared = nullptr;
+	node->flags			= node_flags;
+	
+	node->polygon_index		= node_polygon_index;
+	
+	node->clipping_endpoint_count	= 0;
+	node->clipping_line_count	= 0;
+	
+	node->parent			= node_parent;
+	node->reference			= node_reference;
+	
+	node->siblings			= nullptr;
+	node->children			= nullptr;
+	node->PS_Greater 		= nullptr;
+	node->PS_Less 			= nullptr;
+	node->PS_Shared 		= nullptr;
 	// LP addition above: polygon-sort tree data
 }
 
@@ -141,54 +145,59 @@ void RenderVisTreeClass::build_render_tree()
 	/* pull polygons off the queue, fire at all their new endpoints, building the tree as we go */
 	while (polygon_queue_size)
 	{
-		ix vertex_index;
-		auto polygon_index = PolygonQueue[--polygon_queue_size];
+		auto polygon_index = PolygonQueue[ --polygon_queue_size ];
 		polygon_data *polygon = get_polygon_data(polygon_index);
 		
-		assert(!POLYGON_IS_DETACHED(polygon));
+		assert( !POLYGON_IS_DETACHED(polygon) );
 		
-		for( vertex_index = 0; vertex_index < polygon->vertex_count; ++vertex_index )
+		for( ix vertex_index = 0; vertex_index < polygon->vertex_count; ++vertex_index )
 		{
-			auto endpoint_index	= polygon->endpoint_indexes[vertex_index];
-			endpoint_data *endpoint	= get_endpoint_data(endpoint_index);
+			const auto endpoint_index	= polygon->endpoint_indexes[vertex_index];
+			endpoint_data *endpoint		= get_endpoint_data(endpoint_index);
 			
-			if (!TEST_RENDER_FLAG(endpoint_index, _endpoint_has_been_visited))
+			if (TEST_RENDER_FLAG(endpoint_index, _endpoint_has_been_visited))
+				continue;
+			// LP change: move toward correct handling of long distances
+			long_vector2d _vector;
+			
+			/* transform all visited endpoints */
+			endpoint->transformed = endpoint->vertex;
+			transform_overflow_point2d( &endpoint->transformed, 
+						(world_point2d *) &view->origin, 
+						view->yaw, 
+						&endpoint->flags );
+			/* calculate an outbound vector to this endpoint */
+			// LP: changed to do long distance correctly.	
+			_vector.i 	= int32( endpoint->vertex.x ) - int32( view->origin.x );
+			_vector.j	= int32( endpoint->vertex.y ) - int32( view->origin.y );
+			
+			// LP change: compose a true transformed point to replace endpoint->transformed,
+			// and use it in the upcoming code
+			long_vector2d transformed_endpoint;
+			overflow_short_to_long_2d( 	endpoint->transformed, 
+							endpoint->flags, 
+							transformed_endpoint );
+			if (transformed_endpoint.i > 0)
 			{
-				// LP change: move toward correct handling of long distances
-				long_vector2d _vector;
+				int32 x = view->half_screen_width + 
+				( transformed_endpoint.j * view->world_to_screen_x ) / transformed_endpoint.i;
 				
-				/* transform all visited endpoints */
-				endpoint->transformed= endpoint->vertex;
-				transform_overflow_point2d(&endpoint->transformed, (world_point2d *) &view->origin, view->yaw, &endpoint->flags);
-
-				/* calculate an outbound vector to this endpoint */
-				// LP: changed to do long distance correctly.	
-				_vector.i= int32(endpoint->vertex.x)-int32(view->origin.x);
-				_vector.j= int32(endpoint->vertex.y)-int32(view->origin.y);
-				
-				// LP change: compose a true transformed point to replace endpoint->transformed,
-				// and use it in the upcoming code
-				long_vector2d transformed_endpoint;
-				overflow_short_to_long_2d( endpoint->transformed,endpoint->flags, transformed_endpoint );
-				
-				if (transformed_endpoint.i > 0)
-				{
-					int32 x = view->half_screen_width + 
-					( transformed_endpoint.j * view->world_to_screen_x ) / transformed_endpoint.i;
+				endpoint_x_coordinates[ endpoint_index ] = 
+					static_cast< int16 >( PIN(x, INT16_MIN, INT16_MAX) );
 					
-					endpoint_x_coordinates[endpoint_index]= static_cast<int16>(PIN(x, INT16_MIN, INT16_MAX));
-					SET_RENDER_FLAG(endpoint_index, _endpoint_has_been_transformed);
-				}
-				
-				/* do two cross products to determine whether this endpoint is in our view cone or not
-					(we donÕt have to cast at points outside the cone) */
-				if ((view->right_edge.i*_vector.j - view->right_edge.j*_vector.i)<=0 && (view->left_edge.i*_vector.j - view->left_edge.j*_vector.i)>=0)
-				{
-					cast_render_ray(&_vector, ENDPOINT_IS_TRANSPARENT(endpoint) ? NONE : endpoint_index, &Nodes.front(), _no_bias);
-				}
-				
-				SET_RENDER_FLAG(endpoint_index, _endpoint_has_been_visited);
+				SET_RENDER_FLAG(endpoint_index, _endpoint_has_been_transformed);
 			}
+			
+			/* 
+				do two cross products to determine whether this endpoint is in our view cone or not
+				(we don't have to cast at points outside the cone) 
+			*/
+			if (	(view->right_edge.i * _vector.j - view->right_edge.j * _vector.i) <= 0 
+				&& (view->left_edge.i * _vector.j - view->left_edge.j * _vector.i) >= 0)
+				cast_render_ray(&_vector, ENDPOINT_IS_TRANSPARENT(endpoint) ? NONE : endpoint_index, &Nodes.front(), _no_bias);
+			
+			SET_RENDER_FLAG(endpoint_index, _endpoint_has_been_visited);
+		
 		}
 	}
 }
