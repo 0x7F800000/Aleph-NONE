@@ -1,5 +1,5 @@
 /*
-PATHFINDING.C
+PATHFINDING.CPP
 
 	Copyright (C) 1991-2001 and beyond by Bungie Studios, Inc.
 	and the "Aleph One" developers.
@@ -326,12 +326,12 @@ static void calculate_midpoint_of_shared_line(short polygon1, short polygon2, wo
 	}
 	else
 	{
-		world_distance dx= endpoint1->vertex.x-endpoint0->vertex.x;
-		world_distance dy= endpoint1->vertex.y-endpoint0->vertex.y;
-		world_distance offset= origin + ((global_random()*range)>>16);
+		world_distance dx 	= endpoint1->vertex.x - endpoint0->vertex.x;
+		world_distance dy 	= endpoint1->vertex.y - endpoint0->vertex.y;
+		world_distance offset	= origin + ( ( global_random() * range ) >> 16);
 		
-		midpoint->x= endpoint0->vertex.x + (offset*dx)/shared_line->length;
-		midpoint->y= endpoint0->vertex.y + (offset*dy)/shared_line->length;
+		midpoint->x		= endpoint0->vertex.x + (offset * dx) / shared_line->length;
+		midpoint->y		= endpoint0->vertex.y + (offset * dy) / shared_line->length;
 	}
 }
 
@@ -339,17 +339,12 @@ static void calculate_midpoint_of_shared_line(short polygon1, short polygon2, wo
 // LP: making these available for those wanting to check out the monster AI
 world_point2d *path_peek(short path_index, short *step_count)
 {
-	path_definition *path;
-	world_point2d *points = nullptr;
-	
-	path = paths + path_index;
-	if (path->step_count != NONE)
-	{
-		*step_count= path->step_count;
-		points= path->points;
-	}
-	
-	return points;
+	path_definition *path = &paths[path_index];
+
+	if (path->step_count == NONE)
+		return nullptr;
+	*step_count	= path->step_count;
+	return path->points;
 }
 
 // LP addition: the total number of paths
