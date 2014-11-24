@@ -747,6 +747,7 @@ SkipBecauseObjectIsInvisible:
 
 void monster_data::onDeath()
 {
+	return;	//need to think this through better
 	if( death_special == DeathSpecial_t::_ds_NONE )
 		return;
 		
@@ -755,8 +756,8 @@ void monster_data::onDeath()
 	switch(death_special)
 	{
 		case DeathSpecial_t::_ds_damage_monster:
-			if(!isNONE( _damage_monster_id ) )
-				cause_shrapnel_damage(_damage_monster_id); //lameee
+			//if(!isNONE( _damage_monster_id ) )
+			//	cause_shrapnel_damage(_damage_monster_id); //lameee
 			break;
 		case DeathSpecial_t::_ds_heal_monster:
 			if( isNONE( _heal_monster_id ) )
