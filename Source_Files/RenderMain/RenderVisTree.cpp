@@ -327,15 +327,17 @@ void RenderVisTreeClass::cast_render_ray(long_vector2d *_vector, short endpoint_
 			duplicates */
 		if (clipping_line_index != NONE)
 		{
-			ix i;
 			
 			if (!TEST_RENDER_FLAG(clipping_line_index, _line_has_clip_data))
 				calculate_line_clipping_information(clipping_line_index, clip_flags);
-			clipping_line_index= line_clip_indexes[clipping_line_index];
+			clipping_line_index	= line_clip_indexes[clipping_line_index];
 			
-			for( i = 0; i < node->clipping_line_count && node->clipping_lines[i] != clipping_line_index; ++i)
+			ix i;
+			const auto nodeClippingLineCount = node->clipping_line_count;
+			
+			for( i = 0; i < nodeClippingLineCount && node->clipping_lines[i] != clipping_line_index; ++i)
 				;
-			if (i == node->clipping_line_count)
+			if (i == nodeClippingLineCount)
 			{
 				assert(node->clipping_line_count < MAXIMUM_CLIPPING_LINES_PER_NODE);
 				node->clipping_lines[ node->clipping_line_count++ ] = clipping_line_index;
@@ -343,12 +345,13 @@ void RenderVisTreeClass::cast_render_ray(long_vector2d *_vector, short endpoint_
 		}
 		
 		/* update endpoint clipping information for this node if we have a valid endpoint with clip */
-		if (clipping_endpoint_index != NONE && (clip_flags&(_clip_left|_clip_right)))
+		if( !isNONE(clipping_endpoint_index) && clip_flags & ( _clip_left | _clip_right ) )
 		{
-			clipping_endpoint_index = calculate_endpoint_clipping_information(clipping_endpoint_index, clip_flags);
+			clipping_endpoint_index = calculate_endpoint_clipping_information(
+				clipping_endpoint_index, clip_flags);
 			
 			// Be sure it's valid
-			if (clipping_endpoint_index != NONE && node->clipping_endpoint_count < MAXIMUM_CLIPPING_ENDPOINTS_PER_NODE)
+			if (!isNONE(clipping_endpoint_index)  && node->clipping_endpoint_count < MAXIMUM_CLIPPING_ENDPOINTS_PER_NODE)
 				node->clipping_endpoints[ node->clipping_endpoint_count++ ] = clipping_endpoint_index;
 		}
 		
@@ -682,10 +685,13 @@ void RenderVisTreeClass::calculate_line_clipping_information(short line_index, u
 	line_clip_data Dummy;
 	Dummy.flags = 0;			// Fake initialization to shut up CW
 	LineClips.push_back(Dummy);
-	size_t Length = LineClips.size();
+	
+	const size_t Length = LineClips.size();
+	
 	assert(Length <= 32767);
 	assert(Length >= 1);
-	size_t LastIndex = Length-1;
+	
+	const size_t LastIndex = Length - 1;
 	
 	line_data *line		= get_line_data(line_index);
 	// LP change: relabeling p0 and p1 so as not to conflict with later use
@@ -707,9 +713,11 @@ void RenderVisTreeClass::calculate_line_clipping_information(short line_index, u
 	
 	// Defining long versions here and copying over
 	long_point2d p0, p1;
-	long_vector2d *pv0ptr = (long_vector2d*)(&p0), *pv1ptr = (long_vector2d*)(&p1);
-	overflow_short_to_long_2d(p0_orig,p0_flags,*pv0ptr);
-	overflow_short_to_long_2d(p1_orig,p1_flags,*pv1ptr);
+	long_vector2d *pv0ptr = (long_vector2d*)(&p0);
+	long_vector2d *pv1ptr = (long_vector2d*)(&p1);
+	
+	overflow_short_to_long_2d( p0_orig, p0_flags, *pv0ptr );
+	overflow_short_to_long_2d( p1_orig, p1_flags, *pv1ptr );
 	
 	clip_flags &= _clip_up|_clip_down;	
 	assert(clip_flags&(_clip_up|_clip_down));
@@ -728,8 +736,8 @@ void RenderVisTreeClass::calculate_line_clipping_information(short line_index, u
 	world_distance z;
 	int32 transformed_z;
 	int32 y, y0, y1;
-	int32 x0	= view->half_screen_width + (p0.y*view->world_to_screen_x)/p0.x;
-	int32 x1	= view->half_screen_width + (p1.y*view->world_to_screen_x)/p1.x;
+	int32 x0	= view->half_screen_width + (p0.y * view->world_to_screen_x) / p0.x;
+	int32 x1	= view->half_screen_width + (p1.y * view->world_to_screen_x) / p1.x;
 
 	data->x0	= (int16)	PIN(x0, 0, view->screen_width);
 	data->x1	= (int16)	PIN(x1, 0, view->screen_width);
@@ -822,9 +830,11 @@ short RenderVisTreeClass::calculate_endpoint_clipping_information(short endpoint
 	endpoint_clip_data Dummy;
 	Dummy.flags = 0;			// Fake initialization to shut up CW
 	EndpointClips.push_back(Dummy);
-	size_t Length = EndpointClips.size();
+	const size_t Length = EndpointClips.size();
+	
 	assert(Length <= 32767);
 	assert(Length >= 1);
+	
 	size_t LastIndex = Length-1;
 
 	endpoint_data *endpoint		= get_endpoint_data(endpoint_index);
@@ -832,24 +842,24 @@ short RenderVisTreeClass::calculate_endpoint_clipping_information(short endpoint
 	int32 x;
 
 	assert((clip_flags&(_clip_left|_clip_right))); /* must have a clip flag */
-	assert((clip_flags&(_clip_left|_clip_right))!=(_clip_left|_clip_right)); /* but canÕt have both */
+	assert((clip_flags&(_clip_left|_clip_right))!=(_clip_left|_clip_right)); /* but can't have both */
 	assert(!TEST_RENDER_FLAG(endpoint_index, _endpoint_has_clip_data));
 	
 	// LP change: compose a true transformed point to replace endpoint->transformed,
 	// and use it in the upcoming code
 	long_vector2d transformed_endpoint;
-	overflow_short_to_long_2d(endpoint->transformed,endpoint->flags,transformed_endpoint);
+	overflow_short_to_long_2d( endpoint->transformed,endpoint->flags, transformed_endpoint );
 	
 	data->flags	= clip_flags&(_clip_left|_clip_right);
 	switch (data->flags)
 	{
 		case _clip_left:
-			data->vector.i= transformed_endpoint.i;
-			data->vector.j= transformed_endpoint.j;
+			data->vector.i	= transformed_endpoint.i;
+			data->vector.j	= transformed_endpoint.j;
 			break;
 		case _clip_right: /* negatives so we clip to the correct side */
-			data->vector.i= -transformed_endpoint.i;
-			data->vector.j= -transformed_endpoint.j;
+			data->vector.i	= -transformed_endpoint.i;
+			data->vector.j	= -transformed_endpoint.j;
 			break;
 	}
 
@@ -866,7 +876,7 @@ void RenderVisTreeClass::ResetEndpointClips()
 	EndpointClips.clear();
 	endpoint_clip_data Dummy;
 	Dummy.flags = 0;			// Fake initialization to shut up CW
-	for (int k=0; k<NUMBER_OF_INITIAL_ENDPOINT_CLIPS; k++)
+	for ( int k = 0; k < NUMBER_OF_INITIAL_ENDPOINT_CLIPS; k++ )
 		EndpointClips.push_back(Dummy);
 }
 
