@@ -236,10 +236,10 @@ enum /* monster modes */
 	inline void settername(bool set)	{	exflags = (set) ? exflags | chkflag : exflags & (~chkflag);	}
 
 
-struct monster_data 
+class monster_data 
 {
 public:
-	static struct monster_data* Get(const ix index);
+	static class monster_data* Get(const ix index);
 	
 	IS_MODE(isLocked, setLocked, _monster_locked)
 	IS_MODE(isLosingLock, setLosingLock, _monster_losing_lock)
@@ -363,12 +363,12 @@ extern vector<monster_data> MonsterList;
 
 // extern struct monster_data *monsters;
 
-/* ---------- prototypes/MONSTERS.C */
+/* ---------- prototypes/MONSTERS.CPP */
 
-void initialize_monsters(void);
-void initialize_monsters_for_new_level(void); /* when a map is loaded */
+void initialize_monsters();
+void initialize_monsters_for_new_level(); /* when a map is loaded */
 
-void move_monsters(void); /* assumes ¶t==1 tick */
+void move_monsters(); /* assumes ¶t==1 tick */
 
 short new_monster(struct object_location *location, short monster_code);
 void remove_monster(short monster_index);
