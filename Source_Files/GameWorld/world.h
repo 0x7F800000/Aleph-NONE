@@ -299,23 +299,23 @@ public:
 	
 	inline worldDistance operator +(const worldDistance w)
 	{
-		return worldDistance(w.value + value);
+		return worldDistance( world_distance(w.value + value) );
 	}
 	inline worldDistance operator -(const worldDistance w)
 	{
-		return worldDistance(w.value - value);
+		return worldDistance( world_distance(w.value - value) );
 	}
 	inline worldDistance operator *(const worldDistance w)
 	{
-		return worldDistance(w.value * value);
+		return worldDistance( world_distance(w.value * value) );
 	}
 	inline worldDistance operator /(const worldDistance w)
 	{
-		return worldDistance(value / w.value);
+		return worldDistance( world_distance(value / w.value) );
 	}
 	inline worldDistance operator %(const worldDistance w)
 	{
-		return worldDistance(value % w.value);
+		return worldDistance( world_distance(value % w.value) );
 	}
 	
 	world_distance value;
