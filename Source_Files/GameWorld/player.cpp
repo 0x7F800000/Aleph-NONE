@@ -816,7 +816,7 @@ void damage_player(short monster_index, short aggressor_index, short aggressor_t
 		/* record damage taken */
 		if (aggressor_index!=NONE)
 		{
-			struct monster_data *aggressor= get_monster_data(aggressor_index);
+			monster_data *aggressor= get_monster_data(aggressor_index);
 			
 			if (!PLAYER_IS_DEAD(player))
 			{
@@ -1499,7 +1499,7 @@ static void update_player_media(short player_index)
 static void set_player_shapes(short player_index, bool animate)
 {
 	struct player_data *player= get_player_data(player_index);
-	struct monster_data *monster= get_monster_data(player->monster_index);
+	monster_data *monster= get_monster_data(player->monster_index);
 	struct physics_variables *variables= &player->variables;
 	struct object_data *legs= get_object_data(monster->object_index);
 	struct object_data *torso= get_object_data(legs->parasitic_object);
@@ -1558,11 +1558,10 @@ static void set_player_shapes(short player_index, bool animate)
 }
 
 /* We can rebuild him!! */
-static void revive_player(
-	short player_index)
+static void revive_player(short player_index)
 {
 	struct player_data *player= get_player_data(player_index);
-	struct monster_data *monster= get_monster_data(player->monster_index);
+	monster_data *monster= get_monster_data(player->monster_index);
 	struct object_location location;
 	struct object_data *object;
 	short team;
@@ -1629,7 +1628,7 @@ static void revive_player(
 static void recreate_player(short player_index)
 {
 	short monster_index;
-	struct monster_data *monster;
+	monster_data *monster;
 	struct player_data *player= get_player_data(player_index);
 	short placement_team;
 	struct object_location location;
@@ -1700,13 +1699,10 @@ static void recreate_player(short player_index)
 		monster->ticks_since_last_activation = dynamic_world->tick_count;
 }
 
-static void kill_player(
-	short player_index,
-	short aggressor_player_index,
-	short action)
+static void kill_player(short player_index, short aggressor_player_index, short action)
 {
 	struct player_data *player= get_player_data(player_index);
-	struct monster_data *monster= get_monster_data(player->monster_index);
+	monster_data *monster= get_monster_data(player->monster_index);
 	struct object_data *legs= get_object_data(monster->object_index);
 	struct object_data *torso= get_object_data(legs->parasitic_object);
 
@@ -1840,12 +1836,10 @@ static void get_player_transfer_mode(short player_index, short *transfer_mode, s
 	get_player_data(player_index)->get_transfer_mode(transfer_mode, transfer_period);
 }
 
-static void set_player_dead_shape(
-	short player_index,
-	bool dying)
+static void set_player_dead_shape(short player_index, bool dying)
 {
-	struct player_data *player= get_player_data(player_index);
-	struct monster_data *monster= get_monster_data(player->monster_index);
+	player_data *player= get_player_data(player_index);
+	monster_data *monster= get_monster_data(player->monster_index);
 	short shape;
 	
 	if (monster->action==_monster_is_dying_flaming)
@@ -2942,7 +2936,7 @@ void player_data::give_initial_items()
 	}
 }
 
-struct monster_data* player_data::get_player_monster()
+ monster_data* player_data::get_player_monster()
 {
 	return get_monster_data(monster_index);
 }
