@@ -1,5 +1,5 @@
 /*
-MOUSE.C
+MOUSE.CPP
 
 	Copyright (C) 1991-2001 and beyond by Bungie Studios, Inc.
 	and the "Aleph One" developers.
@@ -75,10 +75,6 @@ May 20, 2003 (Woody Zenfell):
 */
 #endif
 
-#ifdef env68k
-#pragma segment input
-#endif
-
 /* constants */
 #define _CursorADBDispatch 0xaadb
 #define CENTER_MOUSE_X      320
@@ -93,10 +89,10 @@ static pascal OSStatus CEvtHandleApplicationMouseEvents (EventHandlerCallRef nex
 static _fixed snapshot_delta_yaw, snapshot_delta_pitch, snapshot_delta_velocity;
 static bool snapshot_button_state[MAX_BUTTONS];
 static int snapshot_delta_scrollwheel;
-static MPCriticalRegionID CE_MouseLock = NULL;
+static MPCriticalRegionID CE_MouseLock = nullptr;
 static int _CE_delta_x, _CE_delta_y, _CE_delta_scrollwheel;
-static EventHandlerUPP _CEMouseTrackerUPP = NULL;
-static EventHandlerRef _CEMouseTracker = NULL;
+static EventHandlerUPP _CEMouseTrackerUPP = nullptr;
+static EventHandlerRef _CEMouseTracker = nullptr;
 
 // For getting mouse deltas while doing Classic-mode fallback:
 static Point PrevPosition;
@@ -114,9 +110,9 @@ typedef CGDisplayErr
 (*CGWarpMouseCursorPosition_Type)
 (CGPoint Point);
 
-CGGetLastMouseDelta_Type CGGetLastMouseDelta_Ptr = NULL;
+CGGetLastMouseDelta_Type CGGetLastMouseDelta_Ptr = nullptr;
 
-CGWarpMouseCursorPosition_Type CGWarpMouseCursorPosition_Ptr = NULL;
+CGWarpMouseCursorPosition_Type CGWarpMouseCursorPosition_Ptr = nullptr;
 
 static void LoadCGMouseFunctions();
 
@@ -146,7 +142,7 @@ void enter_mouse(
 	};
 	_CEMouseTrackerUPP = NewEventHandlerUPP(CEvtHandleApplicationMouseEvents);
 	InstallApplicationEventHandler (_CEMouseTrackerUPP,
-		5, mouseEvents, NULL, &_CEMouseTracker);
+		5, mouseEvents, nullptr, &_CEMouseTracker);
 	MPCreateCriticalRegion(&CE_MouseLock);
 	
 	// Fallback in case the lock cannot be allocated (possible with Classic):
@@ -191,17 +187,16 @@ void test_mouse(
 	*delta_velocity= snapshot_delta_velocity;
 }
 
-void exit_mouse(
-	short type)
+void exit_mouse(int16 type)
 {
 	(void) (type);
 
 	RemoveEventHandler(_CEMouseTracker);
-	_CEMouseTracker = NULL;
+	_CEMouseTracker = nullptr;
 	DisposeEventHandlerUPP(_CEMouseTrackerUPP);
-	_CEMouseTrackerUPP = NULL;
+	_CEMouseTrackerUPP = nullptr;
 	MPDeleteCriticalRegion(CE_MouseLock);
-	CE_MouseLock = NULL;
+	CE_MouseLock = nullptr;
 }
 
 /* 1200 pixels per second is the highest possible mouse velocity */
@@ -289,15 +284,13 @@ void mouse_idle(
 
 		last_tick_count= tick_count;
 		
-//		dprintf("%08x %08x %08x;g;", snapshot_delta_yaw, snapshot_delta_pitch, snapshot_delta_velocity);
-	}
+\	}
 }
 
 /* ---------- private code */
 
 // unused 
-static void get_mouse_location(
-	Point *where)
+static void get_mouse_location(	Point *where)
 {
 
 	if(MPEnterCriticalRegion(CE_MouseLock, kDurationImmediate) == noErr)
@@ -310,8 +303,7 @@ static void get_mouse_location(
 	}
 	else
 	{
-		// where->h = CENTER_MOUSE_X;
-		// where->v = CENTER_MOUSE_Y;
+
 		// Don't use GetMouse() here -- it does global-to-local,
 		// which makes the mouse position unstable
 		// Fallback in case the lock cannot be allocated (possible with Classic):
@@ -330,8 +322,7 @@ static void get_mouse_location(
 	}
 }
 
-static void set_mouse_location(
-	Point where)
+static void set_mouse_location(Point where)
 {
 	#ifdef __MACH__
 	CGWarpMouseCursorPosition(CGPointMake(where.h, where.v));
@@ -355,7 +346,6 @@ pascal OSStatus CEvtHandleApplicationMouseEvents (EventHandlerCallRef nextHandle
 	OSStatus 		err = eventNotHandledErr;
 	CGMouseDelta 		CGx, CGy;
 	short			game_state;
-//	extern boolean		background;
 
 	event_kind = GetEventKind(theEvent);
 	event_class = GetEventClass(theEvent);
