@@ -277,3 +277,47 @@ static inline void short_to_long_2d(world_vector2d&WVec, long_vector2d& LVec)
 	LVec.i = WVec.i;
 	LVec.j = WVec.j;
 }
+
+#pragma pack(push, 1)
+class worldDistance
+{
+public:
+	inline worldDistance() 			: value( NONE ) {}
+	inline worldDistance(world_distance w) 	: value( w ) {}
+	
+	inline worldDistance(float w) 		: value( w * WORLD_ONE ) {}
+	inline worldDistance(double w)		: value( w * WORLD_ONE ) {}
+	
+	inline operator float()	
+	{	
+		return float(value) / float(WORLD_ONE);	
+	}
+	inline operator double()
+	{
+		return double(value) / double(WORLD_ONE);
+	}
+	
+	inline worldDistance operator +(const worldDistance w)
+	{
+		return worldDistance(w.value + value);
+	}
+	inline worldDistance operator -(const worldDistance w)
+	{
+		return worldDistance(w.value - value);
+	}
+	inline worldDistance operator *(const worldDistance w)
+	{
+		return worldDistance(w.value * value);
+	}
+	inline worldDistance operator /(const worldDistance w)
+	{
+		return worldDistance(value / w.value);
+	}
+	inline worldDistance operator %(const worldDistance w)
+	{
+		return worldDistance(value % w.value);
+	}
+	
+	world_distance value;
+}
+#pragma pack(pop)
