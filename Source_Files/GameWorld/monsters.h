@@ -316,6 +316,11 @@ public:
 	
 	struct object_data* getObject();
 	
+	ix getIndex();
+	
+	void accelerate(world_distance v_velocity, angle direction, world_distance velocity);
+	void changeTarget(const int16 targetIndex);
+	
 	uint32 testDefinitionFlags(uint32 flagtest);
 	uint16 testObjectFlags(uint16 flagtest);
 	uint16 testAnimationFlags(uint16 flagtest);
