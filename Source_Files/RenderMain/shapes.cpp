@@ -1,5 +1,5 @@
 /*
-SHAPES.C
+SHAPES.CPP
 
 	Copyright (C) 1991-2001 and beyond by Bungie Studios, Inc.
 	and the "Aleph One" developers.
@@ -168,8 +168,8 @@ extern SDL_Surface* world_pixels;
 
 #include "shape_definitions.h"
 
-static pixel16 *global_shading_table16= (pixel16 *) NULL;
-static pixel32 *global_shading_table32= (pixel32 *) NULL;
+static pixel16 *global_shading_table16 = nullptr;
+static pixel32 *global_shading_table32 = nullptr;
 
 short number_of_shading_tables, shading_table_fractional_bits, shading_table_size;
 
@@ -266,32 +266,38 @@ static void initialize_pixmap_handler()
 SDL_Surface *get_shape_surface(int shape, int inCollection, byte** outPointerToPixelData, float inIllumination, bool inShrinkImage)
 {
 	// Get shape information
-	int collection_index = GET_COLLECTION(GET_DESCRIPTOR_COLLECTION(shape));
-	int clut_index = GET_COLLECTION_CLUT(GET_DESCRIPTOR_COLLECTION(shape));
-	int low_level_shape_index = GET_DESCRIPTOR_SHAPE(shape);
+	int collection_index 		= GET_COLLECTION(GET_DESCRIPTOR_COLLECTION(shape));
+	int clut_index 			= GET_COLLECTION_CLUT(GET_DESCRIPTOR_COLLECTION(shape));
+	int low_level_shape_index 	= GET_DESCRIPTOR_SHAPE(shape);
         
-        if(inCollection != NONE) {
+        if(inCollection != NONE) 
+        {
             collection_index = GET_COLLECTION(inCollection);
             clut_index = GET_COLLECTION_CLUT(inCollection);
             low_level_shape_index = shape;
         }
 
-	struct collection_definition *collection = get_collection_definition(collection_index);
-	struct low_level_shape_definition *low_level_shape = get_low_level_shape_definition(collection_index, low_level_shape_index);
-	if (!low_level_shape) return NULL;
-	struct bitmap_definition *bitmap;
+	collection_definition *collection 		= get_collection_definition(collection_index);
+	low_level_shape_definition *low_level_shape 	= get_low_level_shape_definition(collection_index, low_level_shape_index);
+	if (!low_level_shape) 
+		return nullptr;
+	bitmap_definition *bitmap;
         SDL_Color colors[256];
 
-        if(inIllumination >= 0) {
+        if(inIllumination >= 0) 
+        {
             assert(inIllumination <= 1.0f);
         
             // ZZZ: get shading tables to use instead of CLUT, if requested
             void*	shading_tables_as_void;
-            extended_get_shape_bitmap_and_shading_table(BUILD_COLLECTION(collection_index, clut_index), low_level_shape_index,
-                    &bitmap, &shading_tables_as_void, _shading_normal);
-            if (!bitmap) return NULL;
+            extended_get_shape_bitmap_and_shading_table(BUILD_COLLECTION(collection_index, clut_index), 
+            						low_level_shape_index,
+                					 &bitmap, &shading_tables_as_void, _shading_normal);
+            if (!bitmap)
+            	return nullptr;
             
-            switch(bit_depth) {
+            switch(bit_depth) 
+            {
                 case 16:
                 {
                     uint16*	shading_tables	= (uint16*) shading_tables_as_void;
@@ -312,44 +318,50 @@ SDL_Surface *get_shape_surface(int shape, int inCollection, byte** outPointerToP
                     shading_tables += 256 * (int)(inIllumination * (number_of_shading_tables - 1));
                     
                     // Extract color table - ZZZ change to use shading table rather than CLUT.  Hope it works.
-                    for(int i = 0; i < 256; i++) {
-                        colors[i].r = RED32(shading_tables[i]);
-                        colors[i].g = GREEN32(shading_tables[i]);
-                        colors[i].b = BLUE32(shading_tables[i]);
+                    for(ix i = 0; i < 256; i++) 
+                    {
+                        colors[i].r = RED32(	shading_tables[i] );
+                        colors[i].g = GREEN32(	shading_tables[i] );
+                        colors[i].b = BLUE32(	shading_tables[i] );
                     }
                 }
                 break;
                 
                 default:
-                    vhalt("oops, bit_depth not supported for get_shape_surface with illumination\n");
+                    assert(false);
                 break;
             }
 
         } // inIllumination >= 0
-        else { // inIllumination < 0
+        else 
+        { // inIllumination < 0
             bitmap = get_bitmap_definition(collection_index, low_level_shape->bitmap_index);
-            if(!bitmap) return NULL;
+            if(!bitmap) 
+            	return nullptr;
             
             // Extract color table
             int num_colors = collection->color_count - NUMBER_OF_PRIVATE_COLORS;
             rgb_color_value *src_colors = get_collection_colors(collection_index, clut_index) + NUMBER_OF_PRIVATE_COLORS;
-            for (int i=0; i<num_colors; i++) {
-                    int idx = src_colors[i].value;
+           
+            for( ix i = 0; i < num_colors; i++ ) 
+            {
+                    ix idx = src_colors[i].value;
                     colors[idx].r = src_colors[i].red >> 8;
                     colors[idx].g = src_colors[i].green >> 8;
                     colors[idx].b = src_colors[i].blue >> 8;
             }
-        } // inIllumination < 0
+        } 
         
         
-	SDL_Surface *s = NULL;
-	if (bitmap->bytes_per_row == NONE) {
+	SDL_Surface *s = nullptr;
+	if (bitmap->bytes_per_row == NONE) 
+	{
 
                 // ZZZ: process RLE-encoded shape
                 
                 // Allocate storage for un-RLE'd pixels
-                uint32	theNumberOfStorageBytes = bitmap->width * bitmap->height * sizeof(byte);
-                byte*	pixel_storage = (byte*) malloc(theNumberOfStorageBytes);
+                uint32	theNumberOfStorageBytes = bitmap->width * bitmap->height * sizeof(uint8);
+                uint8*	pixel_storage = (uint8*) malloc(theNumberOfStorageBytes);
                 memset(pixel_storage, 0, theNumberOfStorageBytes);
                 
                 // Here, a "run" is a row or column.  An "element" is a single pixel's data.
@@ -361,13 +373,15 @@ SDL_Surface *get_shape_surface(int shape, int inCollection, byte** outPointerToP
                 int16	theDestDataNextElementOffset;
 
                 // Is this row-major or column-major?
-                if(bitmap->flags & _COLUMN_ORDER_BIT) {
+                if(bitmap->flags & _COLUMN_ORDER_BIT) 
+                {
                     theNumRuns				= bitmap->width;
                     theNumElementsPerRun		= bitmap->height;
                     theDestDataNextRunOffset		= (low_level_shape->flags & _X_MIRRORED_BIT) ? -1 : 1;
                     theDestDataNextElementOffset	= (low_level_shape->flags & _Y_MIRRORED_BIT) ? -bitmap->width : bitmap->width;
                 }
-                else {
+                else 
+                {
                     theNumRuns				= bitmap->height;
                     theNumElementsPerRun		= bitmap->width;
                     theDestDataNextElementOffset	= (low_level_shape->flags & _X_MIRRORED_BIT) ? -1 : 1;
@@ -384,19 +398,21 @@ SDL_Surface *get_shape_surface(int shape, int inCollection, byte** outPointerToP
                     theDestDataStartAddress += bitmap->width * (bitmap->height - 1);
                 
                 // Walk through runs, un-RLE'ing as we go
-                for(int run = 0; run < theNumRuns; run++) {
+                for( ix run = 0; run < theNumRuns; run++ ) 
+                {
                     uint16*	theLengthData 					= (uint16*) bitmap->row_addresses[run];
                     uint16	theFirstOpaquePixelElement 			= SDL_SwapBE16(theLengthData[0]);
                     uint16	theFirstTransparentAfterOpaquePixelElement	= SDL_SwapBE16(theLengthData[1]);
                     uint16	theNumberOfOpaquePixels = theFirstTransparentAfterOpaquePixelElement - theFirstOpaquePixelElement;
 
-                    byte*	theOriginalPixelData = (byte*) &theLengthData[2];
-                    byte*	theUnpackedPixelData;
+                    uint8*	theOriginalPixelData = (uint8*) &theLengthData[2];
+                    uint8*	theUnpackedPixelData;
                     
                     theUnpackedPixelData = theDestDataStartAddress + run * theDestDataNextRunOffset
                                             + theFirstOpaquePixelElement * theDestDataNextElementOffset;
                     
-                    for(int i = 0; i < theNumberOfOpaquePixels; i++) {
+                    for(int i = 0; i < theNumberOfOpaquePixels; i++) 
+                    {
                         assert(theUnpackedPixelData >= pixel_storage);
                         assert(theUnpackedPixelData < (pixel_storage + theNumberOfStorageBytes));
                         *theUnpackedPixelData = *theOriginalPixelData;
@@ -412,16 +428,19 @@ SDL_Surface *get_shape_surface(int shape, int inCollection, byte** outPointerToP
                 int image_width		= bitmap->width;
                 int image_height	= bitmap->height;
 
-                if(inShrinkImage) {
+                if(inShrinkImage) 
+                {
                     int		theLargerWidth		= bitmap->width;
                     int		theLargerHeight		= bitmap->height;
-                    byte*	theLargerPixelStorage	= pixel_storage;
+                    uint8*	theLargerPixelStorage	= pixel_storage;
                     int		theSmallerWidth		= theLargerWidth / 2 + theLargerWidth % 2;
                     int		theSmallerHeight	= theLargerHeight / 2 + theLargerHeight % 2;
-                    byte*	theSmallerPixelStorage	= (byte*) malloc(theSmallerWidth * theSmallerHeight);
+                    uint8*	theSmallerPixelStorage	= (uint8*) malloc(theSmallerWidth * theSmallerHeight);
                     
-                    for(int y = 0; y < theSmallerHeight; y++) {
-                        for(int x = 0; x < theSmallerWidth; x++) {
+                    for(ix y = 0; y < theSmallerHeight; y++) 
+                    {
+                        for(ix x = 0; x < theSmallerWidth; x++) 
+                        {
                             theSmallerPixelStorage[y * theSmallerWidth + x] =
                                 theLargerPixelStorage[(y * theLargerWidth + x) * 2];
                         }
@@ -435,11 +454,13 @@ SDL_Surface *get_shape_surface(int shape, int inCollection, byte** outPointerToP
                 }
                 
                 // Now we can create a surface from this new storage
-		s = SDL_CreateRGBSurfaceFrom(pixel_storage, image_width, image_height, 8, image_width, 0xff, 0xff, 0xff, 0xff);
+		s = SDL_CreateRGBSurfaceFrom(pixel_storage, image_width, image_height,
+						8, image_width, 0xff, 0xff, 0xff, 0xff);
 
-                if(s != NULL) {
+                if(s != nullptr) 
+                {
                     // If caller is not prepared to take this data, it's a coding error.
-                    assert(outPointerToPixelData != NULL);
+                    assert(outPointerToPixelData != nullptr);
                     *outPointerToPixelData = pixel_storage;
 
                     // Set color table
@@ -449,24 +470,25 @@ SDL_Surface *get_shape_surface(int shape, int inCollection, byte** outPointerToP
                     SDL_SetColorKey(s, SDL_SRCCOLORKEY, 0);
                 }
                 
-	} else {
+	} 
+	else 
+	{
 		// Row-order shape, we can directly create a surface from it
 		if (collection->type == _wall_collection)
-		{
-			s = SDL_CreateRGBSurfaceFrom(bitmap->row_addresses[0], bitmap->height, bitmap->width, 8, bitmap->bytes_per_row, 0xff, 0xff, 0xff, 0xff);
-		}
+			s = SDL_CreateRGBSurfaceFrom(bitmap->row_addresses[0], 
+					bitmap->height, bitmap->width, 8, bitmap->bytes_per_row, 
+					0xff, 0xff, 0xff, 0xff);
 		else
-		{
-			s = SDL_CreateRGBSurfaceFrom(bitmap->row_addresses[0], bitmap->width, bitmap->height, 8, bitmap->bytes_per_row, 0xff, 0xff, 0xff, 0xff);
-		}
+			s = SDL_CreateRGBSurfaceFrom(bitmap->row_addresses[0], 
+					bitmap->width, bitmap->height, 8, bitmap->bytes_per_row, 
+					0xff, 0xff, 0xff, 0xff);
+					
                 // ZZZ: caller should not dispose of any additional data - just free the surface.
-                if(outPointerToPixelData != NULL)
-                    *outPointerToPixelData = NULL;
+                if(outPointerToPixelData != nullptr)
+                    *outPointerToPixelData = nullptr;
 
-                if(s != NULL) {
-                    // Set color table
-                    SDL_SetColors(s, colors, 0, 256);
-                }
+                if(s != nullptr) 
+                    SDL_SetColors(s, colors, 0, 256);	// Set color table
 	}
 
 	return s;
@@ -474,27 +496,30 @@ SDL_Surface *get_shape_surface(int shape, int inCollection, byte** outPointerToP
 
 static void load_collection_definition(collection_definition* cd, SDL_RWops *p)
 {
-	cd->version = SDL_ReadBE16(p);
-	cd->type = SDL_ReadBE16(p);
-	cd->flags = SDL_ReadBE16(p);
-	cd->color_count = SDL_ReadBE16(p);
-	cd->clut_count = SDL_ReadBE16(p);
-	cd->color_table_offset = SDL_ReadBE32(p);
-	cd->high_level_shape_count = SDL_ReadBE16(p);
-	cd->high_level_shape_offset_table_offset = SDL_ReadBE32(p);
-	cd->low_level_shape_count = SDL_ReadBE16(p);
-	cd->low_level_shape_offset_table_offset = SDL_ReadBE32(p);
-	cd->bitmap_count = SDL_ReadBE16(p);
-	cd->bitmap_offset_table_offset = SDL_ReadBE32(p);
-	cd->pixels_to_world = SDL_ReadBE16(p);
+	cd->version 		= SDL_ReadBE16(p);
+	cd->type 		= SDL_ReadBE16(p);
+	cd->flags 		= SDL_ReadBE16(p);
+	cd->color_count 	= SDL_ReadBE16(p);
+	cd->clut_count 		= SDL_ReadBE16(p);
+	cd->color_table_offset 	= SDL_ReadBE32(p);
+	
+	cd->high_level_shape_count 			= SDL_ReadBE16(p);
+	cd->high_level_shape_offset_table_offset 	= SDL_ReadBE32(p);
+	cd->low_level_shape_count 			= SDL_ReadBE16(p);
+	cd->low_level_shape_offset_table_offset 	= SDL_ReadBE32(p);
+	
+	cd->bitmap_count 		= SDL_ReadBE16(p);
+	cd->bitmap_offset_table_offset 	= SDL_ReadBE32(p);
+	cd->pixels_to_world 		= SDL_ReadBE16(p);
+	
 	SDL_ReadBE32(p); // skip size
 	SDL_RWseek(p, 253 * sizeof(int16), SEEK_CUR); // unused
 
 	// resize members
-	cd->color_tables.resize(cd->clut_count * cd->color_count);
-	cd->high_level_shapes.resize(cd->high_level_shape_count);
-	cd->low_level_shapes.resize(cd->low_level_shape_count);
-	cd->bitmaps.resize(cd->bitmap_count);
+	cd->color_tables.resize(	cd->clut_count * cd->color_count);
+	cd->high_level_shapes.resize(	cd->high_level_shape_count);
+	cd->low_level_shapes.resize(	cd->low_level_shape_count);
+	cd->bitmaps.resize(		cd->bitmap_count);
 
 }
 
@@ -514,53 +539,57 @@ static void load_high_level_shape(std::vector<uint8>& shape, SDL_RWops *p)
 	int16 type = SDL_ReadBE16(p);
 	int16 flags = SDL_ReadBE16(p);
 	char name[HIGH_LEVEL_SHAPE_NAME_LENGTH + 2];
+	
 	SDL_RWread(p, name, 1, HIGH_LEVEL_SHAPE_NAME_LENGTH + 2);
 	int16 number_of_views = SDL_ReadBE16(p);
 	int16 frames_per_view = SDL_ReadBE16(p);
 
 	// Convert low-level shape index list
 	int num_views;
-	switch (number_of_views) {
-	case _unanimated:
-	case _animated1:
-		num_views = 1;
-		break;
-	case _animated3to4:
-	case _animated4:
-		num_views = 4;
-		break;
-	case _animated3to5:
-	case _animated5:
-		num_views = 5;
-		break;
-	case _animated2to8:
-	case _animated5to8:
-	case _animated8:
-		num_views = 8;
-		break;
-	default:
-		num_views = number_of_views;
-		break;
+	switch (number_of_views) 
+	{
+		case _unanimated:
+		case _animated1:
+			num_views = 1;
+			break;
+		case _animated3to4:
+		case _animated4:
+			num_views = 4;
+			break;
+		case _animated3to5:
+		case _animated5:
+			num_views = 5;
+			break;
+		case _animated2to8:
+		case _animated5to8:
+		case _animated8:
+			num_views = 8;
+			break;
+		default:
+			num_views = number_of_views;
+			break;
 	}
 
 	shape.resize(sizeof(high_level_shape_definition) + num_views * frames_per_view * sizeof(int16));
 		
 	high_level_shape_definition *d = (high_level_shape_definition *) &shape[0];
 		
-	d->type = type;
-	d->flags = flags;
+	d->type 	= type;
+	d->flags 	= flags;
 	memcpy(d->name, name, HIGH_LEVEL_SHAPE_NAME_LENGTH + 2);
-	d->number_of_views = number_of_views;
-	d->frames_per_view = frames_per_view;
-	d->ticks_per_frame = SDL_ReadBE16(p);
-	d->key_frame = SDL_ReadBE16(p);
-	d->transfer_mode = SDL_ReadBE16(p);
+	
+	d->number_of_views 	= number_of_views;
+	d->frames_per_view 	= frames_per_view;
+	d->ticks_per_frame 	= SDL_ReadBE16(p);
+	d->key_frame 		= SDL_ReadBE16(p);
+	d->transfer_mode 	= SDL_ReadBE16(p);
 	d->transfer_mode_period = SDL_ReadBE16(p);
-	d->first_frame_sound = SDL_ReadBE16(p);
-	d->key_frame_sound = SDL_ReadBE16(p);
-	d->last_frame_sound = SDL_ReadBE16(p);
-	d->pixels_to_world = SDL_ReadBE16(p);
-	d->loop_frame = SDL_ReadBE16(p);
+	d->first_frame_sound 	= SDL_ReadBE16(p);
+	d->key_frame_sound 	= SDL_ReadBE16(p);
+	d->last_frame_sound 	= SDL_ReadBE16(p);
+	d->pixels_to_world 	= SDL_ReadBE16(p);
+	d->loop_frame 		= SDL_ReadBE16(p);
+	
 	SDL_RWseek(p, 14 * sizeof(int16), SEEK_CUR);
 
 	// Convert low-level shape index list
@@ -571,19 +600,19 @@ static void load_high_level_shape(std::vector<uint8>& shape, SDL_RWops *p)
 
 static void load_low_level_shape(low_level_shape_definition *d, SDL_RWops *p)
 {
-	d->flags = SDL_ReadBE16(p);
-	d->minimum_light_intensity = SDL_ReadBE32(p);
-	d->bitmap_index = SDL_ReadBE16(p);
-	d->origin_x = SDL_ReadBE16(p);
-	d->origin_y = SDL_ReadBE16(p);
-	d->key_x = SDL_ReadBE16(p);
-	d->key_y = SDL_ReadBE16(p);
-	d->world_left = SDL_ReadBE16(p);
-	d->world_right = SDL_ReadBE16(p);
-	d->world_top = SDL_ReadBE16(p);
-	d->world_bottom = SDL_ReadBE16(p);
-	d->world_x0 = SDL_ReadBE16(p);
-	d->world_y0 = SDL_ReadBE16(p);
+	d->flags 			= SDL_ReadBE16(p);
+	d->minimum_light_intensity 	= SDL_ReadBE32(p);
+	d->bitmap_index 	= SDL_ReadBE16(p);
+	d->origin_x 		= SDL_ReadBE16(p);
+	d->origin_y 		= SDL_ReadBE16(p);
+	d->key_x 		= SDL_ReadBE16(p);
+	d->key_y 		= SDL_ReadBE16(p);
+	d->world_left 		= SDL_ReadBE16(p);
+	d->world_right 		= SDL_ReadBE16(p);
+	d->world_top 		= SDL_ReadBE16(p);
+	d->world_bottom 	= SDL_ReadBE16(p);
+	d->world_x0 		= SDL_ReadBE16(p);
+	d->world_y0 		= SDL_ReadBE16(p);
 	SDL_RWseek(p, 4 * sizeof(int16), SEEK_CUR);
 }
 
@@ -746,10 +775,11 @@ static void allocate_shading_tables(short collection_index, bool strip)
 	collection_header *header = get_collection_header(collection_index);
 	// Allocate enough space for this collection's shading tables
 	if (strip)
-		header->shading_tables = NULL;
-	else {
+		header->shading_tables = nullptr;
+	else 
+	{
 		collection_definition *definition = get_collection_definition(collection_index);
-		header->shading_tables = (byte *)malloc(get_shading_table_size(collection_index) * definition->clut_count + shading_table_size * NUMBER_OF_TINT_TABLES);
+		header->shading_tables = (uint8 *)malloc(get_shading_table_size(collection_index) * definition->clut_count + shading_table_size * NUMBER_OF_TINT_TABLES);
 	}
 }
 
@@ -770,9 +800,7 @@ static bool load_collection(short collection_index, bool strip)
 	{
 		// Collections are stored in .256 resources
 		if (!M1ShapesFile.Get('.', '2', '5', '6', 128 + collection_index, r))
-		{
 			return false;
-		}
 
 		m1_p.reset(SDL_RWFromConstMem(r.GetPointer(), r.GetLength()), SDL_FreeRW);
 		p = m1_p.get();
@@ -782,15 +810,15 @@ static bool load_collection(short collection_index, bool strip)
 	{
 		// Get offset and length of data in source file from header
 		
-		if (bit_depth == 8 || header->offset16 == -1) {
+		if (bit_depth == 8 || header->offset16 == -1) 
+		{
 			if (header->offset == -1)
-			{
 				return false;
-			}
 			src_offset = header->offset;
-		} else {
+		} 
+		else 
 			src_offset = header->offset16;
-		}
+		
 
 		p = ShapesFile.GetRWops();
 		ShapesFile.SetPosition(0);
@@ -813,7 +841,9 @@ static bool load_collection(short collection_index, bool strip)
 	std::vector<uint32> t(cd->high_level_shape_count);
 	SDL_RWread(p, &t[0], sizeof(uint32), cd->high_level_shape_count);
 	byte_swap_memory(&t[0], _4byte, cd->high_level_shape_count);
-	for (int i = 0; i < cd->high_level_shape_count; i++) {
+	
+	for (ix i = 0; i < cd->high_level_shape_count; i++) 
+	{
 		SDL_RWseek(p, src_offset + t[i], RW_SEEK_SET);
 		load_high_level_shape(cd->high_level_shapes[i], p);
 	}
@@ -824,7 +854,8 @@ static bool load_collection(short collection_index, bool strip)
 	SDL_RWread(p, &t[0], sizeof(uint32), cd->low_level_shape_count);
 	byte_swap_memory(&t[0], _4byte, cd->low_level_shape_count);
 
-	for (int i = 0; i < cd->low_level_shape_count; i++) {
+	for (ix i = 0; i < cd->low_level_shape_count; i++) 
+	{
 		SDL_RWseek(p, src_offset + t[i], RW_SEEK_SET);
 		load_low_level_shape(&cd->low_level_shapes[i], p);
 	}
@@ -835,7 +866,8 @@ static bool load_collection(short collection_index, bool strip)
 	SDL_RWread(p, &t[0], sizeof(uint32), cd->bitmap_count);
 	byte_swap_memory(&t[0], _4byte, cd->bitmap_count);
 
-	for (int i = 0; i < cd->bitmap_count; i++) {
+	for (ix i = 0; i < cd->bitmap_count; i++) 
+	{
 		SDL_RWseek(p, src_offset + t[i], RW_SEEK_SET);
 		load_bitmap(cd->bitmaps[i], p, shapes_file_version);
 	}
@@ -850,9 +882,10 @@ static bool load_collection(short collection_index, bool strip)
 
 	allocate_shading_tables(collection_index, strip);
 	
-	if (header->shading_tables == NULL) {
+	if (header->shading_tables == nullptr) 
+	{
 		delete header->collection;
-		header->collection = NULL;
+		header->collection = nullptr;
 		return false;
 	}
 
