@@ -51,6 +51,10 @@ Oct 24, 2000 (Mark Levin)
 
 /* ---------- constants */
 
+#ifndef	monster_definition
+	#define	monster_definition monsterDefinition
+#endif
+
 #define FLAMING_DEAD_SHAPE BUILD_DESCRIPTOR(_collection_rocket, 7)
 #define FLAMING_DYING_SHAPE BUILD_DESCRIPTOR(_collection_rocket, 8)
 
