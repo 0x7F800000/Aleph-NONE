@@ -2884,7 +2884,7 @@ static bool translate_monster(int16 monster_index, world_distance distance)
 				bool in_range = object->location.z + definition->height > key_height;
 				
 				/* if we're int16 and can't float, take out their knees! */
-				if (!in_range && film_profile.allow_int16_kamikaze && !definition->testFlags(_monster_floats))
+				if (!in_range && film_profile.allow_short_kamikaze && !definition->testFlags(_monster_floats))
 					in_range = object->location.z >= obstacle_object->location.z;
 				
 				if (in_range)
