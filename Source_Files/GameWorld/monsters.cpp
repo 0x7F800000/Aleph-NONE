@@ -326,9 +326,11 @@ Monster *get_monster_data(const ix monster_index)
 	return monster;
 }
 
-struct Monster& monster_data::Get(const ix index)
+struct Monster& Monster::Get(const ix index)
 {
-	return get_monster_data(index);
+	assert(index < MAXIMUM_MONSTERS_PER_MAP);
+	assert(index >= 0);
+	return MonsterList[index];
 }
 
 monster_definition *get_monster_definition(const short type)
