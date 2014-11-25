@@ -235,11 +235,12 @@ enum /* monster modes */
 #define		EXFLAGTEST(gettername, settername, chkflag)		inline bool gettername()	{	return exflags & chkflag;	}	\
 	inline void settername(bool set)	{	exflags = (set) ? exflags | chkflag : exflags & (~chkflag);	}
 
+
 #define	monster_data	Monster
 class Monster 
 {
 public:
-	static class monster_data* Get(const ix index);
+	static class Monster* Get(const ix index);
 	
 	IS_MODE(isLocked, setLocked, _monster_locked)
 	IS_MODE(isLosingLock, setLosingLock, _monster_losing_lock)
@@ -358,7 +359,7 @@ const int SIZEOF_monster_definition = 156;
 
 // Turned the list of active monsters into a variable array
 
-extern vector<monster_data> MonsterList;
+extern vector<Monster> MonsterList;
 #define monsters (&MonsterList[0])
 
 // extern struct monster_data *monsters;
@@ -404,7 +405,7 @@ void damage_monsters_in_radius(short primary_target_index, short aggressor_index
 	world_point3d *epicenter, short epicenter_polygon_index, world_distance radius, struct damage_definition *damage, short projectile_index);
 void damage_monster(short monster_index, short aggressor_index, short aggressor_type, world_point3d *epicenter, struct damage_definition *damage, short projectile_index);
 
-monster_data *get_monster_data(const ix monster_index);
+Monster* get_monster_data(const ix monster_index);
 struct monster_definition *get_monster_definition(const short type);
 
 bool bump_monster(short aggressor_index, short monster_index);
@@ -422,7 +423,7 @@ void try_to_add_random_monster(short monster_type, bool activate);
 short get_monster_impact_effect(short monster_index);
 short get_monster_melee_impact_effect(short monster_index);
 
-bool live_aliens_on_map(void);
+bool live_aliens_on_map();
 
 // LP: will set player view attributes when trying to shoot a guided projectile.
 void SetPlayerViewAttribs(int16 half_visual_arc, int16 half_vertical_visual_arc,
