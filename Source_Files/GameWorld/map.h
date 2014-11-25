@@ -62,6 +62,14 @@ Nov 19, 2000 (Loren Petrich):
 	#define		object_data	Object
 #endif
 
+#ifndef		endpoint_data
+	#define		endpoint_data	Endpoint
+#endif
+
+#ifndef		polygon_data
+	#define		polygon_data	Polygon
+#endif
+
 /* ---------- constants */
 
 #define TICKS_PER_SECOND 30
@@ -498,9 +506,9 @@ const int SIZEOF_object_data = 32;
 #define ENDPOINT_IS_ELEVATION(e) ((e)->flags&2)
 #define SET_ENDPOINT_ELEVATION(e,s) ((s)?((e)->flags|=2):((e)->flags&=~(uint16)2))
 
-struct endpoint_data /* 16 bytes */
+struct Endpoint /* 16 bytes */
 {
-	static struct endpoint_data& Get(const ix index);
+	static struct Endpoint& Get(const ix index);
 	uint16 flags;
 	world_distance highest_adjacent_floor_height, lowest_adjacent_ceiling_height;
 	
@@ -707,9 +715,9 @@ struct horizontal_surface_data /* should be in polygon structure */
 	world_point2d origin;
 };
 
-struct polygon_data 
+struct Polygon 
 {
-	static struct polygon_data& Get(const ix index);
+	static struct Polygon& Get(const ix index);
 	int16 type;
 	uint16 flags;
 	int16 permutation;
