@@ -220,11 +220,14 @@ Jan 17, 2001 (Loren Petrich):
 #include <stdlib.h>
 
 // LP additions for decomposition of this code:
-#include "RenderVisTree.h"
-#include "RenderSortPoly.h"
-#include "RenderPlaceObjs.h"
-#include "RenderRasterize.h"
-#include "Rasterizer_SW.h"
+#ifndef	BRIDGEZ_N_BALCONIEZ
+	#include "RenderVisTree.h"
+	#include "RenderSortPoly.h"
+	#include "RenderPlaceObjs.h"
+	#include "RenderRasterize.h"
+	#include "Rasterizer_SW.h"
+#endif
+
 
 #ifdef HAVE_OPENGL
 	#include "Rasterizer_OGL.h"
