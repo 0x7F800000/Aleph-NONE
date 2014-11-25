@@ -982,7 +982,7 @@ static int32 monster_activation_flood_proc(int16 source_polygon_index, int16 lin
 	bool obey_glue 		= static_world->environment_flags & _environment_glue_m1 != 0;
 	bool limit_activation	= static_world->environment_flags & _environment_activation_ranges != 0;
 	
-	auto cost 		= limit_activation ? source_polygon->area : 1;
+	auto cost 		= limit_activation ? source_polygon.area : 1;
 	auto destinationType 	= destination_polygon.type;
 	
 	if( destinationType == _polygon_is_zone_border )
@@ -1103,7 +1103,7 @@ void activate_monster(int16 monster_index)
 		if vitality is NONE (-1) initialize it from the monster_definition, respecting
 		the difficulty level if necessary 
 	*/
-	if( isNONE( monster->getVitality() ) )
+	if( isNONE( monster.getVitality() ) )
 	{
 		auto vitality = definition->vitality;
 		
@@ -1750,7 +1750,7 @@ bool legal_polygon_height_change(int16 polygon_index, world_distance new_floor_h
 	{
 		Object &object = Object::Get(object_index);
 		
-		if( GET_OBJECT_OWNER(&object) != _object_is_monster || !object->isInvisible() )
+		if( GET_OBJECT_OWNER(&object) != _object_is_monster || !object.isInvisible() )
 		{
 			object_index = object.next_object;
 			continue;
@@ -2088,7 +2088,7 @@ void set_monster_mode(int16 monster_index, int16 new_mode, int16 target_index)
 static void generate_new_path_for_monster(int16 monster_index)
 {
 	Monster *monster 		= get_monster_data(monster_index);
-	Object *object 		= get_object_data(monster->object_index);
+	Object *object 			= get_object_data( monster->getObjectIndex() );
 	monsterDefinition* definition 	= monster->getDefinition();
 	monster_pathfinding_data data;
 	int16 destination_polygon_index;
@@ -2096,10 +2096,10 @@ static void generate_new_path_for_monster(int16 monster_index)
 	world_vector2d bias;
 
 	/* delete this monster's old path, if one exists, and clear the need path flag */
-	if (monster->path!=NONE) 
+	if (!monster->isPath(NONE))
 	{
-		delete_path(monster->path);
-		monster->path= NONE;
+		delete_path( monster->getPath() );
+		monster->setPath(NONE);
 	}
 	SET_MONSTER_NEEDS_PATH_STATUS(monster, false);
 
@@ -2446,7 +2446,7 @@ static bool clear_line_of_sight(int16 viewer_index, int16 target_index, bool ful
 void Monster::changeTarget(const int16 targetIndex)
 {
 	auto myIndex 			= getIndex();
-	monsterDefinition& definition 	= *getDefinition();
+	monsterDefinition* definition 	= getDefinition();
 	auto myObjectIndex		= getObjectIndex();
 	
 	/* locking on ourselves would be cool, but ... */
@@ -2469,11 +2469,11 @@ void Monster::changeTarget(const int16 targetIndex)
 		activate_monster(myIndex);
 
 	/* play activation sounds (including activating on a friendly) */
-	if( !isTarget( targetIndex ) && TYPE_IS_FRIEND(&definition, get_monster_data(targetIndex)->type))
-		play_object_sound(myObjectIndex, definition.friendly_activation_sound);
+	if( !isTarget( targetIndex ) && TYPE_IS_FRIEND(definition, get_monster_data(targetIndex)->type))
+		play_object_sound(myObjectIndex, definition->friendly_activation_sound);
 		
 	else if(!testDefinitionFlags(_monster_makes_sound_when_activated) && isUnlocked() ) 
-		play_object_sound(myObjectIndex, definition.activation_sound);
+		play_object_sound(myObjectIndex, definition->activation_sound);
 		
 	/* instantiate the new target and ask for a new path */
 	if( hasValidTarget() && !isTarget( targetIndex ) ) 
