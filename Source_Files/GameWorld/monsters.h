@@ -235,8 +235,8 @@ enum /* monster modes */
 #define		EXFLAGTEST(gettername, settername, chkflag)		inline bool gettername()	{	return exflags & chkflag;	}	\
 	inline void settername(bool set)	{	exflags = (set) ? exflags | chkflag : exflags & (~chkflag);	}
 
-
-class monster_data 
+#define	monster_data	Monster
+class Monster 
 {
 public:
 	static class monster_data* Get(const ix index);
