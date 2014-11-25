@@ -113,6 +113,12 @@ platform_data *get_platform_data(int16 platform_index)
 	return platform;
 }
 
+platform_data& platform_data::Get(const ix index)
+{
+	assert(index < dynamic_world->platform_count);
+	return PlatformList[index];
+}
+
 platform_definition *get_platform_definition(const int16 type)
 {
 	return GetMemberWithBounds(platform_definitions,type,NUMBER_OF_PLATFORM_TYPES);
@@ -258,7 +264,6 @@ void update_platforms()
 		bool was_flooded = PLATFORM_IS_FLOODED(platform);
 		
 		// Should there be some warning message about platform-polygon inconsistences?
-		// assert(polygon->permutation==platform_index);
 		if (!(polygon->permutation == platform_index)) 
 			continue;
 		
