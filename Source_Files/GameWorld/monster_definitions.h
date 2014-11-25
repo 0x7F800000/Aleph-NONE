@@ -212,7 +212,9 @@ struct attack_definition
 #define		FLAGTEST(gettername, settername, chkflag)		inline bool gettername()	{	return flags & chkflag;	}	\
 	inline void settername(bool set)	{	flags = (set) ? flags | chkflag : flags & (~chkflag);	}
 
-#define		monster_definition	monsterDefinition
+#ifndef		monster_definition
+	#define		monster_definition	monsterDefinition
+#endif
 
 struct monsterDefinition /* <128 bytes */
 {
