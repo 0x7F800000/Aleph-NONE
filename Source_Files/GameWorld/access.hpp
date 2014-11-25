@@ -11,5 +11,5 @@ inline type set##thing(const type newval)\
 }\
 inline bool is##thing(const type isval)\
 {\
-  return field == isval;\
+  return get##thing() == isval;\
 }
