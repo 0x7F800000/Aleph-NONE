@@ -196,9 +196,6 @@ Nov 29, 2000 (Loren Petrich):
 Jan 17, 2001 (Loren Petrich):
 	Added vertical flipping
 */
-
-
-
 #include "cseries.h"
 #include "map.h"
 #include "render.h"
@@ -220,17 +217,12 @@ Jan 17, 2001 (Loren Petrich):
 #include <stdlib.h>
 
 // LP additions for decomposition of this code:
-#ifndef	BRIDGEZ_N_BALCONIEZ
-	#include "RenderVisTree.h"
-	#include "RenderSortPoly.h"
-	#include "RenderPlaceObjs.h"
-	#include "RenderRasterize.h"
-#else
-	#include "NewRenderVisTree.h"
-	#include "RenderSortPoly.h"
-	#include "NewRenderPlaceObjs.h"
-	#include "NewRenderRasterize.h"
-#endif
+
+#include "RenderVisTree.h"
+#include "RenderSortPoly.h"
+#include "RenderPlaceObjs.h"
+#include "RenderRasterize.h"
+
 #include "Rasterizer_SW.h"
 
 
@@ -283,15 +275,12 @@ whitespace results when two adjacent polygons are clipped to different vertical 
 vector<uint16> RenderFlagList;
 
 // LP additions: decomposition of the rendering code into various objects
-#ifndef	BRIDGEZ_N_BALCONIEZ
-	static RenderVisTreeClass RenderVisTree;			// Visibility-tree object
-	static RenderSortPolyClass RenderSortPoly;			// Polygon-sorting object
-	static RenderPlaceObjsClass RenderPlaceObjs;		// Object-placement object
-	static RenderRasterizerClass Render_Classic;		// Clipping and rasterization class
-#else
-	static NewVisTree RenderVisTree;
-	static RenderSortPolyClass RenderSortPoly;
-#endif
+
+static RenderVisTreeClass RenderVisTree;			// Visibility-tree object
+static RenderSortPolyClass RenderSortPoly;			// Polygon-sorting object
+static RenderPlaceObjsClass RenderPlaceObjs;		// Object-placement object
+static RenderRasterizerClass Render_Classic;		// Clipping and rasterization class
+
 
 static Rasterizer_SW_Class Rasterizer_SW;			// Software rasterizer
 #ifdef HAVE_OPENGL
