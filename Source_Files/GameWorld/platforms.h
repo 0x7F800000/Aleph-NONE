@@ -229,6 +229,8 @@ const int SIZEOF_static_platform_data = 32;
 
 struct platform_data /* 140 bytes */
 {
+	static struct platform_data& Get(const ix index);
+	
 	int16 type;
 	uint32 static_flags;
 	int16 speed, delay;
