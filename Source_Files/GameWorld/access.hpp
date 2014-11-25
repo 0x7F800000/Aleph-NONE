@@ -1,3 +1,4 @@
+#pragma once
 
 #define	__accessordecl(thing, type, field) \
 inline type get##thing()\
