@@ -319,5 +319,5 @@ public:
 	}
 	
 	world_distance value;
-}
+};
 #pragma pack(pop)
