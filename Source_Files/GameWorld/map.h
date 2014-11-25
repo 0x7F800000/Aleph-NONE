@@ -58,6 +58,10 @@ Nov 19, 2000 (Loren Petrich):
 
 #include <vector>
 
+#ifndef		object_data
+	#define		object_data	Object
+#endif
+
 /* ---------- constants */
 
 #define TICKS_PER_SECOND 30
@@ -449,7 +453,7 @@ struct object_location
 	uint16 flags;
 };
 
-struct object_data /* 32 bytes */
+struct Object /* 32 bytes */
 {
 	static struct object_data& Get(const ix index);
 	inline bool isInvisible()
