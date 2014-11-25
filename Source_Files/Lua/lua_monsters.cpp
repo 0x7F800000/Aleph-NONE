@@ -1043,78 +1043,8 @@ static int Lua_Monster_Set_Vitality(lua_State *L)
 	return 0;
 }
 
-int Lua_Monster_Set_Special(lua_State *L)
-{
-	if( !lua_isnumber(L, 2) )
-	{
-		return luaL_error(L, "set_special: incorrect argument type");
-	}
-	
-	monster_data& monster = *get_monster_data( Lua_Monster::Index(L, 1) );
-	
-	if( !monster.slotIsUsed() )
-	{
-		return luaL_error(L, "set_special: invalid monster index");
-	}
-	int special = static_cast<int>( lua_tonumber(L, 2) );
-	
-	if(special == -1)	//clearing the special
-	{
-		monster.death_special = _ds_NONE;
-		lua_pushnil(L);
-		return 1;
-	}
-	
-	switch(special)
-	{
-		case DeathSpecial_t::_ds_damage_monster:
-			if( !lua_isnumber(L, 3)  )
-			{
-				return luaL_error(L, "set_special: invalid arguments for special _ds_damage_monster");
-			}
-			monster.death_special = DeathSpecial_t::_ds_damage_monster;
-			monster._damage_monster_id = static_cast< int >( lua_tonumber(L, 4) );
-			
-			break;
-		case DeathSpecial_t::_ds_heal_monster:
-			if( !lua_isnumber(L, 3) || !lua_isnumber(L, 4) )
-			{
-				return luaL_error(L, "set_special: invalid arguments for special _ds_heal_monster");
-			}
-			monster.death_special = DeathSpecial_t::_ds_heal_monster;
-			
-			monster._heal_monster_id = static_cast<int>( lua_tonumber(L, 3) );
-			monster._heal_monster_amount = static_cast<int>( lua_tonumber(L, 4) );
-			
-			break;
-		case DeathSpecial_t::_ds_set_monster_speed:
-			if( !lua_isnumber(L, 3) || !lua_isnumber(L, 4) )
-			{
-				return luaL_error(L, "set_special: invalid arguments for special _ds_set_monster_speed");
-			}
-			monster.death_special = DeathSpecial_t::_ds_set_monster_speed;
-			
-			monster._hasten_monster_id = static_cast<int>( lua_tonumber(L, 3) );
-			monster._hasten_monster_value = static_cast<int>( lua_tonumber(L, 4) * WORLD_ONE );
-			
-			break;
-		case DeathSpecial_t::_ds_set_platform_state:
-			if( !lua_isnumber(L, 3) || !lua_isboolean(L, 4))
-				return luaL_error(L, "set_special: invalid arguments for special _ds_set_platform_state");
-			monster.death_special = DeathSpecial_t::_ds_set_platform_state;
-			
-			monster._set_platform_state_id = static_cast<int>(lua_tonumber(L, 3));
-			monster._set_platform_state_state = lua_toboolean(L, 4);
-			break;
-		default:
-			return luaL_error(L, "set_special: invalid death special provided");
-	}
-	lua_pushnil(L);
-	return 1;
-}
 const luaL_Reg Lua_Monster_Get[] = {
 	{"accelerate", L_TableFunction<Lua_Monster_Accelerate>},
-	{"set_special",L_TableFunction<Lua_Monster_Set_Special>},
 	{"action", Lua_Monster_Get_Action},
 	{"active", Lua_Monster_Get_Active},
 	{"attack", L_TableFunction<Lua_Monster_Attack>},
