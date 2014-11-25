@@ -752,46 +752,48 @@ SkipBecauseObjectIsInvisible:
 */
 void monster_died(int16 target_index)
 {
-	Monster *monster = get_monster_data(target_index);
-	int16 monster_index, closest_target_index;
-
-	/* orphan this monster's projectiles if they don't belong to a player (player's monster
+	Monster &deadMonster = Monster::Get(target_index);
+	/* 
+		orphan this monster's projectiles if they don't belong to a player (player's monster
 		slots are always valid and we want to correctly attribute damage and kills that ocurr
-		after a player dies) */
-	if( !monster->isPlayer() ) 
+		after a player dies) 
+	*/
+	if( !deadMonster.isPlayer() ) 
 		orphan_projectiles( target_index );
 	
 	/* active monsters need extant paths deleted and should be marked as unlocked */
-	if( monster->isActive() )
+	if( deadMonster.isActive() )
 	{
 		set_monster_mode(target_index, _monster_unlocked, NONE);
-		monster->removePath();
+		deadMonster.removePath();
 	}
 	
 	/*	best place to do this	*/
-	if( monster->hasInstanceDefinition() )
-		monster_instances::delete_definition_instance( monster->instance_definition_index) ;
+	if( deadMonster.hasInstanceDefinition() )
+		monster_instances::delete_definition_instance( deadMonster.instance_definition_index) ;
 	
 	/* anyone locked on this monster needs a clue */
-	foreach_monster( monster_index, monster )
+	//foreach_monster( monster_index, monster )
+	for(ix i = 0; i < MAXIMUM_MONSTERS_PER_MAP; ++i )
 	{
-		if( !monster->slotIsUsed() || !monster->isActive() || !monster->isTarget( target_index ) )
+		Monster& monster = Monster::Get(i);
+		if( !monster.slotIsUsed() || !monster.isActive() || !monster.isTarget( target_index ))
 			continue;
-		closest_target_index = find_closest_appropriate_target(monster_index, true);
-
-		monster->setTarget( NONE );
-		monster_needs_path(monster_index, false);
+			
+		auto closest_target_index = find_closest_appropriate_target(i, true);
+		monster.setTarget( NONE );
+		monster_needs_path(i, false);
 		
-		play_object_sound( monster->object_index, monster->getDefinition()->kill_sound );
+		play_object_sound( monster.getObjectIndex(), monster.getDefinition()->kill_sound );
 		
 		if(	closest_target_index != NONE	)
-			change_monster_target( monster_index, closest_target_index );
+			change_monster_target( i, closest_target_index );
 			
 		else 
 		{
-			if( monster->isWaitingToAttackAgain() ) 
-				set_monster_action( monster_index, _monster_is_moving );
-			set_monster_mode( monster_index, _monster_unlocked, NONE );
+			if( monster.isWaitingToAttackAgain() ) 
+				set_monster_action( i, _monster_is_moving );
+			set_monster_mode( i, _monster_unlocked, NONE );
 		}
 	}
 
