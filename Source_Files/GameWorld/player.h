@@ -79,6 +79,10 @@ May 20, 2002 (Woody Zenfell):
 #define MAXIMUM_NUMBER_OF_PLAYERS 8
 #endif
 
+#ifndef monster_data
+	#define	monster_data	Monster
+#endif
+
 enum
 {
 	NUMBER_OF_ITEMS= 64
