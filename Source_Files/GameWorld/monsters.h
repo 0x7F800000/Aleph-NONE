@@ -240,7 +240,7 @@ enum /* monster modes */
 class Monster 
 {
 public:
-	static class Monster* Get(const ix index);
+	static class Monster& Get(const ix index);
 	
 	IS_MODE(isLocked, setLocked, _monster_locked)
 	IS_MODE(isLosingLock, setLosingLock, _monster_losing_lock)
