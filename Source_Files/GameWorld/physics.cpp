@@ -90,6 +90,10 @@ running backwards shouldnÕt mean doom in a fistfight
 
 #include <string.h>
 
+#ifndef monster_data
+	#define	monster_data	Monster
+#endif
+
 /* ---------- constants */
 
 #define COEFFICIENT_OF_ABSORBTION 2
