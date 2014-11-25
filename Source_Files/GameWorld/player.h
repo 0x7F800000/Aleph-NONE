@@ -63,6 +63,8 @@ May 20, 2002 (Woody Zenfell):
 
 // LP additions: stuff that this file needs
 #include "cseries.h"
+#include "access.hpp"
+
 #include "world.h"
 #include "map.h"
 #include "XML_ElementParser.h"
@@ -357,19 +359,7 @@ struct damage_record
 	int16 kills;
 };
 
-#define	__accessordecl(thing, type, field) \
-	inline type get##thing()\
-	{\
-		return field; \
-	}\
-	inline type set##thing(const type newval)\
-	{\
-		return field = newval;\
-	}\
-	inline bool is##thing(const type isval)\
-	{\
-		return field == isval;\
-	}
+
 
 struct player_data
 {
