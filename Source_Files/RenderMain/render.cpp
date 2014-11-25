@@ -225,8 +225,13 @@ Jan 17, 2001 (Loren Petrich):
 	#include "RenderSortPoly.h"
 	#include "RenderPlaceObjs.h"
 	#include "RenderRasterize.h"
-	#include "Rasterizer_SW.h"
+#else
+	#include "NewRenderVisTree.h"
+	#include "RenderSortPoly.h"
+	#include "NewRenderPlaceObjs.h"
+	#include "NewRenderRasterize.h"
 #endif
+#include "Rasterizer_SW.h"
 
 
 #ifdef HAVE_OPENGL
@@ -278,11 +283,15 @@ whitespace results when two adjacent polygons are clipped to different vertical 
 vector<uint16> RenderFlagList;
 
 // LP additions: decomposition of the rendering code into various objects
-
-static RenderVisTreeClass RenderVisTree;			// Visibility-tree object
-static RenderSortPolyClass RenderSortPoly;			// Polygon-sorting object
-static RenderPlaceObjsClass RenderPlaceObjs;		// Object-placement object
-static RenderRasterizerClass Render_Classic;		// Clipping and rasterization class
+#ifndef	BRIDGEZ_N_BALCONIEZ
+	static RenderVisTreeClass RenderVisTree;			// Visibility-tree object
+	static RenderSortPolyClass RenderSortPoly;			// Polygon-sorting object
+	static RenderPlaceObjsClass RenderPlaceObjs;		// Object-placement object
+	static RenderRasterizerClass Render_Classic;		// Clipping and rasterization class
+#else
+	static NewVisTree RenderVisTree;
+	static RenderSortPolyClass RenderSortPoly;
+#endif
 
 static Rasterizer_SW_Class Rasterizer_SW;			// Software rasterizer
 #ifdef HAVE_OPENGL
