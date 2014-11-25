@@ -43,7 +43,7 @@ Oct 13, 2000 (Loren Petrich)
 Oct 24, 2000 (Mark Levin)
 	Revealed some functions for P-tran
 */
-
+#include "access.hpp"
 // LP additions:
 #include "dynamic_limits.h"
 #include "XML_ElementParser.h"
@@ -289,28 +289,17 @@ public:
 	
 	bool canFlyOrFloat();
 	
-	inline int16 getPath()		{	return path;		}
-	inline bool hasPath()		{	return getPath() != NONE;								}
-	inline void setPath(int16 p)	{	path = p;		}
-	inline bool isPath(int16 p)	{	return getPath() == p;									}
+	__accessordecl(Path, int16, path)
+	inline bool hasPath()		{	return getPath() != NONE;	}
+
+	__accessordecl(Target, int16, target_index)
+	inline bool hasTarget()		{	return getTarget() != NONE;	}
 	
-	inline int16 getTarget()	{	return target_index;								}
-	inline bool isTarget(int16 chk)	{	return getTarget() == chk;						}
-	inline bool hasTarget()		{	return getTarget() != NONE;							}
-	void setTarget(int16 t);	
+	__accessordecl(Type, int16, type)
+	__accessordecl(Action, int16, action)
+	__accessordecl(Mode, int16, mode)
+	__accessordecl(Vitality, int16, vitality)
 	
-	inline int16 getType()		{	return type;										}
-	inline bool isType(int16 t)	{	return getType() == t;								}
-	
-	inline int16 getAction()	{	return action;										}
-	inline void setAction(int16 a)	{	action = a;										}	
-	
-	inline int16 getMode()		{	return mode;	}
-	inline void setMode(int16 m)	{	mode = m;	}
-	inline bool isMode(int16 m)	{	return getMode() == m;	}
-	
-	inline int16 getVitality()	{	return vitality;}
-	inline void setVitality(int16 v){	vitality = v;	}
 	
 	inline int16 getObjectIndex()		{	return object_index;			}
 	inline void setObjectIndex(int16 o)	{	object_index = o;			}
@@ -321,10 +310,6 @@ public:
 	inline void setActiveStatus(bool s)	{	SET_MONSTER_ACTIVE_STATUS(this, s);	}
 	
 	struct object_data* getObject();
-	
-	
-	void onDeath();
-	
 	
 	uint32 testDefinitionFlags(uint32 flagtest);
 	uint16 testObjectFlags(uint16 flagtest);
