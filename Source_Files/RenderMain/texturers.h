@@ -1,5 +1,4 @@
-#ifndef __TEXTURERS_H
-#define __TEXTURERS_H
+#pragma once
 
 #include "textures.h"
 
@@ -179,4 +178,3 @@ void _landscape_horizontal_polygon_lines32(HORIZONTAL_TEXTURE_PARAMS);
 typedef void (horizontal_texturer)(HORIZONTAL_TEXTURE_PARAMS);
 typedef void (vertical_texturer)(VERTICAL_TEXTURE_PARAMS);
 
-#endif
