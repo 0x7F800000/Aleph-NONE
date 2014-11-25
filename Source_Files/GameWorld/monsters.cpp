@@ -4207,10 +4207,3 @@ void monster_data::markSlotAsFree()
 {
 	MARK_SLOT_AS_FREE(this);
 }
-
-void monster_data::setTarget(int16 t)	
-{	
-	target_index = t;
-	if(t != NONE)
-		get_monster_data(t);
-}
