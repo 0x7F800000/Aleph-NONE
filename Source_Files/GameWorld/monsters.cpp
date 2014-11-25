@@ -463,7 +463,6 @@ short new_monster(struct object_location *location, short monster_type)
 		m.object_index = object_index;
 		m.flags = flags;
 		m.exflags = 0;
-		m.death_special = DeathSpecial_t::_ds_NONE;
 		m.instance_definition_index = NONE;
 		m.goal_polygon_index = m.activation_bias == _activate_on_goal ?
 			nearest_goal_polygon_index(location->polygon_index) : NONE;
@@ -745,49 +744,6 @@ SkipBecauseObjectIsInvisible:
 	--dynamic_world->civilians_killed_by_players;
 }
 
-void monster_data::onDeath()
-{
-	return;	//need to think this through better
-	if( death_special == DeathSpecial_t::_ds_NONE )
-		return;
-		
-	monster_data* target = nullptr;
-	
-	switch(death_special)
-	{
-		case DeathSpecial_t::_ds_damage_monster:
-			//if(!isNONE( _damage_monster_id ) )
-			//	cause_shrapnel_damage(_damage_monster_id); //lameee
-			break;
-		case DeathSpecial_t::_ds_heal_monster:
-			if( isNONE( _heal_monster_id ) )
-				break;
-				
-			target = &MonsterList[_heal_monster_id];
-			
-			if( !target->slotIsUsed() || target->isDying() || target->isPlayer() )
-				break;
-			target->setVitality( target->getVitality() + _heal_monster_amount);
-			break;
-		case DeathSpecial_t::_ds_set_monster_speed:
-			if( isNONE( _hasten_monster_id ) )
-				break;
-			
-			target = &MonsterList[ _hasten_monster_id ];
-			
-			if( !target->slotIsUsed() || target->isDying() || target->isPlayer() )
-				break;
-			target->getDefinition()->speed += _hasten_monster_value;
-			break;
-		case DeathSpecial_t::_ds_set_platform_state:
-			if( isNONE( _set_platform_state_id ) )
-				break;
-			try_and_change_platform_state(_set_platform_state_id, _set_platform_state_state);
-			break;
-		default:
-			assert(false);
-	}
-}
 
 /* 
 	when a monster dies, all monsters locked on it need to find something better to do; this
@@ -811,9 +767,6 @@ void monster_died(short target_index)
 		set_monster_mode(target_index, _monster_unlocked, NONE);
 		monster->removePath();
 	}
-	
-	/*	handle death special	*/
-	monster->onDeath();
 	
 	/*	best place to do this	*/
 	if( monster->hasInstanceDefinition() )
@@ -2395,11 +2348,11 @@ static bool clear_line_of_sight(short viewer_index, short target_index, bool ful
 	world_point3d *origin = &viewer_object->location;
 	world_point3d *destination = &target_object->location;
 	// LP change: made this long-distance friendly
-	auto dx = int32(destination->x) - int32(origin->x);
-	auto dy = int32(destination->y) - int32(origin->y);
+	int32 dx = int32(destination->x) - int32(origin->x);
+	int32 dy = int32(destination->y) - int32(origin->y);
 	
-	auto dz = destination->z - origin->z;
-	auto distance2d = GUESS_HYPOTENUSE(ABS(dx), ABS(dy));
+	int32 dz = destination->z - origin->z;
+	int32 distance2d = GUESS_HYPOTENUSE(ABS(dx), ABS(dy));
 
 	/* if we can't see full circle, make sure the target is in our visual arc */
 	if (!full_circle)
@@ -2877,74 +2830,74 @@ static bool translate_monster(short monster_index, world_distance distance)
 	{
 		object_data *obstacle_object = get_object_data(obstacle_index);
 		
-		if (GET_OBJECT_OWNER(obstacle_object)==_object_is_monster)
+		if (GET_OBJECT_OWNER(obstacle_object)!=_object_is_monster)
 		{
-			monster_data *obstacle_monster = get_monster_data(obstacle_object->permutation);
-	
-			/* we collided with another monster: see if we want to attack him; if not, see if we
-				can attack his current target (if he is locked or losing_lock); if not, drop lock
-				and ask for a new path. */
-			
-			if(!mTYPE_IS_ENEMY(definition, obstacle_monster->type) && !( monster->hasValidTarget() && monster->isTarget(obstacle_object->permutation) ) &&
-				!MONSTER_IS_BERSERK(monster))
+			attempt_evasive_manouvers( monster_index ); // to avoid the scenery
+			return legal_move;
+		}
+		monster_data *obstacle_monster = get_monster_data(obstacle_object->permutation);
+
+		/* we collided with another monster: see if we want to attack him; if not, see if we
+			can attack his current target (if he is locked or losing_lock); if not, drop lock
+			and ask for a new path. */
+		
+		if(!mTYPE_IS_ENEMY(definition, obstacle_monster->type) && !( monster->hasValidTarget() && monster->isTarget(obstacle_object->permutation) ) &&
+			!MONSTER_IS_BERSERK(monster))
+		{
+			if( !obstacle_monster->isPlayer() )
 			{
-				if( !obstacle_monster->isPlayer() )
+				if( !monster->isLocked() )
 				{
-					if( !monster->isLocked() )
+					if( !obstacle_monster->hasValidTarget() || !switch_target_check(monster_index, obstacle_monster->getTarget(), 0))
 					{
-						if( !obstacle_monster->hasValidTarget() || !switch_target_check(monster_index, obstacle_monster->getTarget(), 0))
+						if (monster->isUnlocked() && !(global_random()&OBSTRUCTION_DEACTIVATION_MASK) &&
+							(monster->goal_polygon_index == NONE || monster->goal_polygon_index == object->polygon))
+							deactivate_monster(monster_index);
+						else
 						{
-							if (monster->isUnlocked() && !(global_random()&OBSTRUCTION_DEACTIVATION_MASK) &&
-								(monster->goal_polygon_index == NONE || monster->goal_polygon_index == object->polygon))
-								deactivate_monster(monster_index);
-							else
-							{
-								monster_needs_path(monster_index, false);
-								/* 
-									if we're not locked, we might want to think about deactivating here, but
-									for now we just build a new random path by forcing our state to _unlocked. 
-								*/
-								if( !monster->isLocked() )
-									set_monster_mode( monster_index, _monster_unlocked, NONE );
-							}
+							monster_needs_path(monster_index, false);
+							/* 
+								if we're not locked, we might want to think about deactivating here, but
+								for now we just build a new random path by forcing our state to _unlocked. 
+							*/
+							if( !monster->isLocked() )
+								set_monster_mode( monster_index, _monster_unlocked, NONE );
 						}
 					}
-					else
-						attempt_evasive_manouvers( monster_index );
 				}
-	
-				SET_MONSTER_IDLE_STATUS(monster, true);
+				else
+					attempt_evasive_manouvers( monster_index );
 			}
-			else
-			{
-				monster_definition *obstacle_definition = obstacle_monster->getDefinition();
-				auto key_height = obstacle_object->location.z + ( obstacle_definition->height / 2 );
-				
-				change_monster_target(monster_index, obstacle_object->permutation);
-				
-				/* if we're a kamakazi and we're within range, pop */
-				if( definition->testFlags( _monster_is_kamakazi ) && object->location.z < key_height)
-				{
-					bool in_range = object->location.z + definition->height > key_height;
-					
-					/* if we're short and can't float, take out their knees! */
-					if (!in_range && film_profile.allow_short_kamikaze && !definition->testFlags(_monster_floats))
-						in_range = object->location.z >= obstacle_object->location.z;
-					
-					if (in_range)
-					{
-						set_monster_action(monster_index, _monster_is_dying_hard);
-						monster_died(monster_index);
-					}
-				}
-				
-				/* if we float and this is our target, go up */
-				if( definition->testFlags( _monster_floats ) )
-					monster->desired_height = obstacle_object->location.z;
-			}
+
+			SET_MONSTER_IDLE_STATUS(monster, true);
 		}
 		else
-			attempt_evasive_manouvers( monster_index ); // to avoid the scenery
+		{
+			monster_definition *obstacle_definition = obstacle_monster->getDefinition();
+			auto key_height = obstacle_object->location.z + ( obstacle_definition->height / 2 );
+			
+			change_monster_target(monster_index, obstacle_object->permutation);
+			
+			/* if we're a kamakazi and we're within range, pop */
+			if( definition->testFlags( _monster_is_kamakazi ) && object->location.z < key_height)
+			{
+				bool in_range = object->location.z + definition->height > key_height;
+				
+				/* if we're short and can't float, take out their knees! */
+				if (!in_range && film_profile.allow_short_kamikaze && !definition->testFlags(_monster_floats))
+					in_range = object->location.z >= obstacle_object->location.z;
+				
+				if (in_range)
+				{
+					set_monster_action(monster_index, _monster_is_dying_hard);
+					monster_died(monster_index);
+				}
+			}
+			
+			/* if we float and this is our target, go up */
+			if( definition->testFlags( _monster_floats ) )
+				monster->desired_height = obstacle_object->location.z;
+		}
 	}
 	
 	return legal_move;
@@ -2952,12 +2905,14 @@ static bool translate_monster(short monster_index, world_distance distance)
 
 static bool attempt_evasive_manouvers(short monster_index)
 {
-	monster_data *monster = get_monster_data(monster_index);
-	object_data *object = get_object_data(monster->object_index);
-	world_point2d destination = *((world_point2d*)&object->location);
-	auto new_facing = NORMALIZE_ANGLE(object->facing + ((global_random()&1) ? QUARTER_CIRCLE : -QUARTER_CIRCLE));
-	auto original_floor_height = get_polygon_data(object->polygon)->floor_height;
-	auto polygon_index = object->polygon;
+	monster_data *monster 		= get_monster_data(monster_index);
+	object_data *object 		= monster->getObject();
+	
+	world_point2d destination 	= *((world_point2d*)&object->location);
+	
+	auto new_facing 		= NORMALIZE_ANGLE(object->facing + ((global_random()&1) ? QUARTER_CIRCLE : -QUARTER_CIRCLE));
+	auto original_floor_height 	= get_polygon_data(object->polygon)->floor_height;
+	auto polygon_index 		= object->polygon;
 	bool successful = true;
 	
 	translate_point2d(&destination, EVASIVE_MANOUVER_DISTANCE, new_facing);
@@ -2966,46 +2921,49 @@ static bool attempt_evasive_manouvers(short monster_index)
 		auto line_index = find_line_crossed_leaving_polygon(polygon_index, (world_point2d *)&object->location, &destination);
 		
 		if (line_index==NONE)
+		{
 			polygon_index = NONE;
+			continue;
+		}
+
+		/* if we ran off the map, we failed */
+		if (LINE_IS_SOLID(get_line_data(line_index)) || (polygon_index= find_adjacent_polygon(polygon_index, line_index))==NONE)
+		{
+			polygon_index= NONE;
+			successful= false;
+		}
 		else
 		{
-			/* if we ran off the map, we failed */
-			if (LINE_IS_SOLID(get_line_data(line_index)) || (polygon_index= find_adjacent_polygon(polygon_index, line_index))==NONE)
+			polygon_data *polygon = get_polygon_data(polygon_index);
+			if (polygon->floor_height != original_floor_height || polygon->type == _polygon_is_monster_impassable)
 			{
-				polygon_index= NONE;
-				successful= false;
-			}
-			else
-			{
-				polygon_data *polygon = get_polygon_data(polygon_index);
-				if (polygon->floor_height != original_floor_height || polygon->type == _polygon_is_monster_impassable)
-				{
-					polygon_index = NONE;
-					successful = false;
-				}
+				polygon_index = NONE;
+				successful = false;
 			}
 		}
+	
 	}
 	while (	!isNONE(polygon_index)	);
 	
-	if(successful)
-	{
-		object->facing = new_facing;
-		if( !monster->isPath( NONE ) ) 
-		{
-			delete_path( monster->getPath() );
-			monster->setPath( NONE );
-		}
-		monster->path_segment_length = EVASIVE_MANOUVER_DISTANCE;
-	}
+	if(!successful)
+		return false;
 	
-	return successful;
+	object->facing = new_facing;
+	if( !monster->isPath( NONE ) ) 
+	{
+		delete_path( monster->getPath() );
+		monster->setPath( NONE );
+	}
+	monster->path_segment_length = EVASIVE_MANOUVER_DISTANCE;
+
+	
+	return true;
 }
 
 void advance_monster_path(short monster_index)
 {
-	monster_data *monster = get_monster_data(monster_index);
-	object_data *object = get_object_data( monster->getObjectIndex() );
+	monster_data *monster 	= get_monster_data(monster_index);
+	object_data *object 	= get_object_data( monster->getObjectIndex() );
 	world_point2d path_goal;
 	bool done = true;
 
