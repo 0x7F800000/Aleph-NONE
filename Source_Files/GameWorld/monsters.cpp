@@ -1324,10 +1324,11 @@ void monster_moved(int16 target_index, int16 old_polygon_index)
 /* returns NONE or a monster_index that prevented us from moving */
 int16 legal_player_move(int16 monster_index, world_point3d *new_location, world_distance *object_floor) /* must be set on entry */
 {
-	Monster *monster = get_monster_data(monster_index);
-	Object *object = get_object_data(monster->object_index);
+	Monster *monster 	= get_monster_data(monster_index);
+	Object *object 		= get_object_data( monster->getObjectIndex() );
+	
 	world_point3d *old_location = &object->location;
-	size_t monster_count;
+
 	world_distance radius, height;
 	int16 obstacle_index = NONE;
 
@@ -1335,10 +1336,11 @@ int16 legal_player_move(int16 monster_index, world_point3d *new_location, world_
 	
 	IntersectedObjects.clear();
 	possible_intersecting_monsters(&IntersectedObjects, LOCAL_INTERSECTING_MONSTER_BUFFER_SIZE, object->polygon, true);
-	monster_count = IntersectedObjects.size();
+	size_t monster_count = IntersectedObjects.size();
+	
 	for( ix i = 0; i < monster_count; ++i )
 	{
-		Object *obstacle = get_object_data(IntersectedObjects[i]);
+		Object *obstacle = get_object_data( IntersectedObjects[i] );
 		world_distance obstacle_radius, obstacle_height;
 		
 		switch (GET_OBJECT_OWNER(obstacle))
@@ -1400,7 +1402,7 @@ int16 legal_monster_move(int16 monster_index,
 	world_point3d *new_location)
 {
 	Monster *monster 	= get_monster_data(monster_index);
-	Object *object 	= get_object_data( monster->getObjectIndex() );
+	Object *object 		= get_object_data( monster->getObjectIndex() );
 
 	world_distance radius, height;
 	int16 obstacle_index = NONE;
@@ -1437,14 +1439,13 @@ int16 legal_monster_move(int16 monster_index,
 		if ( monster->isObject( IntersectedObjects[ i ] ) ) /* no self-intersection */
 			continue;
 		
-		world_point3d *obstacle_location = &obstacle->location;
+		world_point3d &obstacle_location = obstacle->location;
 		
-		if (obstacle_location->z < new_location->z + height && 
-			obstacle_location->z + obstacle_height > new_location->z)
+		if (obstacle_location.z < new_location->z + height && obstacle_location.z + obstacle_height > new_location->z)
 		{
 			auto separation = radius + obstacle_radius;
-			auto dx = obstacle_location->x - new_location->x;
-			auto dy = obstacle_location->y - new_location->y;
+			auto dx = obstacle_location.x - new_location->x;
+			auto dy = obstacle_location.y - new_location->y;
 			
 			if (GET_OBJECT_OWNER(obstacle) != _object_is_scenery && obstacle->permutation > monster_index 
 				&& !MONSTER_IS_PLAYER( get_monster_data( obstacle->permutation ) )) 
