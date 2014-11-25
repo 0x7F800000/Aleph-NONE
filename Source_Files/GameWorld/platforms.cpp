@@ -1070,7 +1070,7 @@ static void adjust_platform_sides(int16 platform_index, world_distance old_ceili
 				break;
 		
 			default:
-				assert(false)
+				assert(false);
 		}
 	
 	}
