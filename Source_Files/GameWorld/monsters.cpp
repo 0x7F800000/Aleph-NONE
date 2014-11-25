@@ -1575,7 +1575,7 @@ void damage_monster(short target_index, short aggressor_index, short aggressor_t
 {
 	Monster *monster 		= get_monster_data(target_index);
 	monster_definition *definition 	= monster->getDefinition();
-	Monster *aggressor_monster = aggressor_index != NONE ? Monster::Get(aggressor_index) : nullptr;
+	Monster *aggressor_monster = aggressor_index != NONE ? get_monster_data(aggressor_index) : nullptr;
 
 	auto delta_vitality = calculate_damage(damage);
 
