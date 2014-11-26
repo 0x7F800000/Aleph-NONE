@@ -2075,8 +2075,8 @@ static void update_monster_vertical_physics_model(int16 monster_index)
 static void update_monster_physics_model(int16 monster_index)
 {
 	Monster &monster 		= Monster::Get(monster_index);
-	monsterDefinition* definition 	= monster->getDefinition();
-	Object &object 			= Object::Get( monster->getObjectIndex() );
+	monsterDefinition* definition 	= monster.getDefinition();
+	Object &object 			= Object::Get( monster.getObjectIndex() );
 	
 	if( !monster.getExternalVelocity() )
 		return;
@@ -2107,8 +2107,8 @@ static void update_monster_physics_model(int16 monster_index)
 	
 	if( object.location.z <= polygon.floor_height || definition->testFlags( _monster_flys | _monster_floats ) )
 	{
-		if( (monster->external_velocity -= MONSTER_EXTERNAL_DECELERATION) < MONSTER_MINIMUM_EXTERNAL_VELOCITY)
-			monster->setExternalVelocity(0);
+		if( (monster.external_velocity -= MONSTER_EXTERNAL_DECELERATION) < MONSTER_MINIMUM_EXTERNAL_VELOCITY)
+			monster.setExternalVelocity(0);
 	}
 
 }
