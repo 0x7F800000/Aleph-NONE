@@ -826,7 +826,7 @@ void initialize_monsters_for_new_level()
 	{
 		if( !monster->slotIsUsed() || !monster->isActive() )
 			continue;
-		SET_MONSTER_NEEDS_PATH_STATUS( monster, true );
+		monster->setNeedsPathStatus(true);
 		monster->setPath( NONE );
 	}
 }
@@ -1309,7 +1309,7 @@ void monster_moved(int16 target_index, int16 old_polygon_index)
 		if( clear_line_of_sight( monster_index, target_index, true ) )
 		{
 			if( monster->isLosingLock() ) 
-				set_monster_mode( monster_index, _monster_locked, monster->getTarget() );
+				monster->changeMode(_monster_locked, monster->getTarget());
 		}
 		else
 		{
@@ -1345,9 +1345,7 @@ void monster_moved(int16 target_index, int16 old_polygon_index)
 			if( monster->isLosingLock() ) 
 				monster->changes_until_lock_lost++;
 				
-			set_monster_mode(
-				monster_index, 
-				monster->changes_until_lock_lost >= definition->intelligence 
+			monster->changeMode(monster->changes_until_lock_lost >= definition->intelligence 
 					? _monster_lost_lock 
 					: _monster_losing_lock, 
 				NONE);
@@ -1812,7 +1810,7 @@ void adjust_monster_for_polygon_height_change(int16 monster_index, int16 polygon
 	Monster &monster = Monster::Get( monster_index );
 	
 	world_distance radius, height;
-	get_monster_dimensions(monster_index, &radius, &height);
+	monster.getDimensions(&radius, &height);
 	
 	if( monster.isPlayer() )
 	{
@@ -1863,12 +1861,12 @@ int16 get_monster_melee_impact_effect(int16 monster_index)
 
 static void cause_shrapnel_damage(int16 monster_index)
 {
-	Monster *monster		= get_monster_data(monster_index);
-	Object *object			= get_object_data( monster->getObjectIndex() );
-	monsterDefinition* definition	= monster->getDefinition();
+	Monster &monster		= Monster::Get(monster_index);
+	Object &object			= Object::Get( monster.getObjectIndex() );
+	monsterDefinition* definition	= monster.getDefinition();
 
 	if( !isNONE( definition->shrapnel_radius ) )
-		damage_monsters_in_radius(NONE, NONE, NONE, &object->location, object->polygon,
+		damage_monsters_in_radius(NONE, NONE, NONE, &object.location, object.polygon,
 			definition->shrapnel_radius, &definition->shrapnel_damage, NONE);
 }
 
