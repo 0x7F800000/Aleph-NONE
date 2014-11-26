@@ -1,5 +1,5 @@
 /*
-ITEMS.C
+ITEMS.CPP
 
 	Copyright (C) 1991-2001 and beyond by Bungie Studios, Inc.
 	and the "Aleph One" developers.
@@ -407,37 +407,38 @@ static void m2_swipe_nearby_items(short player_index)
 		
 		polygon_data *neighboring_polygon= get_polygon_data(*neighbor_indexes++);
 	
-		if (!POLYGON_IS_DETACHED(neighboring_polygon))
-		{
-			next_object= neighboring_polygon->first_object;
+		if (POLYGON_IS_DETACHED(neighboring_polygon))
+			continue;
+	
+		next_object= neighboring_polygon->first_object;
 
-			while(next_object != NONE)
+		while(next_object != NONE)
+		{
+			object= get_object_data(next_object);
+			if (GET_OBJECT_OWNER(object)==_object_is_item && !OBJECT_IS_INVISIBLE(object)) 
 			{
-				object= get_object_data(next_object);
-				if (GET_OBJECT_OWNER(object)==_object_is_item && !OBJECT_IS_INVISIBLE(object)) 
+				if (guess_distance2d((world_point2d *) &player->location, (world_point2d *) &object->location)<=MAXIMUM_ARM_REACH)
 				{
-					if (guess_distance2d((world_point2d *) &player->location, (world_point2d *) &object->location)<=MAXIMUM_ARM_REACH)
+					world_distance radius, height;
+					
+					get_monster_dimensions(player->monster_index, &radius, &height);
+	
+					if (object->location.z >= player->location.z - MAXIMUM_ARM_REACH && object->location.z <= player->location.z + height &&
+						test_item_retrieval(player_object->polygon, &player_object->location, &object->location))
 					{
-						world_distance radius, height;
-						
-						get_monster_dimensions(player->monster_index, &radius, &height);
-		
-						if (object->location.z >= player->location.z - MAXIMUM_ARM_REACH && object->location.z <= player->location.z + height &&
-							test_item_retrieval(player_object->polygon, &player_object->location, &object->location))
+						if(get_item(player_index, next_object))
 						{
-							if(get_item(player_index, next_object))
-							{
-								/* Start the search again.. */
-								next_object= neighboring_polygon->first_object;
-								continue;
-							}
+							/* Start the search again.. */
+							next_object= neighboring_polygon->first_object;
+							continue;
 						}
 					}
 				}
-				
-				next_object= object->next_object;
 			}
+			
+			next_object= object->next_object;
 		}
+	
 	}
 }
 
@@ -775,7 +776,7 @@ void animate_items()
 	}
 }
 
-struct item_definition *original_item_definitions = NULL;
+struct item_definition *original_item_definitions = nullptr;
 class XML_ItemParser: public XML_ElementParser
 {
 	short Index;
