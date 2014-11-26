@@ -153,15 +153,15 @@ dynamic_data	*dynamic_world = nullptr;
 
 // These are allocated here because the numbers of these objects vary as a game progresses.
 vector<effect_data>	EffectList(MAXIMUM_EFFECTS_PER_MAP);
-vector<object_data>	ObjectList(MAXIMUM_OBJECTS_PER_MAP);
-vector<monster_data>	MonsterList(MAXIMUM_MONSTERS_PER_MAP);
+vector<Object>	ObjectList(MAXIMUM_OBJECTS_PER_MAP);
+vector<Monster>	MonsterList(MAXIMUM_MONSTERS_PER_MAP);
 vector<projectile_data>	ProjectileList(MAXIMUM_PROJECTILES_PER_MAP);
 
-vector<endpoint_data>	EndpointList;
-vector<line_data>	LineList;
-vector<side_data>	SideList;
-vector<polygon_data>	PolygonList;
-vector<platform_data>	PlatformList;
+vector<Endpoint>	EndpointList;
+vector<Line>		LineList;
+vector<Side>		SideList;
+vector<Polygon>		PolygonList;
+vector<Platform>	PlatformList;
 
 vector<ambient_sound_image_data>	AmbientSoundImageList;
 vector<random_sound_image_data>		RandomSoundImageList;
@@ -219,9 +219,9 @@ short _find_line_crossed_leaving_polygon(short polygon_index, world_point2d *p0,
 
 // Accessors moved here to shrink the code
 
-object_data *get_object_data(const short object_index)
+Object *get_object_data(const short object_index)
 {
-	object_data *object = GetMemberWithBounds(objects,object_index,MAXIMUM_OBJECTS_PER_MAP);
+	Object *object = GetMemberWithBounds(objects,object_index,MAXIMUM_OBJECTS_PER_MAP);
 	
 	vassert(object, csprintf(temporary, "object index #%d is out of range", object_index));
 	vassert(SLOT_IS_USED(object), csprintf(temporary, "object index #%d is unused", object_index));
@@ -229,13 +229,13 @@ object_data *get_object_data(const short object_index)
 	return object;
 }
 
-struct object_data& object_data::Get(const ix index)
+struct Object& Object::Get(const ix index)
 {
 	assert(index < MAXIMUM_OBJECTS_PER_MAP);
 	return ObjectList[index];
 }
 
-polygon_data *get_polygon_data(const short polygon_index)
+Polygon *get_polygon_data(const short polygon_index)
 {
 	assert(map_polygons);	
 	polygon_data *polygon = GetMemberWithBounds(map_polygons,polygon_index,dynamic_world->polygon_count);
@@ -245,55 +245,55 @@ polygon_data *get_polygon_data(const short polygon_index)
 	return polygon;
 }
 
-struct polygon_data& polygon_data::Get(const ix index)
+struct Polygon& Polygon::Get(const ix index)
 {
 	assert(index < dynamic_world->polygon_count);
 	return PolygonList[index];
 }
 
-line_data *get_line_data(const short line_index)
+Line *get_line_data(const short line_index)
 {
 	assert(map_lines);
-	line_data *line = GetMemberWithBounds(map_lines,line_index,dynamic_world->line_count);
+	Line *line = GetMemberWithBounds(map_lines,line_index,dynamic_world->line_count);
 	
 	vassert(line, csprintf(temporary, "line index #%d is out of range", line_index));
 	
 	return line;
 }
 
-struct line_data& line_data::Get(const ix index)
+struct Line& Line::Get(const ix index)
 {
 	assert(index < dynamic_world->line_count);
 	return LineList[index];
 }
 
-side_data *get_side_data(const short side_index)
+Side *get_side_data(const short side_index)
 {
 	assert(map_sides);
-	side_data *side = GetMemberWithBounds(map_sides,side_index,dynamic_world->side_count);
+	Side *side = GetMemberWithBounds(map_sides,side_index,dynamic_world->side_count);
 	
 	vassert(side, csprintf(temporary, "side index #%d is out of range", side_index));
 	
 	return side;
 }
 
-struct side_data& side_data::Get(const ix index)
+struct Side& Side::Get(const ix index)
 {
 	assert(index < dynamic_world->side_count);
 	return SideList[index];
 }
 
-endpoint_data *get_endpoint_data(const short endpoint_index)
+Endpoint *get_endpoint_data(const short endpoint_index)
 {
 	assert(map_endpoints);
-	endpoint_data *endpoint = GetMemberWithBounds(map_endpoints,endpoint_index,dynamic_world->endpoint_count);
+	Endpoint *endpoint = GetMemberWithBounds(map_endpoints,endpoint_index,dynamic_world->endpoint_count);
 
 	vassert(endpoint, csprintf(temporary, "endpoint index #%d is out of range", endpoint_index));
 	
 	return endpoint;
 }
 
-struct endpoint_data& endpoint_data::Get(const ix index)
+struct Endpoint& Endpoint::Get(const ix index)
 {
 	assert(index < dynamic_world->endpoint_count);
 	return EndpointList[index];
@@ -556,8 +556,8 @@ void mark_environment_collections(short environment_code, bool loading)
 void reconnect_map_object_list()
 {
 	short i;
-	object_data *object;
-	polygon_data *polygon;
+	Object *object;
+	Polygon *polygon;
 
 	/* wipe first_object links from polygon structures */
 	for (polygon=map_polygons,i=0;i<dynamic_world->polygon_count;--i,++polygon)
@@ -638,8 +638,8 @@ short new_map_object3d(world_point3d *location, short polygon_index, shape_descr
 	if( isNONE(object_index) )
 		return NONE;
 	
-	polygon_data &polygon = polygon_data::Get(polygon_index);
-	object_data &object = object_data::Get(object_index);
+	Polygon &polygon 	= polygon_data::Get(polygon_index);
+	Object &object	 	= object_data::Get(object_index);
 
 	/* initialize object polygon and location */	
 	object.polygon = polygon_index;
@@ -895,9 +895,7 @@ bool translate_map_object(short object_index, world_point3d *new_location, short
 }
 
 
-void get_object_shape_and_transfer_mode(
-	world_point3d *camera_location,
-	short object_index,
+void get_object_shape_and_transfer_mode(world_point3d *camera_location, short object_index,
 	struct shape_and_transfer_mode *data)
 {
 	object_data *object= get_object_data(object_index);
@@ -917,8 +915,7 @@ void get_object_shape_and_transfer_mode(
 		data->collection_code = NONE; // Deliberate bad value
 		return;
 	}
-	// assert(animation->frames_per_view>=1);
-	
+
 	/* get correct base shape */
 	// LP change: made long-distance friendly
 	theta= arctangent(int32(object->location.x) - int32(camera_location->x), int32(object->location.y) - int32(camera_location->y)) - object->facing;
