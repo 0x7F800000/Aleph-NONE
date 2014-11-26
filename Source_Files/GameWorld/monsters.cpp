@@ -2627,12 +2627,14 @@ void change_monster_target(int16 monster_index, int16 target_index)
 
 static void handle_moving_or_stationary_monster(int16 monster_index)
 {
-	Monster *monster 		= get_monster_data(monster_index);
-	Object *object 			= monster->getObject();
-	monsterDefinition* definition 	= monster->getDefinition();
+	Monster &monster 		= Monster::Get(monster_index);
+	Object &object 			= Object::Get( monster.getObjectIndex() );
+	monsterDefinition* definition 	= monster.getDefinition();
 	
-	/* stationary, unlocked monsters without paths cannot move */
-	if( !monster->hasPath()  && !monster->isLocked() && monster->isStationary() )
+	/* 
+		stationary, unlocked monsters without paths cannot move 
+	*/
+	if( !monster.hasPath()  && !monster.isLocked() && monster.isStationary() )
 	{
 		monster_needs_path(monster_index, false);
 		return;
@@ -2659,32 +2661,36 @@ static void handle_moving_or_stationary_monster(int16 monster_index)
 				break;
 		}
 	}
-	if ( monster->isBerserk() ) 
+	if ( monster.isBerserk() ) 
 		distance_moved += distance_moved / 2;
 	
-	if( !monster->isWaitingToAttackAgain() )
+	auto updatedTicks = monster.getTicksSinceAttack();
+	
+	if( !monster.isWaitingToAttackAgain() )
 	{
 		if (translate_monster(monster_index, distance_moved))
 		{
 			/* we moved: _monster_is_stationary becomes _monster_is_moving */
-			if( monster->isStationary() ) 
-				monster->changeAction(_monster_is_moving);
+			if( monster.isStationary() ) 
+				monster.changeAction(_monster_is_moving);
 		}
 		else
 		{
 			/* we couldn't move: _monster_is_moving becomes _monster_is_stationary */
-			if ( monster->isMoving() ) 
-				monster->changeAction(_monster_is_stationary);
-			monster->ticks_since_attack++; /* attacks occur twice as frequently if we can't move (damnit!) */
+			if ( monster.isMoving() ) 
+				monster.changeAction(_monster_is_stationary);
+			updatedTicks++; /* attacks occur twice as frequently if we can't move (damnit!) */
 		}
 	}
 	else
-		monster->ticks_since_attack++;
+		updatedTicks++;
 
 	/* whether we moved or not, see if we can attack if we have lock */
-	monster->ticks_since_attack += monster->isBerserk() ? 3 : 1;
+	updatedTicks += monster.isBerserk() ? 3 : 1;
 	
-	if( !OBJECT_WAS_ANIMATED(object) && !monster->isLocked() )
+	monster.setTicksSinceAttack(updatedTicks);
+	
+	if( !OBJECT_WAS_ANIMATED(&object) && !monster.isLocked() )
 		return;
 	
 	auto attack_frequency = definition->attack_frequency;
@@ -2708,17 +2714,17 @@ static void handle_moving_or_stationary_monster(int16 monster_index)
 		}
 	}
 
-	if( monster->ticks_since_attack <= attack_frequency )
+	if( monster.getTicksSinceAttack() <= attack_frequency )
 		return;	//can't attack yet.
 	
 	/* activate with lock nearby monsters on our target */
 	if( try_monster_attack(monster_index) )
-		activate_nearby_monsters( monster->getTarget(), monster_index,
+		activate_nearby_monsters( monster.getTarget(), monster_index,
 			_pass_one_zone_border, MONSTER_ALERT_ACTIVATION_RANGE );
 			
-	else if( monster->isWaitingToAttackAgain() )
+	else if( monster.isWaitingToAttackAgain() )
 	{
-		monster->changeAction( _monster_is_stationary );
+		monster.changeAction( _monster_is_stationary );
 		monster_needs_path( monster_index, true );
 	}
 	
@@ -2963,9 +2969,9 @@ static bool translate_monster(int16 monster_index, world_distance distance)
 						
 					case _platform_will_be_accessable:
 						/* we avoid vidding the door by only trying to open it every door_retry_mask+1 ticks */
-						if (!(dynamic_world->tick_count&definition->door_retry_mask)) 
+						if (!(dynamic_world->tick_count & definition->door_retry_mask)) 
 							try_and_change_platform_state(feature_index, true);
-						SET_MONSTER_IDLE_STATUS(monster, true);
+						SET_MONSTER_IDLE_STATUS( monster, true );
 						legal_move = false;
 						break;
 					
@@ -2998,7 +3004,7 @@ static bool translate_monster(int16 monster_index, world_distance distance)
 			
 			case _standing_on_sniper_ledge:
 				/* we've been told to freeze on a sniper ledge (no saving throw) */
-				legal_move= false;
+				legal_move = false;
 				break;
 		}
 		
@@ -3040,7 +3046,7 @@ static bool translate_monster(int16 monster_index, world_distance distance)
 			and ask for a new path. */
 		
 		if(!mTYPE_IS_ENEMY(definition, obstacle_monster->type) && !( monster->hasValidTarget() && monster->isTarget(obstacle_object->permutation) ) &&
-			!MONSTER_IS_BERSERK(monster))
+			!monster->isBerserk())
 		{
 			if( !obstacle_monster->isPlayer() )
 			{
@@ -3059,7 +3065,7 @@ static bool translate_monster(int16 monster_index, world_distance distance)
 								for now we just build a new random path by forcing our state to _unlocked. 
 							*/
 							if( !monster->isLocked() )
-								set_monster_mode( monster_index, _monster_unlocked, NONE );
+								monster->changeMode( _monster_unlocked, NONE );
 						}
 					}
 				}
@@ -3103,22 +3109,29 @@ static bool translate_monster(int16 monster_index, world_distance distance)
 
 static bool attempt_evasive_manouvers(int16 monster_index)
 {
-	Monster *monster 		= get_monster_data(monster_index);
-	Object *object 		= monster->getObject();
+	Monster &monster 		= Monster::Get(monster_index);
+	Object &object 			= Object::Get( monster.getObjectIndex() );
 	
-	world_point2d destination 	= *((world_point2d*)&object->location);
+	world_point2d destination 	= *((world_point2d*)&object.location);
 	
-	auto new_facing 		= NORMALIZE_ANGLE(object->facing + ((global_random()&1) ? QUARTER_CIRCLE : -QUARTER_CIRCLE));
-	auto original_floor_height 	= get_polygon_data(object->polygon)->floor_height;
-	auto polygon_index 		= object->polygon;
+	
+	angle facingAdjustment = QUARTER_CIRCLE;
+	if( global_random() & 1 == 0)
+		facingAdjustment = -facingAdjustment;
+		
+	auto new_facing 		= NORMALIZE_ANGLE(object.facing + facingAdjustment);
+					
+	auto original_floor_height 	= get_polygon_data(object.polygon)->floor_height;
+	auto polygon_index 		= object.polygon;
 	bool successful = true;
 	
 	translate_point2d(&destination, EVASIVE_MANOUVER_DISTANCE, new_facing);
 	do
 	{
-		auto line_index = find_line_crossed_leaving_polygon(polygon_index, (world_point2d *)&object->location, &destination);
+		auto line_index = find_line_crossed_leaving_polygon(polygon_index, 
+				(world_point2d *)&object.location, &destination);
 		
-		if (line_index==NONE)
+		if (line_index == NONE)
 		{
 			polygon_index = NONE;
 			continue;
@@ -3127,16 +3140,16 @@ static bool attempt_evasive_manouvers(int16 monster_index)
 		/* if we ran off the map, we failed */
 		if (LINE_IS_SOLID(get_line_data(line_index)) || (polygon_index= find_adjacent_polygon(polygon_index, line_index))==NONE)
 		{
-			polygon_index= NONE;
-			successful= false;
+			polygon_index	= NONE;
+			successful	= false;
 		}
 		else
 		{
-			Polygon *polygon = get_polygon_data(polygon_index);
-			if (polygon->floor_height != original_floor_height || polygon->type == _polygon_is_monster_impassable)
+			Polygon &polygon = Polygon::Get(polygon_index);
+			if (polygon.floor_height != original_floor_height || polygon.type == _polygon_is_monster_impassable)
 			{
-				polygon_index = NONE;
-				successful = false;
+				polygon_index 	= NONE;
+				successful 	= false;
 			}
 		}
 	
@@ -3146,26 +3159,24 @@ static bool attempt_evasive_manouvers(int16 monster_index)
 	if(!successful)
 		return false;
 	
-	object->facing = new_facing;
-	if( !monster->isPath( NONE ) ) 
+	object.facing = new_facing;
+	if( !monster.isPath( NONE ) ) 
 	{
-		delete_path( monster->getPath() );
-		monster->setPath( NONE );
+		delete_path( monster.getPath() );
+		monster.setPath( NONE );
 	}
-	monster->path_segment_length = EVASIVE_MANOUVER_DISTANCE;
-
-	
+	monster.path_segment_length = EVASIVE_MANOUVER_DISTANCE;
 	return true;
 }
 
 void advance_monster_path(int16 monster_index)
 {
 	Monster *monster 	= get_monster_data(monster_index);
-	Object *object 	= get_object_data( monster->getObjectIndex() );
+	Object *object 		= get_object_data( monster->getObjectIndex() );
 	world_point2d path_goal;
 	bool done = true;
 
-	if(isNONE(monster->path))
+	if( !monster->hasPath() )
 	{
 		/* only locked monsters in their target's polygon can advance without paths */
 		if(!monster->isLocked() || object->polygon != get_object_data(get_monster_data(monster->getTarget())->object_index)->polygon)
@@ -3180,12 +3191,14 @@ void advance_monster_path(int16 monster_index)
 	/* if we're locked without a path, head right for the bastard (he's in our polygon) */
 	if ((done || monster->isPath(NONE) ) && monster->isLocked() )
 	{
-		Monster *target = get_monster_data( monster->getTarget() );
-		Object *target_object = get_object_data( target->getObjectIndex() );
+		Monster *target 	= get_monster_data( monster->getTarget() );
+		Object *target_object 	= get_object_data( target->getObjectIndex() );
 		
 		if (object->polygon == target_object->polygon)
 		{
-			path_goal= *(world_point2d *)&get_object_data(get_monster_data(monster->getTarget())->object_index)->location;
+			path_goal= *
+			(world_point2d *)&get_object_data(get_monster_data(
+				monster->getTarget())->object_index)->location;
 			done = false;
 		}
 	}
@@ -3196,16 +3209,21 @@ void advance_monster_path(int16 monster_index)
 		monster_needs_path( monster_index, false );
 		if( monster->isUnlocked() )
 		{
-			monster->goal_polygon_index = NONE;
-			if (MONSTER_TELEPORTS_OUT_WHEN_DEACTIVATED(monster)) 
-				deactivate_monster(monster_index);
+			monster->setGoalPolygonIndex(NONE);
+			if( monster->teleportsOutWhenDeactivated() )
+				monster->deactivate();
 		}
 	}
 	else
 	{
 		/* point ourselves at this new point in the path */
-		object->facing = arctangent( path_goal.x-object->location.x, path_goal.y-object->location.y );
-		monster->path_segment_length = distance2d( &path_goal, (world_point2d *)&object->location );
+		object->facing = arctangent( 
+			path_goal.x - object->location.x, 
+			path_goal.y - object->location.y 
+			);
+		monster->setPathSegmentLength(
+				distance2d( &path_goal, (world_point2d *)&object->location )
+			);
 	}
 }
 
@@ -3237,7 +3255,7 @@ static bool try_monster_attack(int16 monster_index)
 		theta = arctangent(destination.x - origin.x, destination.y - origin.y);
 		auto delta_theta = NORMALIZE_ANGLE(theta - object->facing);
 		
-		if (!(definition->flags&_monster_cant_fire_backwards) || (delta_theta<QUARTER_CIRCLE+QUARTER_CIRCLE/2 || delta_theta>FULL_CIRCLE-QUARTER_CIRCLE-QUARTER_CIRCLE/2))
+		if (!definition->testFlags(_monster_cant_fire_backwards) || (delta_theta<QUARTER_CIRCLE+QUARTER_CIRCLE/2 || delta_theta>FULL_CIRCLE-QUARTER_CIRCLE-QUARTER_CIRCLE/2))
 		{
 			switch (monster->action)
 			{
@@ -3247,7 +3265,8 @@ static bool try_monster_attack(int16 monster_index)
 					break;
 				
 				default:
-					if (definition->ranged_attack.type!=NONE && range<definition->ranged_attack.range) new_action= _monster_is_attacking_far;
+					if (definition->ranged_attack.type!=NONE && range<definition->ranged_attack.range) 
+						new_action= _monster_is_attacking_far;
 					if (definition->melee_attack.type!=NONE && range<definition->melee_attack.range)
 					{
 						new_action= _monster_is_attacking_close;
@@ -3346,7 +3365,7 @@ static bool try_monster_attack(int16 monster_index)
 	else
 	{
 		/* we can't attack (for whatever reason), halve ticks_since_attack so we try again soon */
-		monster->ticks_since_attack = 0;
+		monster->setTicksSinceAttack(0);
 			
 		if (obstruction_index!=NONE && get_monster_attitude(monster_index, obstruction_index)==_friendly &&
 			MONSTER_IS_PLAYER(get_monster_data(obstruction_index)))
@@ -3414,7 +3433,8 @@ int32 monster_pathfinding_cost_function(int16 source_polygon_index, int16 line_i
 	for (object_index= destination_polygon->first_object; object_index!=NONE; object_index=  object->next_object)
 	{
 		object= get_object_data(object_index);
-		if (GET_OBJECT_OWNER(object)==_object_is_monster) cost+= MONSTER_PATHFINDING_OBSTRUCTION_COST;
+		if (GET_OBJECT_OWNER(object)==_object_is_monster) 
+			cost += MONSTER_PATHFINDING_OBSTRUCTION_COST;
 	}
 
 	/* if we're trying to move into a polygon with an area smaller than MINIMUM_MONSTER_PATHFINDING_POLYGON_AREA, disallow the move */
@@ -3651,7 +3671,7 @@ static int16 find_obstructing_terrain_feature(int16 monster_index, int16 *featur
 			}
 		}
 	}
-	while (polygon_index!=NONE&&(feature_type==NONE||feature_type==_flying_or_floating_transition));
+	while (polygon_index != NONE && (feature_type == NONE || feature_type==_flying_or_floating_transition) );
 	
 	return feature_type;
 }
