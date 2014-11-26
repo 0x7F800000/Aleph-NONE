@@ -398,6 +398,16 @@ public:
 	int16 instance_definition_index;
 	int16 exflags;
 	int16 unused[6];
+	
+	/*	overloaded operators	*/
+	const struct monsterDefinition& operator ->()
+	{
+		return *getDefinition();
+	}
+	const struct Object& operator ->*()
+	{
+		return *getObject();
+	}
 };
 const int SIZEOF_monster_data = 64;
 
