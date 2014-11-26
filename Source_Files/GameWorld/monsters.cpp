@@ -2180,9 +2180,13 @@ void set_monster_mode(int16 monster_index, int16 new_mode, int16 target_index)
 	wander randomly or follow a guard path. */
 static void generate_new_path_for_monster(int16 monster_index)
 {
-	Monster *monster 		= get_monster_data(monster_index);
-	Object *object 			= get_object_data( monster->getObjectIndex() );
-	monsterDefinition* definition 	= monster->getDefinition();
+	Monster &monster 		= Monster::Get(monster_index);
+	
+	auto monsterObjectIndex		= monster.getObjectIndex();
+	auto monsterTargetIndex		= monster.getTarget();
+	
+	Object &object 			= Object::Get( monsterObjectIndex );
+	monsterDefinition* definition 	= monster.getDefinition();
 	
 	monster_pathfinding_data data;
 	int16 destination_polygon_index;
@@ -2190,55 +2194,69 @@ static void generate_new_path_for_monster(int16 monster_index)
 	world_vector2d bias;
 
 	/* delete this monster's old path, if one exists, and clear the need path flag */
-	if ( !monster->isPath(NONE) )
+	if ( !monster.isPath(NONE) )
 	{
-		delete_path( monster->getPath() );
-		monster->setPath(NONE);
+		delete_path( monster.getPath() );
+		monster.setPath(NONE);
 	}
-	SET_MONSTER_NEEDS_PATH_STATUS(monster, false);
-
-	switch (monster->mode)
+	
+	//clear dat flag
+	monster.setNeedsPathStatus(false);
+	
+	switch ( monster.getMode() )
 	{
 		case _monster_losing_lock:
-			/* our target is out of sight, but we're still zen-ing his position until we run out
-				of intelligence points */
+			/* 
+				our target is out of sight, but we're still zen-ing his position until we run out
+				of intelligence points 
+			*/
 		case _monster_locked:
 		{
-			Monster *target = get_monster_data( monster->getTarget() );
-			Object *target_object= get_object_data( target->getObjectIndex() );
+			Monster &target 	= Monster::Get( monsterTargetIndex );
+			Object &targetObject	= Object::Get( target->getObjectIndex() );
 
-			if (definition->random_sound_mask && !(global_random()&definition->random_sound_mask)) 
-				play_object_sound(monster->object_index, definition->random_sound);
+			if (definition->random_sound_mask && !(global_random() & definition->random_sound_mask)) 
+				play_object_sound(monsterObjectIndex, definition->random_sound);
 
-			/* if we can't attack, run away, otherwise go for the target */
-			if (definition->flags&_monster_cannot_attack)
+			/* 
+				if we can't attack, run away
+			*/
+			if( definition->testFlags(_monster_cannot_attack) )
 			{
 				// LP changed: unnecessary to interrupt for this
 				destination	= (world_point2d *) &bias;
-				bias.i		= object->location.x - target_object->location.x;
-				bias.j		= object->location.y - target_object->location.y;
-				destination_polygon_index= NONE;
+				bias.i		= object.location.x - targetObject.location.x;
+				bias.j		= object.location.y - targetObject.location.y;
+				destination_polygon_index = NONE;	//fleeing
+				break;
 			}
-			else
-			{
-				/* if we still have lock, just build a new path and keep charging */
-				destination= (world_point2d *) &target_object->location;
-				destination_polygon_index = target->isPlayer() ?
-					get_polygon_index_supporting_player( monster->getTarget() ) :
-					target_object->polygon;
-			}
+			/*	otherwise go for the target 	*/
+			
+			/* if we still have lock, just build a new path and keep charging */
+			destination 			= (world_point2d *) &targetObject.location;
+			destination_polygon_index 	= targetObject.polygon;
+			
+			if( target.isPlayer() )
+				destination_polygon_index = get_polygon_index_supporting_player(monsterTargetIndex);
+		
 			break;
 		}
 		
 		case _monster_lost_lock:
-			/* if we lost lock during this path and we went as far as we could go, unlock */
-			set_monster_mode(monster_index, _monster_unlocked, NONE);
-
+			/* 
+				if we lost lock during this path and we went as far as we could go, unlock 
+			*/
+			monster.changeMode(_monster_unlocked, NONE);
+			
 		case _monster_unlocked:
-			/* if we're unlocked and need a new path, follow our guard path if we have one and
-				run around randomly if we don't */
-			if ((destination_polygon_index= monster->goal_polygon_index) != NONE)
-				destination = &get_polygon_data(destination_polygon_index)->center;
+			/* 
+				if we're unlocked and need a new path, follow our guard path if we have one and
+				run around randomly if we don't 
+			*/
+			destination_polygon_index = monster.getGoalPolygonIndex();
+			
+			if( !isNONE(destination_polygon_index) )
+				destination = &Polygon::Get(destination_polygon_index).center;
 			else
 				destination = nullptr;
 			break;
@@ -2246,15 +2264,15 @@ static void generate_new_path_for_monster(int16 monster_index)
 		default:
 			assert(false);
 	}
-
-
-	data.definition = definition;
-	data.monster = monster;
-	data.cross_zone_boundaries = destination_polygon_index == NONE ? false : true;
+	
+	//initialize the monster_pathfinding_data structure
+	data.definition 		= definition;
+	data.monster 			= &monster;
+	data.cross_zone_boundaries 	= !isNONE(destination_polygon_index);
 
 	auto generatedPath = new_path(
-			(world_point2d *)&object->location, 
-			object->polygon, 
+			(world_point2d *)&object.location, 
+			object.polygon, 
 			destination,
 			destination_polygon_index, 
 			3 * definition->radius, 
@@ -2262,23 +2280,29 @@ static void generate_new_path_for_monster(int16 monster_index)
 			&data
 		);
 		
-	monster->setPath(generatedPath);
+	monster.setPath(generatedPath);
+	
 	
 	if (isNONE(generatedPath))
 	{
-		if ( !monster->isBeingHit() || monster->isDying() ) 
-			monster->changeAction(_monster_is_stationary);
-		monster->changeMode(_monster_unlocked, NONE);
+		if ( !monster.isBeingHit() || monster.isDying() ) 
+			monster.changeAction(_monster_is_stationary);
+		monster.changeMode(_monster_unlocked, NONE);
 	}
 	else
 		advance_monster_path(monster_index);
 }
 
 
-/* somebody just did damage to us; see if we should start attacking them or not.  berserk
+/* 
+	somebody just did damage to us; see if we should start attacking them or not.  berserk
 	monsters always switch targets.  this is where we check to see if we go berserk, right?
+	
 	monster->vitality has already been changed (a monster who just bumped into another monster
-	also calls this, with a delta_vitality of zero).  returns true if an attack was started. */
+	also calls this, with a delta_vitality of zero).  
+	
+	returns true if an attack was started. 
+*/
 static bool switch_target_check(int16 monster_index, int16 attacker_index, int16 delta_vitality)
 {
 	Monster *monster = get_monster_data(monster_index);
