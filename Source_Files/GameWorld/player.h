@@ -62,6 +62,10 @@ May 20, 2002 (Woody Zenfell):
 */
 
 // LP additions: stuff that this file needs
+#ifndef		player_data
+	#define		player_data	Player
+#endif
+
 #include "cseries.h"
 #include "access.hpp"
 
@@ -363,9 +367,7 @@ struct damage_record
 	int16 kills;
 };
 
-
-
-struct player_data
+struct Player
 {
 	static struct player_data& Get(const ix index);
 	
