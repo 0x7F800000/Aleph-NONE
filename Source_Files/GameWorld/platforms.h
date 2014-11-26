@@ -33,6 +33,10 @@ May 18, 2000 (Loren Petrich):
 
 /* ---------- constants */
 
+#ifndef		platform_data
+	#define		platform_data	Platform
+#endif
+
 
 enum /* platform types */
 {
@@ -227,9 +231,9 @@ struct static_platform_data /* size platform-dependant */
 };
 const int SIZEOF_static_platform_data = 32;
 
-struct platform_data /* 140 bytes */
+struct Platform /* 140 bytes */
 {
-	static struct platform_data& Get(const ix index);
+	static struct Platform& Get(const ix index);
 	
 	int16 type;
 	uint32 static_flags;
