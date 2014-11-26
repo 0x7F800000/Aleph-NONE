@@ -43,6 +43,10 @@ Aug 29, 2000 (Loren Petrich):
 #include "map.h"
 #include "XML_ElementParser.h"
 
+#ifndef	media_data
+	#define	media_data	Media
+#endif
+
 /* ---------- constants */
 
 // #define MAXIMUM_MEDIAS_PER_MAP 16
@@ -99,8 +103,10 @@ enum /* media sounds */
 
 /* ---------- structures */
 
-struct media_data /* 32 bytes */
+class Media /* 32 bytes */
 {
+public:
+	static class Media& Get(const ix index);
 	int16 type;
 	uint16 flags;
 
@@ -133,15 +139,15 @@ const int SIZEOF_media_data = 32;
 // Turned the list of lights into a variable array;
 // took over their maximum number as how many of them
 
-extern vector<media_data> MediaList;
+extern vector<Media> MediaList;
 #define medias (&MediaList[0])
 #define MAXIMUM_MEDIAS_PER_MAP (MediaList.size())
 
 /* --------- prototypes/MEDIA.C */
 
-size_t new_media(struct media_data *data);
+size_t new_media(class Media *data);
 
-void update_medias(void);
+void update_medias();
 
 void get_media_detonation_effect(short media_index, short type, short *detonation_effect);
 short get_media_sound(short media_index, short type);
@@ -154,8 +160,7 @@ bool IsMediaDangerous(short media_type);
 
 bool media_in_environment(short media_type, short environment_code);
 
-media_data *get_media_data(
-	const size_t media_index);
+media_data *get_media_data(const size_t media_index);
 
 // LP addition: count number of media types used,
 // for better Infinity compatibility when saving games
