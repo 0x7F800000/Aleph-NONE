@@ -1,5 +1,5 @@
 /*
-PROJECTILES.C
+PROJECTILES.CPP
 
 	Copyright (C) 1991-2001 and beyond by Bungie Studios, Inc.
 	and the "Aleph One" developers.
@@ -103,10 +103,6 @@ Oct 13, 2000 (Loren Petrich)
 //translate_projectile() must set _projectile_hit_landscape bit
 */
 
-#ifdef env68k
-#pragma segment objects
-#endif
-
 /* ---------- constants */
 
 enum
@@ -180,7 +176,7 @@ projectile_definition *get_projectile_definition(
 	return definition;
 }
 
-/* false means donﾕt fire this (itﾕs in a floor or ceiling or outside of the map), otherwise
+/* false means donﾃ付 fire this (itﾃ不 in a floor or ceiling or outside of the map), otherwise
 	the monster that was intersected first (or NONE) is returned in target_index */
 bool preflight_projectile(
 	world_point3d *origin,
@@ -251,7 +247,7 @@ short new_projectile(
 	world_point3d *origin,
 	short polygon_index,
 	world_point3d *_vector,
-	angle delta_theta, /* ｱｶtheta is added (in a circle) to the angle before firing */
+	angle delta_theta, /* ﾂｱﾂｶtheta is added (in a circle) to the angle before firing */
 	short type,
 	short owner_index,
 	short owner_type,
@@ -319,255 +315,252 @@ short new_projectile(
 	return projectile_index;
 }
 
-/* assumes ｶt==1 tick */
-void move_projectiles(
-	void)
+/* assumes ﾂｶt==1 tick */
+void move_projectiles()
 {
-	struct projectile_data *projectile;
+	projectile_data *projectile;
 	short projectile_index;
 	
 	for (projectile_index=0,projectile=projectiles;projectile_index<MAXIMUM_PROJECTILES_PER_MAP;++projectile_index,++projectile)
 	{
-		if (SLOT_IS_USED(projectile))
+		if (!SLOT_IS_USED(projectile))
+			continue;
+		
+		Object *object = get_object_data(projectile->object_index);
+		
+		
+		projectile_definition *definition= get_projectile_definition(projectile->type);
+		auto old_polygon_index = object->polygon;
+		world_point3d new_location, old_location;
+		short obstruction_index, new_polygon_index;
+		
+		new_location= old_location= object->location;
+
+		/* update our objectﾃ不 animation */
+		animate_object(projectile->object_index);
+		
+		/* if weﾃ瓶e supposed to end when our animation loops, check this condition */
+		if ((definition->flags&_stop_when_animation_loops) && (GET_OBJECT_ANIMATION_FLAGS(object)&_obj_last_frame_animated))
 		{
-			struct object_data *object= get_object_data(projectile->object_index);
+			remove_projectile(projectile_index);
+		}
+		else
+		{
+			world_distance speed= definition->speed;
+			uint32 adjusted_definition_flags = 0;
+			uint16 flags;
 			
-//			if (!OBJECT_IS_INVISIBLE(object))
+			/* base alien projectile speed on difficulty level */
+			if (definition->flags&_alien_projectile)
 			{
-				struct projectile_definition *definition= get_projectile_definition(projectile->type);
-				short old_polygon_index= object->polygon;
-				world_point3d new_location, old_location;
-				short obstruction_index, new_polygon_index;
-				
-				new_location= old_location= object->location;
-	
-				/* update our objectﾕs animation */
-				animate_object(projectile->object_index);
-				
-				/* if weﾕre supposed to end when our animation loops, check this condition */
-				if ((definition->flags&_stop_when_animation_loops) && (GET_OBJECT_ANIMATION_FLAGS(object)&_obj_last_frame_animated))
+				switch (dynamic_world->game_information.difficulty_level)
 				{
-					remove_projectile(projectile_index);
+					case _wuss_level: speed-= speed>>3; break;
+					case _easy_level: speed-= speed>>4; break;
+					case _major_damage_level: speed+= speed>>3; break;
+					case _total_carnage_level: speed+= speed>>2; break;
+				}
+			}
+
+			/* if this is a guided projectile with a valid target, update guidance system */				
+			if ((definition->flags&_guided) && projectile->target_index!=NONE && (dynamic_world->tick_count&1)) update_guided_projectile(projectile_index);
+
+			if (PROJECTILE_HAS_CROSSED_MEDIA_BOUNDARY(projectile)) adjusted_definition_flags= _penetrates_media;
+			
+			/* move the projectile and check for collisions; if we didnﾃ付 detonate move the
+				projectile and check to see if we need to leave a contrail */
+			if ((definition->flags&_affected_by_half_gravity) && (dynamic_world->tick_count&1)) projectile->gravity-= GRAVITATIONAL_ACCELERATION;
+			if (definition->flags&_affected_by_gravity) projectile->gravity-= GRAVITATIONAL_ACCELERATION;
+			if (definition->flags&_doubly_affected_by_gravity) projectile->gravity-= 2*GRAVITATIONAL_ACCELERATION;
+			new_location.z+= projectile->gravity;
+			translate_point3d(&new_location, speed, object->facing, projectile->elevation);
+			if (definition->flags&_vertical_wander) new_location.z+= (global_random()&1) ? WANDER_MAGNITUDE : -WANDER_MAGNITUDE;
+			if (definition->flags&_horizontal_wander) translate_point3d(&new_location, (global_random()&1) ? WANDER_MAGNITUDE : -WANDER_MAGNITUDE, NORMALIZE_ANGLE(object->facing+QUARTER_CIRCLE), 0);
+			if (film_profile.infinity_smg)
+			{
+				definition->flags ^= adjusted_definition_flags;
+			}
+			flags= translate_projectile(projectile->type, &old_location, object->polygon, &new_location, &new_polygon_index, projectile->owner_index, &obstruction_index, 0, false, projectile_index);
+			if (film_profile.infinity_smg)
+			{
+				definition->flags ^= adjusted_definition_flags;
+			}
+			
+			// LP change: set up for penetrating media boundary
+			bool will_go_through = false;
+			
+			if (flags&_projectile_hit)
+			{
+				if ((flags&_projectile_hit_floor) && (definition->flags&_rebounds_from_floor) &&
+					projectile->gravity<-MINIMUM_REBOUND_VELOCITY)
+				{
+					play_object_sound(projectile->object_index, definition->rebound_sound);
+					projectile->gravity= - projectile->gravity + (projectile->gravity>>2); /* 0.75 */
 				}
 				else
 				{
-					world_distance speed= definition->speed;
-					uint32 adjusted_definition_flags = 0;
-					uint16 flags;
+ 					short monster_obstruction_index= (flags&_projectile_hit_monster) ? get_object_data(obstruction_index)->permutation : NONE;
+					bool destroy_persistent_projectile= false;
 					
-					/* base alien projectile speed on difficulty level */
-					if (definition->flags&_alien_projectile)
+					if (flags&_projectile_hit_scenery) damage_scenery(obstruction_index);
+					
+					/* cause damage, if we can */
+					if (!PROJECTILE_HAS_CAUSED_DAMAGE(projectile))
 					{
-						switch (dynamic_world->game_information.difficulty_level)
+						struct damage_definition *damage= &definition->damage;
+						
+						damage->scale= projectile->damage_scale;
+						if (definition->flags&_becomes_item_on_detonation)
 						{
-							case _wuss_level: speed-= speed>>3; break;
-							case _easy_level: speed-= speed>>4; break;
-							case _major_damage_level: speed+= speed>>3; break;
-							case _total_carnage_level: speed+= speed>>2; break;
-						}
-					}
-	
-					/* if this is a guided projectile with a valid target, update guidance system */				
-					if ((definition->flags&_guided) && projectile->target_index!=NONE && (dynamic_world->tick_count&1)) update_guided_projectile(projectile_index);
-
-					if (PROJECTILE_HAS_CROSSED_MEDIA_BOUNDARY(projectile)) adjusted_definition_flags= _penetrates_media;
-					
-					/* move the projectile and check for collisions; if we didnﾕt detonate move the
-						projectile and check to see if we need to leave a contrail */
-					if ((definition->flags&_affected_by_half_gravity) && (dynamic_world->tick_count&1)) projectile->gravity-= GRAVITATIONAL_ACCELERATION;
-					if (definition->flags&_affected_by_gravity) projectile->gravity-= GRAVITATIONAL_ACCELERATION;
-					if (definition->flags&_doubly_affected_by_gravity) projectile->gravity-= 2*GRAVITATIONAL_ACCELERATION;
-					new_location.z+= projectile->gravity;
-					translate_point3d(&new_location, speed, object->facing, projectile->elevation);
-					if (definition->flags&_vertical_wander) new_location.z+= (global_random()&1) ? WANDER_MAGNITUDE : -WANDER_MAGNITUDE;
-					if (definition->flags&_horizontal_wander) translate_point3d(&new_location, (global_random()&1) ? WANDER_MAGNITUDE : -WANDER_MAGNITUDE, NORMALIZE_ANGLE(object->facing+QUARTER_CIRCLE), 0);
-					if (film_profile.infinity_smg)
-					{
-						definition->flags ^= adjusted_definition_flags;
-					}
-					flags= translate_projectile(projectile->type, &old_location, object->polygon, &new_location, &new_polygon_index, projectile->owner_index, &obstruction_index, 0, false, projectile_index);
-					if (film_profile.infinity_smg)
-					{
-						definition->flags ^= adjusted_definition_flags;
-					}
-					
-					// LP change: set up for penetrating media boundary
-					bool will_go_through = false;
-					
-					if (flags&_projectile_hit)
-					{
-						if ((flags&_projectile_hit_floor) && (definition->flags&_rebounds_from_floor) &&
-							projectile->gravity<-MINIMUM_REBOUND_VELOCITY)
-						{
-							play_object_sound(projectile->object_index, definition->rebound_sound);
-							projectile->gravity= - projectile->gravity + (projectile->gravity>>2); /* 0.75 */
-						}
-						else
-						{
- 							short monster_obstruction_index= (flags&_projectile_hit_monster) ? get_object_data(obstruction_index)->permutation : NONE;
-							bool destroy_persistent_projectile= false;
-							
-							if (flags&_projectile_hit_scenery) damage_scenery(obstruction_index);
-							
-							/* cause damage, if we can */
-							if (!PROJECTILE_HAS_CAUSED_DAMAGE(projectile))
+							if (monster_obstruction_index==NONE)
 							{
-								struct damage_definition *damage= &definition->damage;
+								struct object_location location;
 								
-								damage->scale= projectile->damage_scale;
-								if (definition->flags&_becomes_item_on_detonation)
-								{
-									if (monster_obstruction_index==NONE)
-									{
-										struct object_location location;
-										
-										location.p= object->location, location.p.z= 0;
-										location.polygon_index= object->polygon;
-										location.yaw= location.pitch= 0;
-										location.flags= 0;
-										// START Benad
-										// Found it!
-										// With new_item(), current_item_count[item] increases, but not
-										// with try_and_add_player_item(). So reverse the effect of new_item in advance.
-										dynamic_world->current_item_count[projectile->permutation]--;
-										// END Benad
-										new_item(&location, projectile->permutation);
-										
-										destroy_persistent_projectile= true;
-									}
-									else
-									{
-										if(MONSTER_IS_PLAYER(get_monster_data(monster_obstruction_index)))
-										{
-											short player_obstruction_index= monster_index_to_player_index(monster_obstruction_index);
-											destroy_persistent_projectile= try_and_add_player_item(player_obstruction_index, projectile->permutation);
-										}
-									}
-								}
-								else
-								{
-									if (definition->area_of_effect)
-									{
-										damage_monsters_in_radius(monster_obstruction_index, projectile->owner_index, projectile->owner_type, &old_location, object->polygon, definition->area_of_effect, damage, projectile_index);
-									}
-									else
-									{
-										if (monster_obstruction_index!=NONE) damage_monster(monster_obstruction_index, projectile->owner_index, projectile->owner_type, &old_location, damage, projectile_index);
-									}
-								}
-							}
-              
-							if ((definition->flags&_persistent) && !destroy_persistent_projectile)
-							{
-								SET_PROJECTILE_DAMAGE_STATUS(projectile, true);
+								location.p= object->location, location.p.z= 0;
+								location.polygon_index= object->polygon;
+								location.yaw= location.pitch= 0;
+								location.flags= 0;
+								// START Benad
+								// Found it!
+								// With new_item(), current_item_count[item] increases, but not
+								// with try_and_add_player_item(). So reverse the effect of new_item in advance.
+								dynamic_world->current_item_count[projectile->permutation]--;
+								// END Benad
+								new_item(&location, projectile->permutation);
+								
+								destroy_persistent_projectile= true;
 							}
 							else
 							{
-								short detonation_effect= definition->detonation_effect;
-								
-								if (monster_obstruction_index!=NONE)
+								if(MONSTER_IS_PLAYER(get_monster_data(monster_obstruction_index)))
 								{
-									if (definition->flags&_bleeding_projectile)
-									{
-										detonation_effect= get_monster_impact_effect(monster_obstruction_index);
-									}
-									if (definition->flags&_melee_projectile)
-									{
-										short new_detonation_effect= get_monster_melee_impact_effect(monster_obstruction_index);
-										if (new_detonation_effect!=NONE) detonation_effect= new_detonation_effect;
-									}
+									short player_obstruction_index= monster_index_to_player_index(monster_obstruction_index);
+									destroy_persistent_projectile= try_and_add_player_item(player_obstruction_index, projectile->permutation);
 								}
-								if (flags&_projectile_hit_media)
-								{
-									get_media_detonation_effect(get_polygon_data(obstruction_index)->media_index, definition->media_detonation_effect, &detonation_effect);
-									// LP addition: check if projectile will hit media and continue (PMB flag)
-									// set will_go_through for later processing
-									if (film_profile.a1_smg)
-									{
-										// Be careful about parentheses here!
-										will_go_through = (definition->flags&_penetrates_media_boundary) != 0;
-										// Push the projectile upward or downward, if necessary
-										if (will_go_through) {
-											if (projectile->elevation == 0) {}
-											else if (projectile->elevation < HALF_CIRCLE) new_location.z++;
-											else if (projectile->elevation > HALF_CIRCLE) new_location.z--;
-										}
-									}
-								}
-								if (film_profile.a1_smg)
-								{
-									// LP addition: don't detonate if going through media
-									// if PMB is set; otherwise, detonate if doing so.
-									// Some of the later routines may set both "hit landscape" and "hit media",
-									// so be careful.
-									if (flags&_projectile_hit_landscape && !(flags&_projectile_hit_media)) detonation_effect= NONE;
-								}
-								else
-								{
-									if (flags&_projectile_hit_landscape) detonation_effect = NONE;
-								}
-								
-								if (detonation_effect!=NONE) new_effect(&new_location, new_polygon_index, detonation_effect, object->facing);
-								L_Call_Projectile_Detonated(projectile->type, projectile->owner_index, new_polygon_index, new_location);
-								
-								if (!film_profile.infinity_smg || (!(definition->flags&_penetrates_media_boundary) || !(flags&_projectile_hit_media)))
-								{
-									if ((definition->flags&_persistent_and_virulent) && !destroy_persistent_projectile && monster_obstruction_index!=NONE)
-									{
-										bool reassign_projectile = true;
-										if (film_profile.prevent_dead_projectile_owners)
-										{
-											monster_data *monster = get_monster_data(monster_obstruction_index);
-											reassign_projectile = MONSTER_IS_PLAYER(monster) || !MONSTER_IS_DYING(monster);
-										}
-										if (reassign_projectile)
-											projectile->owner_index= monster_obstruction_index; /* keep going, but donﾕt hit this target again */
-									}
-									// LP addition: don't remove a projectile that will hit media and continue (PMB flag)
-									else if (!will_go_through)
-									{
-										remove_projectile(projectile_index);
-									}
-								}
-								else if (film_profile.infinity_smg)
-								{
-									SET_PROJECTILE_CROSSED_MEDIA_BOUNDARY_STATUS(projectile, true);
-								}
+							}
+						}
+						else
+						{
+							if (definition->area_of_effect)
+							{
+								damage_monsters_in_radius(monster_obstruction_index, projectile->owner_index, projectile->owner_type, &old_location, object->polygon, definition->area_of_effect, damage, projectile_index);
+							}
+							else
+							{
+								if (monster_obstruction_index!=NONE) damage_monster(monster_obstruction_index, projectile->owner_index, projectile->owner_type, &old_location, damage, projectile_index);
 							}
 						}
 					}
-					// Move the projectile if it hit nothing or it will go through media surface
-					if (!(flags&_projectile_hit) || will_go_through)
-					// else
+
+					if ((definition->flags&_persistent) && !destroy_persistent_projectile)
 					{
-						/* move to the new_polygon_index */
-						translate_map_object(projectile->object_index, &new_location, new_polygon_index);
+						SET_PROJECTILE_DAMAGE_STATUS(projectile, true);
+					}
+					else
+					{
+						short detonation_effect= definition->detonation_effect;
 						
-						/* should we leave a contrail at our old location? */
-						if ((projectile->ticks_since_last_contrail+=1)>=definition->ticks_between_contrails)
+						if (monster_obstruction_index!=NONE)
 						{
-							if (definition->maximum_contrails==NONE || projectile->contrail_count<definition->maximum_contrails)
+							if (definition->flags&_bleeding_projectile)
 							{
-								projectile->contrail_count+= 1;
-								projectile->ticks_since_last_contrail= 0;
-								if (definition->contrail_effect!=NONE) new_effect(&old_location, old_polygon_index, definition->contrail_effect, object->facing);
+								detonation_effect= get_monster_impact_effect(monster_obstruction_index);
+							}
+							if (definition->flags&_melee_projectile)
+							{
+								short new_detonation_effect= get_monster_melee_impact_effect(monster_obstruction_index);
+								if (new_detonation_effect!=NONE) detonation_effect= new_detonation_effect;
 							}
 						}
-		
-						if ((flags&_flyby_of_current_player) && !PROJECTILE_HAS_MADE_A_FLYBY(projectile))
+						if (flags&_projectile_hit_media)
 						{
-							SET_PROJECTILE_FLYBY_STATUS(projectile, true);
-							play_object_sound(projectile->object_index, definition->flyby_sound);
+							get_media_detonation_effect(get_polygon_data(obstruction_index)->media_index, definition->media_detonation_effect, &detonation_effect);
+							// LP addition: check if projectile will hit media and continue (PMB flag)
+							// set will_go_through for later processing
+							if (film_profile.a1_smg)
+							{
+								// Be careful about parentheses here!
+								will_go_through = (definition->flags&_penetrates_media_boundary) != 0;
+								// Push the projectile upward or downward, if necessary
+								if (will_go_through) {
+									if (projectile->elevation == 0) {}
+									else if (projectile->elevation < HALF_CIRCLE) new_location.z++;
+									else if (projectile->elevation > HALF_CIRCLE) new_location.z--;
+								}
+							}
 						}
-		
-						/* if we have a maximum range and we have exceeded it then remove the projectile */
-						if (definition->maximum_range!=NONE)
+						if (film_profile.a1_smg)
 						{
-							if ((projectile->distance_travelled+= speed)>=definition->maximum_range)
+							// LP addition: don't detonate if going through media
+							// if PMB is set; otherwise, detonate if doing so.
+							// Some of the later routines may set both "hit landscape" and "hit media",
+							// so be careful.
+							if (flags&_projectile_hit_landscape && !(flags&_projectile_hit_media)) detonation_effect= NONE;
+						}
+						else
+						{
+							if (flags&_projectile_hit_landscape) detonation_effect = NONE;
+						}
+						
+						if (detonation_effect!=NONE) new_effect(&new_location, new_polygon_index, detonation_effect, object->facing);
+						L_Call_Projectile_Detonated(projectile->type, projectile->owner_index, new_polygon_index, new_location);
+						
+						if (!film_profile.infinity_smg || (!(definition->flags&_penetrates_media_boundary) || !(flags&_projectile_hit_media)))
+						{
+							if ((definition->flags&_persistent_and_virulent) && !destroy_persistent_projectile && monster_obstruction_index!=NONE)
+							{
+								bool reassign_projectile = true;
+								if (film_profile.prevent_dead_projectile_owners)
+								{
+									monster_data *monster = get_monster_data(monster_obstruction_index);
+									reassign_projectile = MONSTER_IS_PLAYER(monster) || !MONSTER_IS_DYING(monster);
+								}
+								if (reassign_projectile)
+									projectile->owner_index= monster_obstruction_index; /* keep going, but donﾃ付 hit this target again */
+							}
+							// LP addition: don't remove a projectile that will hit media and continue (PMB flag)
+							else if (!will_go_through)
 							{
 								remove_projectile(projectile_index);
 							}
 						}
+						else if (film_profile.infinity_smg)
+						{
+							SET_PROJECTILE_CROSSED_MEDIA_BOUNDARY_STATUS(projectile, true);
+						}
+					}
+				}
+			}
+			// Move the projectile if it hit nothing or it will go through media surface
+			if (!(flags&_projectile_hit) || will_go_through)
+			// else
+			{
+				/* move to the new_polygon_index */
+				translate_map_object(projectile->object_index, &new_location, new_polygon_index);
+				
+				/* should we leave a contrail at our old location? */
+				if ((projectile->ticks_since_last_contrail+=1)>=definition->ticks_between_contrails)
+				{
+					if (definition->maximum_contrails==NONE || projectile->contrail_count<definition->maximum_contrails)
+					{
+						projectile->contrail_count+= 1;
+						projectile->ticks_since_last_contrail= 0;
+						if (definition->contrail_effect!=NONE) new_effect(&old_location, old_polygon_index, definition->contrail_effect, object->facing);
+					}
+				}
+
+				if ((flags&_flyby_of_current_player) && !PROJECTILE_HAS_MADE_A_FLYBY(projectile))
+				{
+					SET_PROJECTILE_FLYBY_STATUS(projectile, true);
+					play_object_sound(projectile->object_index, definition->flyby_sound);
+				}
+
+				/* if we have a maximum range and we have exceeded it then remove the projectile */
+				if (definition->maximum_range!=NONE)
+				{
+					if ((projectile->distance_travelled+= speed)>=definition->maximum_range)
+					{
+						remove_projectile(projectile_index);
 					}
 				}
 			}
@@ -575,17 +568,15 @@ void move_projectiles(
 	}
 }
 
-void remove_projectile(
-	short projectile_index)
+void remove_projectile(int16 projectile_index)
 {
-	struct projectile_data *projectile= get_projectile_data(projectile_index);
+	projectile_data *projectile= get_projectile_data(projectile_index);
 	L_Invalidate_Projectile(projectile_index);
 	remove_map_object(projectile->object_index);
 	MARK_SLOT_AS_FREE(projectile);
 }
 
-void remove_all_projectiles(
-	void)
+void remove_all_projectiles()
 {
 	struct projectile_data *projectile;
 	short projectile_index;
@@ -639,7 +630,7 @@ void mark_projectile_collections(
 			loading ? mark_collection_for_loading(definition->collection) : mark_collection_for_unloading(definition->collection);
 		}
 		
-		/* mark the projectileﾕs effectﾕs collection */
+		/* mark the projectileﾃ不 effectﾃ不 collection */
 		mark_effect_collections(definition->detonation_effect, loading);
 		mark_effect_collections(definition->contrail_effect, loading);
 	}
@@ -709,7 +700,7 @@ static short adjust_projectile_type(
 #define MAXIMUM_GUIDED_DELTA_YAW 8
 #define MAXIMUM_GUIDED_DELTA_PITCH 6
 
-/* changes are at a rate of ｱ1 angular unit per tick */
+/* changes are at a rate of ﾂｱ1 angular unit per tick */
 static void update_guided_projectile(
 	short projectile_index)
 {
@@ -728,7 +719,7 @@ static void update_guided_projectile(
 	{
 		case _xfer_invisibility:
 		case _xfer_subtle_invisibility:
-			/* canﾕt hold lock on invisible targets unless on _total_carnage_level */
+			/* canﾃ付 hold lock on invisible targets unless on _total_carnage_level */
 			if (dynamic_world->game_information.difficulty_level!=_total_carnage_level) break;
 		default:
 		{
@@ -754,35 +745,6 @@ static void update_guided_projectile(
 
 			projectile_object->facing= NORMALIZE_ANGLE(projectile_object->facing+delta_yaw);
 			projectile->elevation= NORMALIZE_ANGLE(projectile->elevation+delta_pitch);
-
-#if 0
-			angle delta_pitch= HALF_CIRCLE - NORMALIZE_ANGLE(arctangent(guess_distance2d((world_point2d *)&target_location, (world_point2d *)&projectile_object->location), dz) - projectile->elevation);
-			angle delta_yaw= HALF_CIRCLE - NORMALIZE_ANGLE(arctangent(dx, dy) - projectile_object->facing);
-			short obstruction_index;
-			uint16 flags;
-
-			switch (dynamic_world->game_information.difficulty_level)
-			{
-				case _wuss_level:
-					if (dynamic_world->tick_count&7) return;
-					break;
-				case _easy_level:
-					if (dynamic_world->tick_count&3) return;
-					break;
-			}
-
-			switch (dynamic_world->game_information.difficulty_level)
-			{
-				case _major_damage_level:
-				case _total_carnage_level:
-					flags= translate_projectile(projectile->type, &projectile_object->location, projectile_object->polygon,
-								    &target_location, (short *) NULL, projectile->owner_index, &obstruction_index, 0, true, -1);
-					if (!(flags&_projectile_hit_monster)) break; /* if weﾕre headed for a wall, donﾕt steer */
-				default:
-					projectile_object->facing= NORMALIZE_ANGLE(projectile_object->facing+PIN(delta_yaw, -maximum_delta_yaw, maximum_delta_yaw));
-					projectile->elevation= NORMALIZE_ANGLE(projectile->elevation+PIN(delta_pitch, -maximum_delta_pitch, maximum_delta_pitch));
-			}
-#endif
 		}
 	}
 }
@@ -829,7 +791,7 @@ uint16 translate_projectile(
 			traveled_underneath = (definition->flags&_penetrates_media_boundary) && (old_location->z <= media_height);
 		}
 		
-		/* add this polygonﾕs monsters to our non-redundant list of possible intersections */
+		/* add this polygonﾃ不 monsters to our non-redundant list of possible intersections */
 		possible_intersecting_monsters(&IntersectedObjects, GLOBAL_INTERSECTING_MONSTER_BUFFER_SIZE, old_polygon_index, true);
 		intersected_object_count = IntersectedObjects.size();
 		
@@ -918,7 +880,7 @@ uint16 translate_projectile(
 		}
 		else
 		{
-			/* make sure we didnﾕt hit the ceiling or floor in this polygon */
+			/* make sure we didnﾃ付 hit the ceiling or floor in this polygon */
 			// LP change: if PMB is set, then a projectile can travel as if the liquid did not exist,
 			// but it will be able to run into a media surface.
 			// Here, test for whether the projectile is above the floor or the media surface;
@@ -928,7 +890,7 @@ uint16 translate_projectile(
 				// If PMB was set, check to see if the projectile hit the media surface.
 				if ((!traveled_underneath || new_location->z<media_height) && new_location->z<old_polygon->ceiling_height)
 				{
-					/* weﾕre staying in this polygon and weﾕre finally done screwing around;
+					/* weﾃ瓶e staying in this polygon and weﾃ瓶e finally done screwing around;
 						the caller can look in *new_polygon_index to find out where we ended up */
 				}
 				else
@@ -952,7 +914,7 @@ uint16 translate_projectile(
 	}
 	while (line_index!=NONE&&contact==_hit_nothing);
 	
-	/* ceilings and floor intersections still donﾕt have accurate intersection points, so calculate
+	/* ceilings and floor intersections still donﾃ付 have accurate intersection points, so calculate
 		them */
 	if (contact!=_hit_nothing)
 	{
@@ -992,7 +954,7 @@ uint16 translate_projectile(
 				(world_point2d *)old_location, (world_point2d *)new_location);
 			world_distance radius, height;
 				
-			if (object->permutation!=owner_index) /* donﾕt hit ourselves */
+			if (object->permutation!=owner_index) /* donﾃ付 hit ourselves */
 			{
 				int32 radius_squared;
 				
@@ -1006,7 +968,7 @@ uint16 translate_projectile(
 				}
 				radius_squared= (radius+definition->radius)*(radius+definition->radius);
 				
-				if (separation<radius_squared) /* if weﾕre within radius^2 we passed through this monster */
+				if (separation<radius_squared) /* if weﾃ瓶e within radius^2 we passed through this monster */
 				{
 					world_distance distance= distance2d((world_point2d *)old_location, (world_point2d *)&object->location);
 					world_distance projectile_z= distance_traveled ? 
@@ -1036,7 +998,7 @@ uint16 translate_projectile(
 				}
 				else
 				{
-					if (GET_OBJECT_OWNER(object)==_object_is_monster && separation<12*radius_squared) /* if weﾕre within (x*radius)^2 we passed near this monster */
+					if (GET_OBJECT_OWNER(object)==_object_is_monster && separation<12*radius_squared) /* if weﾃ瓶e within (x*radius)^2 we passed near this monster */
 					{
 						if (MONSTER_IS_PLAYER(get_monster_data(object->permutation)) && 
 							monster_index_to_player_index(object->permutation)==current_player_index)
