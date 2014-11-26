@@ -2505,7 +2505,7 @@ void Monster::changeTarget(const int16 targetIndex)
 		CLEAR_TARGET_DAMAGE_FLAG(this);
 		
 	monster_needs_path( myIndex, false );
-	set_monster_mode( myIndex, _monster_locked, target_index );
+	set_monster_mode( myIndex, _monster_locked, targetIndex );
 }
 
 /*	just a stub that calls the method now	*/
