@@ -1,5 +1,5 @@
 /*
-DEVICES.C
+DEVICES.CPP
 
 	Copyright (C) 1991-2001 and beyond by Bungie Studios, Inc.
 	and the "Aleph One" developers.
@@ -459,54 +459,58 @@ void try_and_toggle_control_panel(short polygon_index, short line_index,  short 
 {
 	short side_index= find_adjacent_side(polygon_index, line_index);
 	
-	if (side_index!=NONE)
-	{
-		struct side_data *side= get_side_data(side_index);
+	if (side_index==NONE)
+		return;
+	
+	Side *side = get_side_data(side_index);
 
-		if (SIDE_IS_CONTROL_PANEL(side))
-		{
-			if (switch_can_be_toggled(side_index, false))
+	if (!SIDE_IS_CONTROL_PANEL(side) || !switch_can_be_toggled(side_index, false))
+		return;
+	
+	bool make_sound = false;
+	bool state	= GET_CONTROL_PANEL_STATUS(side);
+	
+	control_panel_definition *definition = get_control_panel_definition(side->control_panel_type);
+	// LP change: idiot-proofing
+	if (!definition) 
+		return;
+	
+	switch (definition->_class)
+	{
+		case _panel_is_tag_switch:
+			state		= !state;
+			make_sound 	= set_tagged_light_statuses(side->control_panel_permutation, state);
+			
+			if (try_and_change_tagged_platform_states(side->control_panel_permutation, state)) 
+				make_sound = true;
+				
+			if (!side->control_panel_permutation) 
+				make_sound = true;
+				
+			if (make_sound)
 			{
-				bool make_sound = false, state= GET_CONTROL_PANEL_STATUS(side);
-				struct control_panel_definition *definition= get_control_panel_definition(side->control_panel_type);
-				// LP change: idiot-proofing
-				if (!definition) return;
-				
-				switch (definition->_class)
-				{
-					case _panel_is_tag_switch:
-						state= !state;
-						make_sound= set_tagged_light_statuses(side->control_panel_permutation, state);
-						if (try_and_change_tagged_platform_states(side->control_panel_permutation, state)) make_sound= true;
-						if (!side->control_panel_permutation) make_sound= true;
-						if (make_sound)
-						{
-							SET_CONTROL_PANEL_STATUS(side, state);
-							set_control_panel_texture(side);
-						}
-						L_Call_Projectile_Switch(side_index, projectile_index);				
-						break;
-					case _panel_is_light_switch:
-						state= !state;
-						make_sound= set_light_status(side->control_panel_permutation, state);
-						
-						L_Call_Projectile_Switch(side_index, projectile_index);				
-						break;
-					case _panel_is_platform_switch:
-						state= !state;
-						make_sound= try_and_change_platform_state(get_polygon_data(side->control_panel_permutation)->permutation, state);
-						
-						L_Call_Projectile_Switch(side_index, projectile_index);				
-						break;
-				}
-				
-				if (make_sound)
-				{
-					play_control_panel_sound(side_index, state ? _activating_sound : _deactivating_sound);
-				}
+				SET_CONTROL_PANEL_STATUS(side, state);
+				set_control_panel_texture(side);
 			}
-		}
+			
+			L_Call_Projectile_Switch(side_index, projectile_index);				
+			break;
+		case _panel_is_light_switch:
+			state		= !state;
+			make_sound	= set_light_status(side->control_panel_permutation, state);
+			
+			L_Call_Projectile_Switch(side_index, projectile_index);				
+			break;
+		case _panel_is_platform_switch:
+			state		= !state;
+			make_sound	= try_and_change_platform_state(
+					get_polygon_data(side->control_panel_permutation)->permutation, state);
+			
+			L_Call_Projectile_Switch(side_index, projectile_index);				
+			break;
 	}
+	if (make_sound)
+		play_control_panel_sound(side_index, state ? _activating_sound : _deactivating_sound);
 }
 
 
