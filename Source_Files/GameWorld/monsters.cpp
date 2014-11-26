@@ -4283,7 +4283,7 @@ ix Monster::getIndex()
 {
 	const ix ListStart = ix( &MonsterList[0] );
 	const ix ThisStart = ix( this );
-	return (ListStart - ThisStart) / sizeof(Monster);
+	return (ThisStart - ListStart) / sizeof(Monster);
 }
 
 void Monster::accelerate(world_distance v_velocity, angle direction, world_distance velocity)
