@@ -1,5 +1,5 @@
 /*
-MEDIA.C
+MEDIA.CPP
 
 	Copyright (C) 1991-2001 and beyond by Bungie Studios, Inc.
 	and the "Aleph One" developers.
@@ -56,10 +56,6 @@ Feb 8, 2001 (Loren Petrich):
 
 #include <string.h>
 
-#ifdef env68k
-#pragma segment marathon
-#endif
-
 /* ---------- macros */
 
 #define CALCULATE_MEDIA_HEIGHT(m) ((m)->low + FIXED_INTEGERAL_PART(((m)->high-(m)->low)*get_light_intensity((m)->light_index)))
@@ -87,12 +83,21 @@ static media_definition *get_media_definition(const short type);
 
 media_data *get_media_data(const size_t media_index)
 {
-	struct media_data *media = GetMemberWithBounds(medias,media_index,MAXIMUM_MEDIAS_PER_MAP);
+	media_data *media = GetMemberWithBounds(medias,media_index,MAXIMUM_MEDIAS_PER_MAP);
 	
-	if (!media) return NULL;
-	if (!(SLOT_IS_USED(media))) return NULL;
+	if (!media) 
+		return nullptr;
+	if (!(SLOT_IS_USED(media))) 
+		return nullptr;
 	
 	return media;
+}
+
+class Media& Media::Get(const ix index);
+{
+	assert(ix < MAXIMUM_MEDIAS_PER_MAP);
+	assert(ix >= 0);
+	return MediaList[index];
 }
 
 // LP change: moved down here because it uses liquid definitions
@@ -105,24 +110,26 @@ media_definition *get_media_definition(const short type)
 // light_index must be loaded
 size_t new_media(struct media_data *initializer)
 {
-	struct media_data *media;
+	media_data *media;
 	size_t media_index;
 	
-	for (media_index= 0, media= medias; media_index<MAXIMUM_MEDIAS_PER_MAP; ++media_index, ++media)
+	for (media_index = 0, media= medias; media_index < MAXIMUM_MEDIAS_PER_MAP; ++media_index, ++media)
 	{
-		if (SLOT_IS_FREE(media))
-		{
-			*media= *initializer;
-			
-			MARK_SLOT_AS_USED(media);
-			
-			media->origin.x= media->origin.y= 0;
-			update_one_media(media_index, true);
-			
-			break;
-		}
+		if (!SLOT_IS_FREE(media))
+			continue;
+		
+		*media = *initializer;
+		
+		MARK_SLOT_AS_USED(media);
+		
+		media->origin.x = media->origin.y = 0;
+		update_one_media(media_index, true);
+		
+		break;
+	
 	}
-	if (media_index==MAXIMUM_MEDIAS_PER_MAP) media_index= UNONE;
+	if (media_index == MAXIMUM_MEDIAS_PER_MAP) 
+		media_index = UNONE;
 	
 	return media_index;
 }
@@ -130,7 +137,7 @@ size_t new_media(struct media_data *initializer)
 bool media_in_environment(short media_type, short environment_code)
 {
 	// LP change: idiot-proofing
-	media_definition *definition= get_media_definition(media_type);
+	media_definition *definition = get_media_definition(media_type);
 	if (!definition) 
 		return false;
 	
@@ -144,78 +151,80 @@ void update_medias()
 	
 	for (media_index= 0, media= medias; media_index<MAXIMUM_MEDIAS_PER_MAP; ++media_index, ++media)
 	{
-		if (SLOT_IS_USED(media))
-		{
-			update_one_media(media_index, false);
-			
-			media->origin.x= WORLD_FRACTIONAL_PART(media->origin.x + ((cosine_table[media->current_direction]*media->current_magnitude)>>TRIG_SHIFT));
-			media->origin.y= WORLD_FRACTIONAL_PART(media->origin.y + ((sine_table[media->current_direction]*media->current_magnitude)>>TRIG_SHIFT));
-		}
+		if (!SLOT_IS_USED(media))
+			continue;
+		
+		update_one_media(media_index, false);
+		
+		media->origin.x = 
+		WORLD_FRACTIONAL_PART(media->origin.x +
+		((cosine_table[media->current_direction]*media->current_magnitude)>>TRIG_SHIFT));
+		
+		media->origin.y = 
+		WORLD_FRACTIONAL_PART(media->origin.y + 
+		((sine_table[media->current_direction]*media->current_magnitude)>>TRIG_SHIFT));
+	
 	}
 }
 
 void get_media_detonation_effect(short media_index, short type, short *detonation_effect)
 {
-	media_data *media= get_media_data(media_index);
+	const media_data *media = get_media_data(media_index);
 	// LP change: idiot-proofing
 	if (!media) 
 		return;
 	
-	media_definition *definition= get_media_definition(media->type);
-	if (!definition) 
-		return;
+	const media_definition *definition = get_media_definition(media->type);
 
-	if (type!=NONE)
-	{
-		if (!(type>=0 && type<NUMBER_OF_MEDIA_DETONATION_TYPES)) 
-			return;
-		
-		if (definition->detonation_effects[type]!=NONE) 
-			*detonation_effect= definition->detonation_effects[type];
-	}
+	if(!definition || type == NONE || type < 0 || type >= NUMBER_OF_MEDIA_DETONATION_TYPES)
+		return;
+	
+	if( definition->detonation_effects[type] != NONE ) 
+		*detonation_effect = definition->detonation_effects[type];
 }
 
-short get_media_sound(
-	short media_index,
-	short type)
+short get_media_sound(short media_index, short type)
 {
-	struct media_data *media= get_media_data(media_index);
+	const media_data *media = get_media_data(media_index);
 	// LP change: idiot-proofing
-	if (!media) return NONE;
+	if (!media) 
+		return NONE;
 	
-	struct media_definition *definition= get_media_definition(media->type);
-	if (!definition) return NONE;
+	const media_definition *definition = get_media_definition(media->type);
 
-	if (!(type>=0 && type<NUMBER_OF_MEDIA_SOUNDS)) return NONE;
+	if( !definition || type < 0 || type >= NUMBER_OF_MEDIA_SOUNDS ) 
+		return NONE;
 
 	return definition->sounds[type];
 }
 
 struct damage_definition *get_media_damage(short media_index, _fixed scale)
 {
-	media_data *media= get_media_data(media_index);
+	const media_data *media = get_media_data(media_index);
 	// LP change: idiot-proofing
-	if (!media) return NULL;
+	if (!media) 
+		return nullptr;
 	
-	media_definition *definition= get_media_definition(media->type);
-	if (!definition) return NULL;
+	media_definition *definition = get_media_definition(media->type);
+	if (!definition) 
+		return nullptr;
 	
-	damage_definition *damage= &definition->damage;
+	damage_definition *damage = &definition->damage;
 
-	damage->scale= scale;
+	damage->scale = scale;
 		
-	return (damage->type==NONE || (dynamic_world->tick_count&definition->damage_frequency)) ?
+	return damage->type == NONE || dynamic_world->tick_count & definition->damage_frequency ?
 		nullptr : damage;
 }
 
 short get_media_submerged_fade_effect(short media_index)
 {
-	media_data *media= get_media_data(media_index);
+	media_data *media = get_media_data(media_index);
 	// LP change: idiot-proofing
 	if (!media) 
 		return NONE;
 	
-	media_definition *definition= get_media_definition(media->type);
+	media_definition *definition = get_media_definition(media->type);
 	if (!definition)
 		return NONE;
 	
@@ -224,12 +233,14 @@ short get_media_submerged_fade_effect(short media_index)
 
 bool get_media_collection(short media_index, short& collection)
 {
-	media_data *media = get_media_data(media_index);
+	const media_data *media = get_media_data(media_index);
 
-	if (!media) return false;
+	if (!media) 
+		return false;
 
-	media_definition *definition = get_media_definition(media->type);
-	if (!definition) return false;
+	const media_definition *definition = get_media_definition(media->type);
+	if (!definition) 
+		return false;
 
 	collection = definition->collection;
 	return true;
@@ -239,32 +250,38 @@ bool get_media_collection(short media_index, short& collection)
 bool IsMediaDangerous(short media_index)
 {
 	media_definition *definition = get_media_definition(media_index);
-	if (!definition) return false;
 	
-	struct damage_definition *damage= &definition->damage;
-	if (damage->type == NONE) return false;
-	else return (damage->base > 0);
+	if (!definition) 
+		return false;
+	
+	damage_definition *damage = &definition->damage;
+	
+	if (damage->type == NONE) 
+		return false;
+	return (damage->base > 0);
 }
 
 /* ---------- private code */
 
 void update_one_media(size_t media_index, bool force_update)
 {
-	media_data *media= get_media_data(media_index);
+	media_data *restrict media = get_media_data(media_index);
 	// LP change: idiot-proofing
 	if (!media) 
 		return;
-	media_definition *definition= get_media_definition(media->type);
-	if (!definition) return;
+		
+	const media_definition *definition = get_media_definition(media->type);
+	if (!definition) 
+		return;
 
 	/* update height */
-	media->height= (media->low + FIXED_INTEGERAL_PART((media->high-media->low)*get_light_intensity(media->light_index)));
+	media->height = (
+		media->low + FIXED_INTEGERAL_PART( (media->high - media->low) * get_light_intensity(media->light_index))
+		);
 
 	/* update texture */	
-	media->texture= BUILD_DESCRIPTOR(definition->collection, definition->shape);
-	media->transfer_mode= definition->transfer_mode;
-
-	(void)force_update;
+	media->texture		= BUILD_DESCRIPTOR(definition->collection, definition->shape);
+	media->transfer_mode	= definition->transfer_mode;
 }
 
 // LP addition: count number of media types used,
@@ -273,7 +290,7 @@ void update_one_media(size_t media_index, bool force_update)
 size_t count_number_of_medias_used()
 {
 	size_t number_used = 0; // Take care of the case of no slots being used
-	for (int media_index=((int)MAXIMUM_MEDIAS_PER_MAP)-1; media_index>=0; media_index--)
+	for(ix media_index = MAXIMUM_MEDIAS_PER_MAP - 1; media_index >= 0; media_index--)
 	{
 		// Look for the last used one rather than the last unused one!
 		if (SLOT_IS_USED(medias + media_index))
@@ -499,7 +516,7 @@ bool XML_LqSoundParser::AttributesDone()
 static XML_LqSoundParser LqSoundParser;
 
 
-struct media_definition *original_media_definitions = NULL;
+struct media_definition *original_media_definitions = nullptr;
 class XML_LiquidParser: public XML_ElementParser
 {
 	short Index;
@@ -625,7 +642,7 @@ bool XML_LiquidParser::ResetValues()
 		for (int i = 0; i < NUMBER_OF_MEDIA_TYPES; i++)
 			media_definitions[i] = original_media_definitions[i];
 		free(original_media_definitions);
-		original_media_definitions = NULL;
+		original_media_definitions = nullptr;
 	}
 	return true;
 }
