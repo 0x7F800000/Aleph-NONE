@@ -93,7 +93,7 @@ media_data *get_media_data(const size_t media_index)
 	return media;
 }
 
-class Media& Media::Get(const ix index);
+class Media& Media::Get(const ix index)
 {
 	assert(ix < MAXIMUM_MEDIAS_PER_MAP);
 	assert(ix >= 0);
