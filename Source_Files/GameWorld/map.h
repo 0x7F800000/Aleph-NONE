@@ -70,6 +70,14 @@ Nov 19, 2000 (Loren Petrich):
 	#define		polygon_data	Polygon
 #endif
 
+#ifndef		line_data
+	#define		line_data	Line
+#endif
+
+#ifndef		side_data
+	#define		side_data	Side
+#endif
+
 /* ---------- constants */
 
 #define TICKS_PER_SECOND 30
@@ -549,9 +557,9 @@ const int SIZEOF_world_point2d = 4;
 #define SET_LINE_HAS_TRANSPARENT_SIDE(l,v) ((v)?((l)->flags|=(uint16)LINE_HAS_TRANSPARENT_SIDE_BIT):((l)->flags&=(uint16)~LINE_HAS_TRANSPARENT_SIDE_BIT))
 #define LINE_HAS_TRANSPARENT_SIDE(l) ((l)->flags&LINE_HAS_TRANSPARENT_SIDE_BIT)
 
-struct line_data /* 32 bytes */
+struct Line /* 32 bytes */
 {
-	static struct line_data& Get(const ix index);
+	static struct Line& Get(const ix index);
 	int16 endpoint_indexes[2];
 	uint16 flags; /* no permutation field */
 
@@ -635,9 +643,9 @@ struct side_exclusion_zone
 	world_point2d e0, e1, e2, e3;
 };
 
-struct side_data /* size platform-dependant */
+struct Side /* size platform-dependant */
 {
-	static struct side_data& Get(const ix index);
+	static struct Side& Get(const ix index);
 	int16 type;
 	uint16 flags;
 	
