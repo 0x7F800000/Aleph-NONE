@@ -81,9 +81,9 @@ static media_definition *get_media_definition(const short type);
 
 /* ---------- code */
 
-media_data *get_media_data(const size_t media_index)
+Media *get_media_data(const size_t media_index)
 {
-	media_data *media = GetMemberWithBounds(medias,media_index,MAXIMUM_MEDIAS_PER_MAP);
+	Media *media = GetMemberWithBounds(medias,media_index,MAXIMUM_MEDIAS_PER_MAP);
 	
 	if (!media) 
 		return nullptr;
@@ -108,30 +108,31 @@ media_definition *get_media_definition(const short type)
 
 
 // light_index must be loaded
-size_t new_media(struct media_data *initializer)
+size_t new_media(class Media *initializer)
 {
-	media_data *media;
-	size_t media_index;
-	
-	for (media_index = 0, media= medias; media_index < MAXIMUM_MEDIAS_PER_MAP; ++media_index, ++media)
+	ix i;
+	for( i = 0; i < MAXIMUM_MEDIAS_PER_MAP; ++i )
 	{
-		if (!SLOT_IS_FREE(media))
+		Media &media = Media::Get(i);
+		
+		if( !SLOT_IS_FREE(&media) )
 			continue;
 		
-		*media = *initializer;
+		media = *initializer;
 		
-		MARK_SLOT_AS_USED(media);
+		MARK_SLOT_AS_USED(&media);
 		
-		media->origin.x = media->origin.y = 0;
-		update_one_media(media_index, true);
+		media.origin.x = 0;
+		media.origin.y = 0;
+		update_one_media(i, true);
 		
 		break;
 	
 	}
-	if (media_index == MAXIMUM_MEDIAS_PER_MAP) 
-		media_index = UNONE;
+	if (i == MAXIMUM_MEDIAS_PER_MAP) 
+		i = UNONE;
 	
-	return media_index;
+	return i;
 }
 
 bool media_in_environment(short media_type, short environment_code)
@@ -146,35 +147,28 @@ bool media_in_environment(short media_type, short environment_code)
 
 void update_medias()
 {
-	size_t media_index;
-	struct media_data *media;
-	
-	for (media_index= 0, media= medias; media_index<MAXIMUM_MEDIAS_PER_MAP; ++media_index, ++media)
+	for( ix i = 0; i < MAXIMUM_MEDIAS_PER_MAP; ++i )
 	{
-		if (!SLOT_IS_USED(media))
+		Media &media = Media::Get(i);
+		if( !SLOT_IS_USED(&media) )
 			continue;
 		
-		update_one_media(media_index, false);
+		update_one_media(i, false);
+		auto currDirection = media.current_direction;
+		auto currMagnitude = media.current_magnitude;
 		
-		media->origin.x = 
-		WORLD_FRACTIONAL_PART(media->origin.x +
-		((cosine_table[media->current_direction]*media->current_magnitude)>>TRIG_SHIFT));
-		
-		media->origin.y = 
-		WORLD_FRACTIONAL_PART(media->origin.y + 
-		((sine_table[media->current_direction]*media->current_magnitude)>>TRIG_SHIFT));
-	
+		media.origin.x = WORLD_FRACTIONAL_PART(
+			media.origin.x + TRIG_LEFT_SHIFT(cosine_table[currDirection] * currMagnitude) );
+		media.origin.y = WORLD_FRACTIONAL_PART(
+			media.origin.y + TRIG_LEFT_SHIFT( sine_table[currDirection] * currMagnitude));
 	}
 }
 
 void get_media_detonation_effect(short media_index, short type, short *detonation_effect)
 {
-	const media_data *media = get_media_data(media_index);
-	// LP change: idiot-proofing
-	if (!media) 
-		return;
+	Media& media = Media::Get(media_index);
 	
-	const media_definition *definition = get_media_definition(media->type);
+	const media_definition *definition = get_media_definition(media.type);
 
 	if(!definition || type == NONE || type < 0 || type >= NUMBER_OF_MEDIA_DETONATION_TYPES)
 		return;
