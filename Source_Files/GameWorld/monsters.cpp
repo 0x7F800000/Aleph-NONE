@@ -1739,7 +1739,7 @@ void damage_monster(int16 target_index, int16 aggressor_index, int16 aggressor_t
 		
 		if(external_velocity && epicenter)
 		{
-			const Object &object = Object::Get( monster->getObjectIndex() );
+			Object &object = Object::Get( monster->getObjectIndex() );
 			
 			auto dx = object.location.x - epicenter->x;
 			auto dy = object.location.y - epicenter->y;
@@ -1775,7 +1775,7 @@ bool legal_polygon_height_change(int16 polygon_index, world_distance new_floor_h
 	
 	while( !isNONE(object_index) )
 	{
-		const Object &object = Object::Get(object_index);
+		Object &object = Object::Get(object_index);
 		
 		if( GET_OBJECT_OWNER(&object) != _object_is_monster || !object.isInvisible() )
 		{
