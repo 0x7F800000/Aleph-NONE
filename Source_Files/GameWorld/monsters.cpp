@@ -1141,12 +1141,12 @@ void Monster::activate()
 	monster_needs_path( myIndex, true );
 
 	if( myObject.isInvisible() )
-		teleport_object_in( monsterObjectIndex );
+		teleport_object_in( myObjectIndex );
 		
 	else if( testDefinitionFlags( _monster_makes_sound_when_activated ) )
-		play_object_sound( monsterObjectIndex, definition->activation_sound );
+		play_object_sound( myObjectIndex, definition->activation_sound );
 	
-	changed_polygon( object.polygon, object.polygon, NONE );
+	changed_polygon( myObject.polygon, myObject.polygon, NONE );
 }
 
 //stub for old C function
@@ -2081,13 +2081,13 @@ void Monster::changeMode(const int16 newMode, const int16 targetIndex)
 		if we were locked on a monster in our own polygon and we lost him then we don't have a path
 		and going anywhere would be dangerous so we need to ask for a new path
 	*/
-	if( isLocked() && new_mode != _monster_locked && isPath(NONE) )
+	if( isLocked() && newMode != _monster_locked && isPath(NONE) )
 		monster_needs_path(getIndex(), false);
 
-	switch (new_mode)
+	switch (newMode)
 	{
 		case _monster_locked:
-			setTarget(target_index);
+			setTarget(targetIndex);
 			CLEAR_TARGET_DAMAGE_FLAG(this);
 		case _monster_losing_lock: /* target_index ignored, but still valid */
 		case _monster_lost_lock:
@@ -2098,7 +2098,7 @@ void Monster::changeMode(const int16 newMode, const int16 targetIndex)
 		default:
 			assert(false);
 	}
-	setMode( new_mode );
+	setMode( newMode );
 }
 
 //stub for Monster::changeMode
@@ -2670,7 +2670,7 @@ void Monster::changeAction(const int16 newAction)
 	if( newAction == _monster_is_dying_hard )
 	{
 		if( testDefinitionFlags(_monster_has_delayed_hard_death) )
-			cause_shrapnel_damage(monster_index);
+			cause_shrapnel_damage(getIndex());
 			
 		else if (film_profile.key_frame_zero_shrapnel_fix)
 		{
