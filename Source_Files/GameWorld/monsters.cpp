@@ -2478,7 +2478,7 @@ void Monster::changeTarget(const int16 targetIndex)
 	if(myIndex == targetIndex)
 		return;
 	
-	if(isNONE(target_index))
+	if(isNONE(targetIndex))
 	{
 		/* no target, if we're not unlocked mark us as unlocked and ask for a new path */
 		if(isActive() && !isUnlocked())
