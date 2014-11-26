@@ -52,11 +52,6 @@ Nov 19, 2000 (Loren Petrich):
 */
 
 #include "csmacros.h"
-#include "world.h"
-#include "dynamic_limits.h"
-#include "XML_ElementParser.h"
-
-#include <vector>
 
 #ifndef		object_data
 	#define		object_data	Object
@@ -77,6 +72,15 @@ Nov 19, 2000 (Loren Petrich):
 #ifndef		side_data
 	#define		side_data	Side
 #endif
+
+
+#include "world.h"
+#include "dynamic_limits.h"
+#include "XML_ElementParser.h"
+
+#include <vector>
+
+
 
 /* ---------- constants */
 
@@ -189,6 +193,7 @@ const int SIZEOF_map_object = 16;
 
 // Due to misalignments, these have different sizes
 typedef world_point2d saved_map_pt;
+
 typedef struct line_data saved_line;
 typedef struct polygon_data saved_poly;
 typedef struct map_annotation saved_annotation;
@@ -352,14 +357,16 @@ const int SIZEOF_random_sound_image_data = 32;
 #define SET_OBJECT_RENDERED_FLAG(o) ((o)->flags|=(uint16)0x4000)
 #define CLEAR_OBJECT_RENDERED_FLAG(o) ((o)->flags&=(uint16)~0x4000)
 
-/* this field is only valid after transmogrify_object_shape is called; in terms of our pipeline, that
-	means that itÕs only valid if OBJECT_WAS_RENDERED returns true *and* was cleared before
+/* 
+	this field is only valid after transmogrify_object_shape is called; in terms of our pipeline, that
+	means that it's only valid if OBJECT_WAS_RENDERED returns true *and* was cleared before
 	the last call to render_scene() ... this means that if OBJECT_WAS_RENDERED returns false,
 	the monster and projectile managers will probably call transmogrif_object_shape themselves.
 	for reasons beyond this scope of this comment to explain, the keyframe cannot be frame zero!
 	also, when any of the flags below are set, the phase of the .sequence field can be examined
 	to determine exactly how many ticks the last frame took to animate (that is, .sequence.phase
-	is not reset until the next loop). */
+	is not reset until the next loop). 
+*/
 #define OBJECT_WAS_ANIMATED(o) ((o)->flags&(uint16)_obj_animated)
 #define GET_OBJECT_ANIMATION_FLAGS(o) ((o)->flags&(uint16)0x3c00)
 #define SET_OBJECT_ANIMATION_FLAGS(o,n) { (o)->flags&= (uint16)~0x3c00; (o)->flags|= (n); }
@@ -449,9 +456,9 @@ enum /* object transfer modes (high-level) */
 
 struct object_location
 {
-	bool testFlags(uint16 test)
+	uint16 testFlags(uint16 test)
 	{
-		return (flags & test) != 0;
+		return flags & test;
 	}
 	
 	FLAGTEST(isInvisible, setInvisible, _map_object_is_invisible)
@@ -476,6 +483,11 @@ struct Object /* 32 bytes */
 	{
 		return OBJECT_IS_INVISIBLE(this);
 	}
+	inline uint16 testFlags(uint16 test)
+	{
+		return flags & test;
+	}
+	
 	/* these fields are in the order of a world_location3d structure, but are missing the pitch
 		and velocity fields */
 	world_point3d location;
@@ -517,6 +529,12 @@ const int SIZEOF_object_data = 32;
 struct Endpoint /* 16 bytes */
 {
 	static struct Endpoint& Get(const ix index);
+	
+	inline uint16 testFlags(uint16 test)
+	{
+		return flags & test;
+	}
+	
 	uint16 flags;
 	world_distance highest_adjacent_floor_height, lowest_adjacent_ceiling_height;
 	
@@ -560,6 +578,7 @@ const int SIZEOF_world_point2d = 4;
 struct Line /* 32 bytes */
 {
 	static struct Line& Get(const ix index);
+	
 	int16 endpoint_indexes[2];
 	uint16 flags; /* no permutation field */
 
@@ -726,6 +745,7 @@ struct horizontal_surface_data /* should be in polygon structure */
 struct Polygon 
 {
 	static struct Polygon& Get(const ix index);
+
 	int16 type;
 	uint16 flags;
 	int16 permutation;
@@ -1045,23 +1065,23 @@ const unsigned int SIZEOF_dynamic_data = 604;
 extern struct static_data *static_world;
 extern struct dynamic_data *dynamic_world;
 
-extern vector<object_data> ObjectList;
+extern vector<Object> ObjectList;
 #define objects (&ObjectList[0])
 
 
-extern vector<endpoint_data> EndpointList;
+extern vector<Endpoint> EndpointList;
 #define map_endpoints (&EndpointList[0])
 #define MAXIMUM_ENDPOINTS_PER_MAP (EndpointList.size())
 
-extern vector<line_data> LineList;
+extern vector<Line> LineList;
 #define map_lines (&LineList[0])
 #define MAXIMUM_LINES_PER_MAP (LineList.size())
 
-extern vector<side_data> SideList;
+extern vector<Side> SideList;
 #define map_sides (&SideList[0])
 #define MAXIMUM_SIDES_PER_MAP (SideList.size())
 
-extern vector<polygon_data> PolygonList;
+extern vector<Polygon> PolygonList;
 #define map_polygons (&PolygonList[0])
 #define MAXIMUM_POLYGONS_PER_MAP (PolygonList.size())
 
@@ -1265,30 +1285,21 @@ void reallocate_map_structure_memory(long size);
 // the geometry ones make failed asserts,
 // while the sound ones return null pointers.
 
-object_data *get_object_data(
-	const short object_index);
+object_data *get_object_data(const short object_index);
 
-polygon_data *get_polygon_data(
-	const short polygon_index);
+polygon_data *get_polygon_data(const short polygon_index);
 
-line_data *get_line_data(
-	const short line_index);
+line_data *get_line_data(const short line_index);
 
-side_data *get_side_data(
-	const short side_index);
+side_data *get_side_data(const short side_index);
 
-endpoint_data *get_endpoint_data(
-	const short endpoint_index);
+endpoint_data *get_endpoint_data(const short endpoint_index);
 
-short *get_map_indexes(
-	const short index,
-	const short count);
+short *get_map_indexes(const short index, const short count);
 
-ambient_sound_image_data *get_ambient_sound_image_data(
-	const short ambient_sound_image_index);
+ambient_sound_image_data *get_ambient_sound_image_data(const short ambient_sound_image_index);
 
-random_sound_image_data *get_random_sound_image_data(
-	const short random_sound_image_index);
+random_sound_image_data *get_random_sound_image_data(const short random_sound_image_index);
 
 /* ---------- prototypes/MAP_CONSTRUCTORS.C */
 
@@ -1355,7 +1366,7 @@ uint8 *pack_damage_definition(uint8 *Stream, damage_definition* Objects, size_t 
 	relatively simple, and because the automap lines and polygons need no such processing.
 */
 
-/* ---------- prototypes/PLACEMENT.C */
+/* ---------- prototypes/PLACEMENT.CPP */
 
 // LP: this one does unpacking also
 void load_placement_data(uint8 *_monsters, uint8 *_items);
@@ -1369,9 +1380,9 @@ short get_random_player_starting_location_and_facing(short max_player_index, sho
 void mark_all_monster_collections(bool loading);
 void load_all_monster_sounds();
 
-/* ---------- prototypes/GAME_DIALOGS.C */
+/* ---------- prototypes/GAME_DIALOGS.CPP */
 
-/* --------- prototypes/LIGHTSOURCE.C */
+/* --------- prototypes/LIGHTSOURCE.CPP */
 
 void update_lightsources();
 short new_lightsource_from_old(short old_source);
@@ -1380,7 +1391,7 @@ void left_polygon(short index);
 /* Only send _light_turning_on, _light_turning_off, _light_toggle */
 void change_light_state(size_t lightsource_index, short state);
 
-/* ---------- prototypes/DEVICES.C */
+/* ---------- prototypes/DEVICES.CPP */
 
 void mark_control_panel_shapes(bool load);
 void initialize_control_panels_for_level(); 
@@ -1401,7 +1412,7 @@ void try_and_toggle_control_panel(short polygon_index, short line_index, short p
 
 bool line_side_has_control_panel(short line_index, short polygon_index, short *side_index_with_panel);
 
-/* ---------- prototypes/GAME_WAD.C */
+/* ---------- prototypes/GAME_WAD.CPP */
 
 struct map_identifier {
 	uint32 scenario_checksum;
