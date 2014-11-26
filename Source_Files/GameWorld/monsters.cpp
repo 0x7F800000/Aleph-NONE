@@ -1747,8 +1747,7 @@ void damage_monster(int16 target_index, int16 aggressor_index, int16 aggressor_t
 			auto vertical_velocity = vertical_component && radius 
 						?  (external_velocity * dz) / radius  
 						: 0;
-	
-			accelerate_monster(target_index, vertical_velocity, direction, external_velocity);
+			monster->accelerate(vertical_velocity, direction, external_velocity);
 		}
 	}
 }
