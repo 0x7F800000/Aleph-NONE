@@ -979,7 +979,7 @@ static int32 monster_activation_flood_proc(int16 source_polygon_index, int16 lin
 	
 	Polygon &destination_polygon 	= Polygon::Get(destination_polygon_index);
 	Polygon &source_polygon 	= Polygon::Get(source_polygon_index);
-	line_data *line 		= get_line_data(line_index);
+	Line &line 			= Line::Get(line_index);
 	
 	bool obey_glue 		= static_world->environment_flags & _environment_glue_m1 != 0;
 	bool limit_activation	= static_world->environment_flags & _environment_activation_ranges != 0;
@@ -1005,7 +1005,7 @@ static int32 monster_activation_flood_proc(int16 source_polygon_index, int16 lin
 	         !testFlags(_pass_solid_lines) && limit_activation)
 		cost = -1;
 
-	if( !testFlags(_pass_solid_lines) && LINE_IS_SOLID(line) ) 
+	if( !testFlags(_pass_solid_lines) && LINE_IS_SOLID(&line) ) 
 		cost = -1;
 
 	if(cost > 0 && limit_activation)
@@ -3260,11 +3260,12 @@ static void execute_monster_attack(int16 monster_index)
 
 int32 monster_pathfinding_cost_function(int16 source_polygon_index, int16 line_index, int16 destination_polygon_index, void *vdata)
 {
-	monster_pathfinding_data *data = (monster_pathfinding_data *)vdata;
-	monsterDefinition* definition = data->definition;
-	Polygon *destination_polygon = get_polygon_data(destination_polygon_index);
-	Polygon *source_polygon = get_polygon_data(source_polygon_index);
-	line_data *line = get_line_data(line_index);
+	monster_pathfinding_data *data 	= (monster_pathfinding_data *)vdata;
+	monsterDefinition* definition 	= data->definition;
+	Polygon *destination_polygon 	= get_polygon_data(destination_polygon_index);
+	Polygon *source_polygon 	= get_polygon_data(source_polygon_index);
+	Line *line 			= get_line_data(line_index);
+	
 	bool respect_polygon_heights = true;
 	Object *object;
 	int16 object_index;
@@ -3367,20 +3368,13 @@ int32 monster_pathfinding_cost_function(int16 source_polygon_index, int16 line_i
 		}
 	}
 
-	if (cost>0)
+	if (cost > 0 && destination_polygon->media_index != NONE)
 	{
 		/* if we're trying to move into media, pay the penalty */
-		if (destination_polygon->media_index != NONE)
-		{
-			media_data *media = get_media_data(destination_polygon->media_index);
-			
-			// LP change: idiot-proofed this
-			if (media)
-			{
-				if (media->height>destination_polygon->floor_height)
-					cost += 2 * destination_polygon->area;
-			}
-		}
+		Media &media = Media::Get(destination_polygon->media_index);
+		
+		if (media.height > destination_polygon->floor_height)
+			cost += 2 * destination_polygon->area;
 	}
 
 	return cost;
