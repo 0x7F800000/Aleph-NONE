@@ -400,9 +400,9 @@ public:
 	int16 unused[6];
 	
 	/*	overloaded operators	*/
-	const struct monsterDefinition& operator ->()
+	const struct monsterDefinition* operator ->()
 	{
-		return *getDefinition();
+		return getDefinition();
 	}
 
 };
