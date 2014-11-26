@@ -768,10 +768,6 @@ void monster_died(int16 target_index)
 		deadMonster.removePath();
 	}
 	
-	/*	best place to do this	*/
-	if( deadMonster.hasInstanceDefinition() )
-		monster_instances::delete_definition_instance( deadMonster.instance_definition_index) ;
-	
 	/* anyone locked on this monster needs a clue */
 	//foreach_monster( monster_index, monster )
 	for(ix i = 0; i < MAXIMUM_MONSTERS_PER_MAP; ++i )
@@ -2866,7 +2862,11 @@ void Monster::kill()
 		
 	setType(myType);
 	object_was_just_destroyed( _object_is_monster, myType );
-
+	
+		/*	best place to do this	*/
+	if( hasInstanceDefinition() )
+		monster_instances::delete_definition_instance( instance_definition_index ) ;
+		
 	L_Invalidate_Monster(myIndex);
 	markSlotAsFree();
 }
@@ -2887,13 +2887,17 @@ static void kill_monster(int16 monster_index)
 static bool translate_monster(int16 monster_index, world_distance distance)
 {
 	Monster *monster 		= get_monster_data(monster_index);
-	Object *object 		= monster->getObject();
+	Object *object 			= monster->getObject();
 	monsterDefinition* definition 	= monster->getDefinition();
-	world_point3d new_location;
+	
 	bool legal_move = false;
 
-	new_location = object->location;
+	/*	first we get our current location from our map object	*/
+	world_point3d new_location = object->location;
+	
+	/*	then translate our current location by distance in our current direction	*/
 	translate_point2d((world_point2d *)&new_location, distance, object->facing);
+	
 	auto obstacle_index = legal_monster_move(monster_index, object->facing, &new_location);
 	/* find out where we're going and see if we could actually move there */
 	if( isNONE(obstacle_index) )
@@ -2957,7 +2961,14 @@ static bool translate_monster(int16 monster_index, world_distance distance)
 		
 		if (legal_move)
 		{
-			if( ( monster->path_segment_length -= distance ) <= 0 )
+			/*	
+				we've moved by distance along our current segment
+				decrease path_segment_length to reflect this
+			*/
+			auto newSegmentLength = monster->getPathSegmentLength() - distance;
+			
+			/*	if we're done with this segment, update our path	*/
+			if( monster->setPathSegmentLength(newSegmentLength) <= 0 )
 				advance_monster_path(monster_index);
 			else
 			{
