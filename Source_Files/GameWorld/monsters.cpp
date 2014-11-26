@@ -1809,8 +1809,8 @@ bool legal_polygon_height_change(int16 polygon_index, world_distance new_floor_h
 void adjust_monster_for_polygon_height_change(int16 monster_index, int16 polygon_index, world_distance new_floor_height, 
 			world_distance new_ceiling_height)
 {
-	const Polygon &polygon = Polygon::Get( polygon_index );
-	const Monster &monster = Monster::Get( monster_index );
+	Polygon &polygon = Polygon::Get( polygon_index );
+	Monster &monster = Monster::Get( monster_index );
 	
 	world_distance radius, height;
 	monster.getDimensions(&radius, &height);
@@ -1864,7 +1864,7 @@ int16 get_monster_melee_impact_effect(int16 monster_index)
 
 static void cause_shrapnel_damage(int16 monster_index)
 {
-	const Monster &monster		= Monster::Get(monster_index);
+	Monster &monster		= Monster::Get(monster_index);
 	Object &object			= Object::Get( monster.getObjectIndex() );
 	monsterDefinition* definition	= monster.getDefinition();
 
@@ -2005,7 +2005,7 @@ static void update_monster_vertical_physics_model(int16 monster_index)
 		*/
 		if ( monster->hasValidTarget() )
 		{
-			const Monster &target 				= Monster::Get( monster->getTarget() );
+			Monster &target 				= Monster::Get( monster->getTarget() );
 			const monsterDefinition* target_definition 	= target.getDefinition();
 			
 			monster->desired_height = 
@@ -2103,7 +2103,7 @@ static void update_monster_physics_model(int16 monster_index)
 	}
 	
 	/* slow him down if he's touching the ground or flying */
-	const Polygon &polygon = Polygon::Get( object.polygon );
+	Polygon &polygon = Polygon::Get( object.polygon );
 	
 	if( object.location.z <= polygon.floor_height || definition->testFlags( _monster_flys | _monster_floats ) )
 	{
