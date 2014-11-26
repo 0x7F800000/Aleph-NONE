@@ -1,5 +1,5 @@
 /*
-	PLACEMENT.C
+	PLACEMENT.CPP
 
 	Copyright (C) 1991-2001 and beyond by Bungie Studios, Inc.
 	and the "Aleph One" developers.
@@ -82,33 +82,6 @@ void load_placement_data(uint8 *_monsters, uint8 *_items)
 	
 	// Clears the data for monster #0, the Marine
 	obj_clear(*monster_placement_info);
-
-#ifdef DEBUG
-	{
-		ix i;
-		
-		if (monster_placement_info[_monster_marine].initial_count > 0 ||
-			monster_placement_info[_monster_marine].minimum_count > 0 ||
-			((monster_placement_info[_monster_marine].random_count > 0 || monster_placement_info[_monster_marine].random_count == NONE) && monster_placement_info[_monster_marine].random_chance > 1))
-		{
-			dprintf("placement data would drop marine;g;");
-		}
-		
-		for (i = 1; i < NUMBER_OF_MONSTER_TYPES; i++)
-		{
-			if (monster_placement_info[i].initial_count < 0) dprintf("bad monster initial count.;g;");
-			if (monster_placement_info[i].minimum_count < 0) dprintf("bad monster minimum count.;g;");
-			if (monster_placement_info[i].maximum_count < 0) dprintf("bad monster maximum count.;g;");
-		}
-		
-		for (i = 0; i < NUMBER_OF_DEFINED_ITEMS; i++)
-		{
-			if (item_placement_info[i].initial_count < 0) dprintf("bad item initial count.;g;");
-			if (item_placement_info[i].minimum_count < 0) dprintf("bad item minimum count.;g;");
-			if (item_placement_info[i].maximum_count < 0) dprintf("bad item maximum count.;g;");
-		}
-	}
-#endif
 }
 
 /*************************************************************************************************
@@ -131,7 +104,9 @@ struct object_frequency_definition *get_placement_info()
  *************************************************************************************************/
 void place_initial_objects()
 {
-	dynamic_world->current_civilian_causalties = dynamic_world->current_civilian_count = 0;
+	//...why here?
+	dynamic_world->current_civilian_causalties 	= 0;
+	dynamic_world->current_civilian_count 		= 0;
 
 	for(ix index = 1; index < NUMBER_OF_MONSTER_TYPES; index++)
 	{
@@ -265,7 +240,6 @@ void object_was_just_destroyed(short object_class, short object_type)
 			
 		default:
 			assert(false);
-			break;
 	}
 	
 	if (diff>0)
@@ -285,15 +259,15 @@ short get_random_player_starting_location_and_facing(short max_player_index, sho
 	short starting_location_index, maximum_starting_locations, offset, index = NONE, best_index = NONE;
 	object_location current_location;
 	
-	maximum_starting_locations= get_player_starting_location_and_facing(team, 0, NULL);
+	maximum_starting_locations= get_player_starting_location_and_facing(team, 0, nullptr);
 	
 	// if it's a team game, and there are no starts, just pick one at random
 	if (maximum_starting_locations == 0) {
 		team = NONE;
-		maximum_starting_locations = get_player_starting_location_and_facing(team, 0, NULL);
+		maximum_starting_locations = get_player_starting_location_and_facing(team, 0, nullptr);
 	}
 
-	offset= global_random() % maximum_starting_locations;
+	offset= global_random(maximum_starting_locations);
 	best_distance= 0;
 	
 	for (starting_location_index= 0; starting_location_index<maximum_starting_locations; starting_location_index++)
@@ -551,7 +525,7 @@ static bool choose_invisible_random_point(
 	
 	for (retries = 0; retries < INVISIBLE_RANDOM_POINT_RETRIES && !found_legal_point; ++retries)
 	{
-		short random_polygon_index = global_random() % dynamic_world->polygon_count;
+		short random_polygon_index = global_random(dynamic_world->polygon_count);
 
 		find_center_of_polygon(random_polygon_index, p);
 		if(polygon_is_valid_for_object_drop(p, random_polygon_index, object_type, initial_drop, true))
@@ -570,14 +544,10 @@ static bool choose_invisible_random_point(
  * Purpose:  decide if we can drop an object in this polygon.
  *
  *************************************************************************************************/
-static bool polygon_is_valid_for_object_drop(
-	world_point2d *location,
-	short polygon_index,
-	short object_type,
-	bool initial_drop,
-	bool is_random_location)
+static bool polygon_is_valid_for_object_drop(world_point2d *location, short polygon_index, short object_type,
+	bool initial_drop, bool is_random_location)
 {
-	struct polygon_data *polygon = get_polygon_data(polygon_index);
+	Polygon *polygon = get_polygon_data(polygon_index);
 	bool valid = false;
 	int32 distance; // only used to call point_is_player_visible()
 
@@ -610,7 +580,7 @@ static bool polygon_is_valid_for_object_drop(
 					valid = true;
 					while (object_index!=NONE && valid)
 					{
-						struct object_data *object = get_object_data(object_index);
+						Object *object = get_object_data(object_index);
 						
 						if (is_random_location)
 						{
