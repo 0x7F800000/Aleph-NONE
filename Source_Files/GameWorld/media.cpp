@@ -95,8 +95,8 @@ media_data *get_media_data(const size_t media_index)
 
 class Media& Media::Get(const ix index)
 {
-	assert(ix < MAXIMUM_MEDIAS_PER_MAP);
-	assert(ix >= 0);
+	assert(index < MAXIMUM_MEDIAS_PER_MAP);
+	assert(index >= 0);
 	return MediaList[index];
 }
 
