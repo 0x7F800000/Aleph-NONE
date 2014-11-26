@@ -404,10 +404,7 @@ public:
 	{
 		return *getDefinition();
 	}
-	const struct Object& operator ->*()
-	{
-		return *getObject();
-	}
+
 };
 const int SIZEOF_monster_data = 64;
 
