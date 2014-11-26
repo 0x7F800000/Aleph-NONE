@@ -764,12 +764,11 @@ void monster_died(int16 target_index)
 	/* active monsters need extant paths deleted and should be marked as unlocked */
 	if( deadMonster.isActive() )
 	{
-		set_monster_mode(target_index, _monster_unlocked, NONE);
+		deadMonster.changeMode( _monster_unlocked, NONE);
 		deadMonster.removePath();
 	}
 	
 	/* anyone locked on this monster needs a clue */
-	//foreach_monster( monster_index, monster )
 	for(ix i = 0; i < MAXIMUM_MONSTERS_PER_MAP; ++i )
 	{
 		Monster& monster = Monster::Get(i);
@@ -782,14 +781,13 @@ void monster_died(int16 target_index)
 		
 		play_object_sound( monster.getObjectIndex(), monster.getDefinition()->kill_sound );
 		
-		if(	closest_target_index != NONE	)
-			change_monster_target( i, closest_target_index );
-			
+		if( !isNONE(closest_target_index) )
+			monster.changeTarget(closest_target_index );
 		else 
 		{
 			if( monster.isWaitingToAttackAgain() ) 
-				set_monster_action( i, _monster_is_moving );
-			set_monster_mode( i, _monster_unlocked, NONE );
+				monster.changeAction( _monster_is_moving );
+			monster.changeMode( _monster_unlocked, NONE );
 		}
 	}
 
@@ -807,23 +805,21 @@ void initialize_monsters()
 	dynamic_world->new_monster_vanishing_cookie 	= global_random();
 }
 
-/* call this when a new level is loaded from disk so the monsters can cope with their new world */
+/* 
+	call this when a new level is loaded from disk so the monsters can cope with their new world 
+	when a level is loaded after being saved all of an active monster's data is still intact,
+	but it's path no longer exists.  this function resets all monsters so that they recalculate
+	their paths, first thing. 
+*/
 void initialize_monsters_for_new_level()
 {
-	Monster *monster;
-	int16 monster_index;
-
-	/* 
-		when a level is loaded after being saved all of an active monster's data is still intact,
-		but it's path no longer exists.  this function resets all monsters so that they recalculate
-		their paths, first thing. 
-	*/
-	foreach_monster( monster_index, monster )
+	for( ix i = 0; i < MAXIMUM_MONSTERS_PER_MAP; ++i )
 	{
-		if( !monster->slotIsUsed() || !monster->isActive() )
+		Monster &monster = Monster::Get(i);
+		if( !monster.slotIsUsed() || !monster.isActive() )
 			continue;
-		monster->setNeedsPathStatus(true);
-		monster->setPath( NONE );
+		monster.setNeedsPathStatus(true);
+		monster.setPath( NONE );
 	}
 }
 
@@ -1062,9 +1058,9 @@ void Monster::activate()
 		
 		if( !isNONE( polygon.media_index ) )
 		{
-			const media_data *media = get_media_data(polygon.media_index);
+			Media &media = Media::Get(polygon.media_index);
 			
-			if (media && media->height > myObject.location.z + definition->height 
+			if (media.height > myObject.location.z + definition->height 
 				&& !testDefinitionFlags( _monster_can_teleport_under_media ) )
 				return;
 		}
