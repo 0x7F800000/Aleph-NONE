@@ -293,18 +293,7 @@ public:
 	void markSlotAsFree();
 	
 	bool canFlyOrFloat();
-	
-	__accessordecl(Path, int16, path)
-	inline bool hasPath()		{	return getPath() != NONE;	}
 
-	__accessordecl(Target, int16, target_index)
-	inline bool hasTarget()		{	return getTarget() != NONE;	}
-	
-	__accessordecl(Type, int16, type)
-	__accessordecl(Action, int16, action)
-	__accessordecl(Mode, int16, mode)
-	__accessordecl(Vitality, int16, vitality)
-	
 	
 	inline int16 getObjectIndex()		{	return object_index;			}
 	inline void setObjectIndex(int16 o)	{	object_index = o;			}
@@ -320,42 +309,92 @@ public:
 	
 	void accelerate(world_distance v_velocity, angle direction, world_distance velocity);
 	void changeTarget(const int16 targetIndex);
+	void changeMode(const int16 newMode, const int16 targetIndex);
+	void changeAction(const int16 newAction);
+	
+	void activate();
+	void deactivate();
+	void kill();
+	
+	void getDimensions(world_distance* radius, world_distance* height);
+	
+	int16 getImpactEffect();
+	int16 getMeleeImpactEffect();
+	
 	
 	uint32 testDefinitionFlags(uint32 flagtest);
 	uint16 testObjectFlags(uint16 flagtest);
 	uint16 testAnimationFlags(uint16 flagtest);
 	struct monster_definition*	getDefinition();
+	
+	__accessordecl(Type, int16, type)
 	int16 type;
+	
+	__accessordecl(Vitality, int16, vitality)
 	int16 vitality; /* if ==NONE, will be properly initialized when the monster is first activated */
+	
 	uint16 flags; /* [slot_used.1] [need_path.1] [recovering_from_hit.1] [active.1] [idle.1] [berserk.1] [target_damage.1] [unused.6] [never_activated.1] [demoted.1] [promoted.1] */
 	
+	inline bool hasPath()		{	return getPath() != NONE;	}
+	__accessordecl(Path, int16, path)
 	int16 path; /* NONE is no path (the need path bit should be set in this case) */
+	
+	__accessordecl(PathSegmentLength, world_distance, path_segment_length)
 	world_distance path_segment_length; /* distance until weÕre through with this segment of the path */
+	
+	__accessordecl(DesiredHeight, world_distance, desired_height)
 	world_distance desired_height;
 	
-	int16 mode, action;
+	__accessordecl(Mode, int16, mode)
+	int16 mode;
+	
+	__accessordecl(Action, int16, action)
+	int16 action;
+	
+	inline bool hasTarget()		{	return getTarget() != NONE;	}
+	__accessordecl(Target, int16, target_index)
 	int16 target_index; /* a monster_index */
+	
+	
+	__accessordecl(ExternalVelocity, world_distance, external_velocity)
 	world_distance external_velocity; /* per tick, in the direction -facing, only updated during hit/death animations */
+	
+	__accessordecl(VerticalVelocity, world_distance, vertical_velocity)
 	world_distance vertical_velocity; /* per tick, is rarely positive; absorbed immediately on contact with ground */
-	int16 ticks_since_attack, attack_repetitions;
+	
+	__accessordecl(TicksSinceAttack, int16, ticks_since_attack)
+	int16 ticks_since_attack;
+	
+	__accessordecl(AttackRepetitions, int16, attack_repetitions)
+	int16 attack_repetitions;
+	
+	__accessordecl(ChangesUntilLockLost, int16, changes_until_lock_lost)
 	int16 changes_until_lock_lost; /* number of times more the target can change polygons until _losing_lock becomes _lost_lock */
 
+	__accessordecl(Elevation, world_distance, elevation)
 	world_distance elevation; /* valid when attacking; z-component of projectile vector */
 
 	int16 object_index;
 	
+	__accessordecl(TicksSinceLastActivation, int16, ticks_since_last_activation)
 	int32 ticks_since_last_activation;
-
+	
+	__accessordecl(ActivationBias, int16, activation_bias)
 	int16 activation_bias;
 	
+	__accessordecl(GoalPolygonIndex, int16, goal_polygon_index)
 	int16 goal_polygon_index; // used instead of NONE when generating random paths
 
 	// copied from monsterÕs object every tick but updated with height
+	inline world_point3d& getSoundLocation()	{	return sound_location;	}
 	world_point3d sound_location;
+	
+	__accessordecl(SoundPolygonIndex, int16, sound_polygon_index)
 	int16 sound_polygon_index;
-
+	
+	__accessordecl(RandomDesiredHeight, int16, random_desired_height)
 	int16 random_desired_height;
-	/*	AM	-	had to make this change. sorry. also changed number of unused shorts to 5 to compensate*/
+	
 	int16 instance_definition_index;
 	int16 exflags;
 	int16 unused[6];
