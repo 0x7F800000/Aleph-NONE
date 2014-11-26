@@ -2253,7 +2253,7 @@ static void generate_new_path_for_monster(int16 monster_index)
 	{
 		if ( !monster->isBeingHit() || monster->isDying() ) 
 			monster->changeAction(_monster_is_stationary);
-		monster->changeMode(_monster_unlocked, NONE)l
+		monster->changeMode(_monster_unlocked, NONE);
 	}
 	else
 		advance_monster_path(monster_index);
