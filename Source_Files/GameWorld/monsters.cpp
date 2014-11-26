@@ -2213,7 +2213,7 @@ static void generate_new_path_for_monster(int16 monster_index)
 		case _monster_locked:
 		{
 			Monster &target 	= Monster::Get( monsterTargetIndex );
-			Object &targetObject	= Object::Get( target->getObjectIndex() );
+			Object &targetObject	= Object::Get( target.getObjectIndex() );
 
 			if (definition->random_sound_mask && !(global_random() & definition->random_sound_mask)) 
 				play_object_sound(monsterObjectIndex, definition->random_sound);
@@ -2632,7 +2632,7 @@ static void handle_moving_or_stationary_monster(int16 monster_index)
 	monsterDefinition* definition 	= monster->getDefinition();
 	
 	/* stationary, unlocked monsters without paths cannot move */
-	if( isNONE( monster->getPath() ) && !monster->isLocked() && monster->isStationary() )
+	if( !monster->hasPath()  && !monster->isLocked() && monster->isStationary() )
 	{
 		monster_needs_path(monster_index, false);
 		return;
@@ -2662,19 +2662,19 @@ static void handle_moving_or_stationary_monster(int16 monster_index)
 	if ( monster->isBerserk() ) 
 		distance_moved += distance_moved / 2;
 	
-	if (monster->action!=_monster_is_waiting_to_attack_again)
+	if( !monster->isWaitingToAttackAgain() )
 	{
 		if (translate_monster(monster_index, distance_moved))
 		{
 			/* we moved: _monster_is_stationary becomes _monster_is_moving */
 			if( monster->isStationary() ) 
-				set_monster_action(monster_index, _monster_is_moving);
+				monster->changeAction(_monster_is_moving);
 		}
 		else
 		{
 			/* we couldn't move: _monster_is_moving becomes _monster_is_stationary */
 			if ( monster->isMoving() ) 
-				set_monster_action(monster_index, _monster_is_stationary);
+				monster->changeAction(_monster_is_stationary);
 			monster->ticks_since_attack++; /* attacks occur twice as frequently if we can't move (damnit!) */
 		}
 	}
@@ -2689,7 +2689,7 @@ static void handle_moving_or_stationary_monster(int16 monster_index)
 	
 	auto attack_frequency = definition->attack_frequency;
 	
-	if(definition->flags & _monster_is_alien)
+	if( definition->testFlags( _monster_is_alien ) )
 	{
 		switch (dynamic_world->game_information.difficulty_level)
 		{
@@ -2718,7 +2718,7 @@ static void handle_moving_or_stationary_monster(int16 monster_index)
 			
 	else if( monster->isWaitingToAttackAgain() )
 	{
-		set_monster_action( monster_index, _monster_is_stationary );
+		monster->changeAction( _monster_is_stationary );
 		monster_needs_path( monster_index, true );
 	}
 	
