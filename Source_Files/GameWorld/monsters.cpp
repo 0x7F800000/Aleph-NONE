@@ -1172,12 +1172,12 @@ void Monster::deactivate()
 	
 	if( teleportsOutWhenDeactivated() && !isTeleportingOut() )
 	{
-		set_monster_action(myIndex, _monster_is_teleporting_out );
+		changeAction(_monster_is_teleporting_out);
 		return;
 	}
 
 	/* assume stationary shape before deactivation */
-	set_monster_action(myIndex, _monster_is_stationary );
+	changeAction(_monster_is_stationary);
 	auto monsterPath = getPath();
 	
 	/* get rid of this monster's path if he has one */
