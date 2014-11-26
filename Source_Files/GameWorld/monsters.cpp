@@ -2068,9 +2068,9 @@ static void monster_needs_path(int16 monster_index, bool immediately)
 		monster.setPath(NONE);
 	}
 	if (monster.isMoving() && immediately) 
-		set_monster_action(monster_index, _monster_is_stationary);
+		monster.changeAction( _monster_is_stationary );
 		
-	SET_MONSTER_NEEDS_PATH_STATUS(&monster, true);
+	monster.setNeedsPathStatus(true);
 }
 
 void Monster::changeMode(const int16 newMode, const int16 targetIndex)
