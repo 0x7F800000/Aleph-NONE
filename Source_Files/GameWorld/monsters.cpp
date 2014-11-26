@@ -802,11 +802,13 @@ void monster_died(int16 target_index)
 void initialize_monsters()
 {
 	/* initialize our globals to be the same thing on all machines */
-	dynamic_world->civilians_killed_by_players = 0;
-	dynamic_world->last_monster_index_to_get_time = NONE;
+	dynamic_world->civilians_killed_by_players 	= 0;
+	
+	dynamic_world->last_monster_index_to_get_time 	= NONE;
 	dynamic_world->last_monster_index_to_build_path = NONE;
-	dynamic_world->new_monster_mangler_cookie = global_random();
-	dynamic_world->new_monster_vanishing_cookie = global_random();
+	
+	dynamic_world->new_monster_mangler_cookie 	= global_random();
+	dynamic_world->new_monster_vanishing_cookie 	= global_random();
 }
 
 /* call this when a new level is loaded from disk so the monsters can cope with their new world */
@@ -1048,126 +1050,146 @@ bool live_aliens_on_map()
 }
 
 /* activate the given monster (initially unlocked) */
-void activate_monster(int16 monster_index)
+void Monster::activate()
 {
-	Monster &monster 		= Monster::Get( monster_index );
-	auto monsterObjectIndex		= monster.getObjectIndex();
-	Object &object 			= Object::Get( monsterObjectIndex );
-	monsterDefinition *definition 	= monster.getDefinition();
-
-	assert( !monster.isActive() && !monster.isPlayer() );
-
-	if( object.isInvisible() )
+	auto myObjectIndex 		= getObjectIndex();
+	auto myIndex			= getIndex();
+	
+	Object &myObject 		= Object::Get(myObjectIndex);
+	monsterDefinition* definition 	= getDefinition();
+	
+	assert( !isActive() && !isPlayer() );
+	
+	if( myObject.isInvisible() )
 	{
-		Polygon &polygon = Polygon::Get(object.polygon);
+		Polygon &polygon = Polygon::Get(myObject.polygon);
 		
 		if( !isNONE( polygon.media_index ) )
 		{
-			media_data *media = get_media_data(polygon.media_index);
+			const media_data *media = get_media_data(polygon.media_index);
 			
-			if (media && media->height > object.location.z + definition->height 
-				&& !definition->testFlags( _monster_can_teleport_under_media ) )
+			if (media && media->height > myObject.location.z + definition->height 
+				&& !testDefinitionFlags( _monster_can_teleport_under_media ) )
 				return;
 		}
 	}
+		
+	CLEAR_MONSTER_RECOVERING_FROM_HIT(this);
 	
-	CLEAR_MONSTER_RECOVERING_FROM_HIT(&monster);
+	SET_MONSTER_IDLE_STATUS(this, false);
+	setActiveStatus( true );
+	SET_MONSTER_BERSERK_STATUS(this, false);
+	SET_MONSTER_HAS_BEEN_ACTIVATED(this);
 	
-	SET_MONSTER_IDLE_STATUS(&monster, false);
-	monster.setActiveStatus( true );
-	SET_MONSTER_BERSERK_STATUS(&monster, false);
-	SET_MONSTER_HAS_BEEN_ACTIVATED(&monster);
-	
-	monster.flags &= ~(_monster_is_blind|_monster_is_deaf);
+	flags &= ~(_monster_is_blind|_monster_is_deaf);
 
-	monster.setPath( NONE );
+	setPath( NONE );
 	/* 
 		we used to set monster->target_index here, but it is invalid when mode == _monster_unlocked 
 	*/
-	monster.setMode( _monster_unlocked );
-	monster.setTarget( NONE );
+	setMode( _monster_unlocked );
+	setTarget( NONE );
+	auto attackFrequency = definition->attack_frequency;
 
-	if (!definition->attack_frequency) // IP: Avoid division by zero
-		definition->attack_frequency++;	 
+	if (!attackFrequency) // IP: Avoid division by zero
+		attackFrequency++;	 
+	
+	if( testDefinitionFlags(_monster_attacks_immediately) )
+		setTicksSinceAttack(attackFrequency);
+	else
+		setTicksSinceAttack( global_random(attackFrequency) );
 
-	monster.ticks_since_attack = definition->testFlags(_monster_attacks_immediately) 
-			?	definition->attack_frequency :	global_random(definition->attack_frequency);
 	
-	monster.desired_height 		= object.location.z; /* best guess */
-	monster.random_desired_height 	= INT16_MAX; // to be out of range and recalculated
-	monster.external_velocity 	= monster.vertical_velocity = 0;	
+	setDesiredHeight( myObject.location.z ); /* best guess */
+	setRandomDesiredHeight( INT16_MAX ); // to be out of range and recalculated
 	
-	monster.ticks_since_last_activation = 0;
+	setExternalVelocity(0);
+	setVerticalVelocity(0);
+	setTicksSinceLastActivation(0);
 	
 	/* 
 		if vitality is NONE (-1) initialize it from the monster_definition, respecting
 		the difficulty level if necessary 
 	*/
-	if( isNONE( monster.getVitality() ) )
+	if( isNONE( getVitality() ) )
 	{
-		auto vitality = definition->vitality;
+		auto definedVitality = definition->vitality;
 		
-		if( definition->testFlags( _monster_is_alien ) )
+		if( testDefinitionFlags( _monster_is_alien ) )
 		{
 			switch( dynamic_world->game_information.difficulty_level )
 			{
 				case _wuss_level: 
-					vitality -= vitality / 2; 
+					definedVitality -= definedVitality / 2; 
 					break;
 				case _easy_level: 
-					vitality -= vitality / 4; 
+					definedVitality -= definedVitality / 4; 
 					break;
 				case _major_damage_level: 
-					vitality += vitality / 4; 
+					definedVitality += definedVitality / 4; 
 					break;
 				case _total_carnage_level: 
-					vitality += vitality / 2; 
+					definedVitality += definedVitality / 2; 
 					break;
 			}
 		}
 		
-		monster.setVitality( vitality );
+		setVitality( definedVitality );
 	}
 
-	set_monster_action( monster_index, _monster_is_stationary );
-	monster_needs_path( monster_index, true );
+	set_monster_action( myIndex, _monster_is_stationary );
+	monster_needs_path( myIndex, true );
 
-	if( object.isInvisible() )
+	if( myObject.isInvisible() )
 		teleport_object_in( monsterObjectIndex );
 		
-	else if( definition->testFlags( _monster_makes_sound_when_activated ) )
+	else if( testDefinitionFlags( _monster_makes_sound_when_activated ) )
 		play_object_sound( monsterObjectIndex, definition->activation_sound );
 	
 	changed_polygon( object.polygon, object.polygon, NONE );
 }
 
-void deactivate_monster(int16 monster_index)
+//stub for old C function
+void activate_monster(int16 monster_index)
 {
-	Monster &monster = Monster::Get( monster_index );
+	Monster::Get(monster_index).activate();
+}
 
-	assert( monster.isActive() );
+void Monster::deactivate()
+{
+	auto myIndex = getIndex();
+	
+	assert( isActive() );
 
-	if( monster.teleportsOutWhenDeactivated() ) 
-		monster.vertical_velocity = monster.external_velocity = 0;
-
-	if( monster.vertical_velocity || monster.external_velocity )
+	if( teleportsOutWhenDeactivated() ) 
+	{
+		setVerticalVelocity(0);
+		setExternalVelocity(0);
+	}
+	
+	if( getVerticalVelocity() || getExternalVelocity() )
 		return;
 	
-	if( monster.teleportsOutWhenDeactivated() && !monster.isTeleportingOut() )
+	if( teleportsOutWhenDeactivated() && !isTeleportingOut() )
 	{
-		set_monster_action( monster_index, _monster_is_teleporting_out );
+		set_monster_action(myIndex, _monster_is_teleporting_out );
 		return;
 	}
 
 	/* assume stationary shape before deactivation */
-	set_monster_action( monster_index, _monster_is_stationary );
-	auto monsterPath = monster.getPath();
+	set_monster_action(myIndex, _monster_is_stationary );
+	auto monsterPath = getPath();
 	
 	/* get rid of this monster's path if he has one */
 	if( !isNONE( monsterPath ) )
 		delete_path( monsterPath );
+	setActiveStatus( false );
+}
 
-	monster.setActiveStatus( false );
+//another stub
+void deactivate_monster(int16 monster_index)
+{
+	Monster::Get( monster_index ).deactivate();
 }
 
 /* 
@@ -1489,13 +1511,17 @@ int16 legal_monster_move(int16 monster_index,
 	return obstacle_index;
 }
 
-void get_monster_dimensions(int16 monster_index, world_distance *radius, world_distance *height)
+void Monster::getDimensions(world_distance* radius, world_distance* height)
 {
-	Monster *monster 		= get_monster_data( monster_index );
-	monsterDefinition *definition 	= monster->getDefinition();
-
+	monsterDefinition* definition = getDefinition();
 	*radius = definition->radius;
 	*height = definition->height;
+}
+
+//stub
+void get_monster_dimensions(int16 monster_index, world_distance *radius, world_distance *height)
+{
+	Monster::Get(monster_index).getDimensions(radius, height);
 }
 
 void damage_monsters_in_radius(int16 primary_target_index, int16 aggressor_index, int16 aggressor_type,
@@ -1577,8 +1603,8 @@ void damage_monsters_in_radius(int16 primary_target_index, int16 aggressor_index
 	// or, just make him it
 	if (GET_GAME_TYPE() == _game_of_tag && aggressor_is_live_player)
 	{
-		Monster* monster = get_monster_data(aggressor_index);
-		if( monster->isPlayer() )
+		Monster& monster = Monster::Get(aggressor_index);
+		if( monster.isPlayer() )
 		{
 			auto player_index 	= monster_index_to_player_index(aggressor_index);
 			player_data* player 	= get_player_data(player_index);
@@ -1806,30 +1832,31 @@ void accelerate_monster(int16 monster_index, world_distance vertical_velocity, a
 }
 
 
-int16 get_monster_impact_effect(int16 monster_index)
+int16 Monster::getImpactEffect()
 {
-	Monster *monster 		= get_monster_data(monster_index);
-	monsterDefinition* definition 	= monster->getDefinition();
-	auto impact_effect_index 	= definition->impact_effect;
+	auto impact_effect_index 	= getDefinition()->impact_effect;
 	
-	if( monster->isPlayer() )
-	{
-		switch (monster->getObject()->transfer_mode)
-		{
-			case _xfer_static:
-				impact_effect_index = NONE;
-				break;
-		}
-	}
-	
+	if( isPlayer() && getObject()->transfer_mode == _xfer_static)
+		impact_effect_index = NONE;
+
 	return impact_effect_index;
 }
 
+//stub
+int16 get_monster_impact_effect(int16 monster_index)
+{
+	return Monster::Get(monster_index).getImpactEffect();
+}
+
+int16 Monster::getMeleeImpactEffect()
+{
+	return getDefinition()->melee_impact_effect;
+}
+
+//stub
 int16 get_monster_melee_impact_effect(int16 monster_index)
 {
-	Monster *monster 		= get_monster_data(monster_index);
-	monsterDefinition* definition 	= monster->getDefinition();
-	return definition->melee_impact_effect;
+	return Monster::Get(monster_index).getMeleeImpactEffect();
 }
 
 /* ---------- private code */
@@ -2048,38 +2075,36 @@ static void monster_needs_path(int16 monster_index, bool immediately)
 	SET_MONSTER_NEEDS_PATH_STATUS(&monster, true);
 }
 
-void set_monster_mode(int16 monster_index, int16 new_mode, int16 target_index)
+void Monster::changeMode(const int16 newMode, const int16 targetIndex)
 {
-	Monster *monster= get_monster_data(monster_index);
-
-	/* if we were locked on a monster in our own polygon and we lost him then we don't have a path
-		and going anywhere would be dangerous so we need to ask for a new path */
-	if( monster->isLocked() && new_mode != _monster_locked && monster->isPath(NONE) )
-		monster_needs_path(monster_index, false);
+	/* 
+		if we were locked on a monster in our own polygon and we lost him then we don't have a path
+		and going anywhere would be dangerous so we need to ask for a new path
+	*/
+	if( isLocked() && new_mode != _monster_locked && isPath(NONE) )
+		monster_needs_path(getIndex(), false);
 
 	switch (new_mode)
 	{
 		case _monster_locked:
-			(void)get_monster_data(target_index); /* for bounds checking only */
-			monster->setTarget(target_index);
-			CLEAR_TARGET_DAMAGE_FLAG(monster);
-
-			break;
-		
+			setTarget(target_index);
+			CLEAR_TARGET_DAMAGE_FLAG(this);
 		case _monster_losing_lock: /* target_index ignored, but still valid */
 		case _monster_lost_lock:
-			(void)get_monster_data(monster->getTarget()); /* for bounds checking only */
 			break;
-		
 		case _monster_unlocked:
-			monster->setTarget(NONE);
+			setTarget(NONE);
 			break;
-		
 		default:
 			assert(false);
-			break;
 	}
-	monster->mode = new_mode;
+	setMode( new_mode );
+}
+
+//stub for Monster::changeMode
+void set_monster_mode(int16 monster_index, int16 new_mode, int16 target_index)
+{
+	Monster::Get(monster_index).changeMode(new_mode, target_index);
 }
 
 /* this function decides what the given monster actually wants to do, and then generates a path
@@ -2588,19 +2613,18 @@ static void handle_moving_or_stationary_monster(int16 monster_index)
 	
 }
 
-void set_monster_action(int16 monster_index, int16 action)
+void Monster::changeAction(const int16 newAction)
 {
-	Monster *monster 		= get_monster_data( monster_index );
-	monsterDefinition* definition 	= monster->getDefinition();
+	monsterDefinition* definition 	= getDefinition();
 	shape_descriptor shape;
 
 	/* what shape should we use? */
-	if( action == _monster_is_dying_flaming )
+	if( newAction == _monster_is_dying_flaming )
 		shape = FLAMING_DYING_SHAPE;
 	else
 	{
-		assert( (unsigned int)action < NUMBER_OF_MONSTER_ACTIONS ); //so we can remove the default case
-		switch (action)
+		assert( newAction < NUMBER_OF_MONSTER_ACTIONS ); //so we can remove the default case
+		switch (newAction)
 		{
 			case _monster_is_waiting_to_attack_again:
 			case _monster_is_stationary: 
@@ -2639,26 +2663,26 @@ void set_monster_action(int16 monster_index, int16 action)
 	if( isUNONE( shape ) )
 		return;
 	
-	monster->setAction(action);
-	set_object_shape_and_transfer_mode(
-		monster->getObjectIndex(), shape, NONE
-		);
+	setAction(newAction);
+	set_object_shape_and_transfer_mode(getObjectIndex(), shape, NONE);
 
 	/* if this monster does shrapnel damage, do it */
-	if( action == _monster_is_dying_hard )
+	if( newAction == _monster_is_dying_hard )
 	{
-		if( definition->testFlags(_monster_has_delayed_hard_death) )
+		if( testDefinitionFlags(_monster_has_delayed_hard_death) )
 			cause_shrapnel_damage(monster_index);
+			
 		else if (film_profile.key_frame_zero_shrapnel_fix)
 		{
-			const Object*object = monster->getObject();
+			const Object* object = getObject();
 			const shape_animation_data* animation = get_shape_animation_data( object->shape );
+			
 			if( animation && !animation->key_frame )
-				cause_shrapnel_damage( monster_index );
+				cause_shrapnel_damage( getIndex() );
 		}
 	}
 	
-	if( definition->testFlags( _monster_has_nuclear_hard_death ) && action == _monster_is_dying_hard )
+	if( testDefinitionFlags( _monster_has_nuclear_hard_death ) && newAction == _monster_is_dying_hard )
 	{
 		start_fade( _fade_long_bright );
 		SoundManager::instance()->PlayLocalSound( Sound_Exploding() );
@@ -2666,23 +2690,33 @@ void set_monster_action(int16 monster_index, int16 action)
 
 }
 
-/* do whatever needs to be done when this monster dies and remove it from the monster list */
-static void kill_monster(int16 monster_index)
+//stub
+void set_monster_action(int16 monster_index, int16 action)
 {
-	Monster *monster 		= get_monster_data( monster_index );
-	monsterDefinition* definition 	= monster->getDefinition();
-	Object *object 		= monster->getObject();
+	Monster::Get(monster_index).changeAction(action);
+}
+
+/* do whatever needs to be done when this monster dies and remove it from the monster list */
+void Monster::kill()
+{
+	monsterDefinition* definition 	= getDefinition();
+	auto myObjectIndex		= getObjectIndex();
+	Object &object 			= Object::Get(myObjectIndex);
+	auto myIndex 			= getIndex();
+
 	shape_descriptor shape;
 	
-	assert( monster->isDying() ); //eliminates default case
+	assert( isDying() ); //eliminates default case
 	
-	switch( monster->getAction() )
+	switch( getAction() )
 	{
 		case _monster_is_dying_soft:
-			shape = isUNONE(definition->soft_dead_shapes) ? UNONE : BUILD_DESCRIPTOR(definition->collection, definition->soft_dead_shapes);
+			shape = isUNONE(definition->soft_dead_shapes) ? UNONE : 
+			BUILD_DESCRIPTOR(definition->collection, definition->soft_dead_shapes);
 			break;
 		case _monster_is_dying_hard:
-			shape = isUNONE(definition->hard_dead_shapes) ? UNONE : BUILD_DESCRIPTOR(definition->collection, definition->hard_dead_shapes);
+			shape = isUNONE(definition->hard_dead_shapes) ? UNONE : 
+			BUILD_DESCRIPTOR(definition->collection, definition->hard_dead_shapes);
 			break;
 		case _monster_is_dying_flaming:
 			shape = FLAMING_DEAD_SHAPE;
@@ -2690,14 +2724,15 @@ static void kill_monster(int16 monster_index)
 	}
 
 	/* add an item if we're supposed to be carrying something */
-	if( !isNONE( definition->carrying_item_type ) && monster->isDyingSoft() )
+	if( !isNONE( definition->carrying_item_type ) && isDyingSoft() )
 	{
 		world_distance radius, height;
 		world_point3d random_point;
 		int16 random_polygon_index;
 		
-		get_monster_dimensions(monster_index, &radius, &height);
-		random_point_on_circle(&object->location, object->polygon, radius, &random_point, &random_polygon_index);
+		getDimensions(&radius, &height);
+		random_point_on_circle(&object.location, object.polygon, radius, &random_point, &random_polygon_index);
+		
 		if( !isNONE(random_polygon_index) )
 		{
 			Polygon *random_polygon = get_polygon_data(random_polygon_index);
@@ -2724,42 +2759,50 @@ static void kill_monster(int16 monster_index)
 	}
 	
 	/* stuff in an appropriate dead shape (or remove our object if we don't have a dead shape) */
-    bool remove_object = isUNONE(shape);
-    if (!remove_object && (static_world->environment_flags & _environment_ouch_m1))
-    {
-        Polygon *polygon = get_polygon_data(object->polygon);
-        switch (polygon->type)
-        {
-            case _polygon_is_major_ouch:
-            case _polygon_is_minor_ouch:
-                remove_object = true;
-                break;
-            case _polygon_is_platform:
-                if (PLATFORM_IS_FLOODED(get_platform_data(polygon->permutation)) &&
-                    find_flooding_polygon(object->polygon) != NONE)
-                    remove_object = true;
-                break;
-        }
-    }
+	bool remove_object = isUNONE(shape);
+	auto objPoly = object.polygon;
+	if (!remove_object && (static_world->environment_flags & _environment_ouch_m1))
+	{
+		Polygon &polygon = Polygon::Get(objPoly);
+		switch (polygon.type)
+		{
+		case _polygon_is_major_ouch:
+		case _polygon_is_minor_ouch:
+			remove_object = true;
+			break;
+		case _polygon_is_platform:
+			if (PLATFORM_IS_FLOODED(get_platform_data(polygon.permutation)) && find_flooding_polygon(objPoly) != NONE)
+				remove_object = true;
+			break;
+		}
+	}
     
-	if (remove_object)
-		remove_map_object( monster->getObjectIndex() );
+	if(remove_object)
+		remove_map_object( myObjectIndex );
 	else
 	{
-		turn_object_to_shit( monster->getObjectIndex() );
-		randomize_object_sequence( monster->getObjectIndex(), shape );
+		turn_object_to_shit( myObjectIndex );
+		randomize_object_sequence( myObjectIndex, shape );
 	}
 
+	auto myType = getType();
 	/* recover original type and notify the object stuff a monster died */
-	if( monster->wasPromoted() ) 
-		monster->type--;
-	if( monster->wasDemoted() ) 
-		monster->type++;
+	if( wasPromoted() ) 
+		myType--;
+	if( wasDemoted() ) 
+		myType++;
+		
+	setType(myType);
+	object_was_just_destroyed( _object_is_monster, myType );
 
-	object_was_just_destroyed( _object_is_monster, monster->getType() );
+	L_Invalidate_Monster(myIndex);
+	markSlotAsFree();
+}
 
-	L_Invalidate_Monster(monster_index);
-	monster->markSlotAsFree();
+//stubroutine
+static void kill_monster(int16 monster_index)
+{
+	Monster::Get(monster_index).kill();
 }
 		
 /* 
