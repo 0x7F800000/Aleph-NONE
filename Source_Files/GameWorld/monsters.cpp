@@ -2211,8 +2211,8 @@ static void generate_new_path_for_monster(int16 monster_index)
 			Monster &target 	= Monster::Get( monsterTargetIndex );
 			Object &targetObject	= Object::Get( target.getObjectIndex() );
 
-			if (definition->random_sound_mask && !(global_random() & definition->random_sound_mask)) 
-				play_object_sound(monsterObjectIndex, definition->random_sound);
+			if (definition->random_sound_mask && !(global_random() & monster->random_sound_mask)) 
+				play_object_sound(monsterObjectIndex, monster->random_sound);
 
 			/* 
 				if we can't attack, run away
