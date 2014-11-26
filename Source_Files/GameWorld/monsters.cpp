@@ -2085,7 +2085,7 @@ static void update_monster_physics_model(int16 monster_index)
 	
 	world_distance adjusted_floor_height, adjusted_ceiling_height;
 	
-	auto negative_facing = NORMALIZE_ANGLE(HALF_CIRCLE + object->facing);
+	auto negative_facing = NORMALIZE_ANGLE(HALF_CIRCLE + object.facing);
 	int16 supporting_polygon_index;
 
 	/* move the monster */		
