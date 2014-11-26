@@ -61,7 +61,6 @@ we should cut corners instead of blindly following map geometry (i.e., separate 
 #define MAXIMUM_PATHS (get_dynamic_limit(_dynamic_limit_paths))
 #define MAXIMUM_POINTS_PER_PATH 63
 
-#define PATH_VALIDATION_AREA_SIZE 64*1024
 
 /* ---------- structures */
 
@@ -78,11 +77,6 @@ struct path_definition /* 256 bytes */
 
 static struct path_definition *paths = nullptr;
 
-#ifdef VERIFY_PATH_SYNC
-static byte *path_validation_area = nullptr;
-static int32 path_validation_area_index;
-static short path_run_count;
-#endif
 
 /* ---------- private prototypes */
 
@@ -93,178 +87,115 @@ static void calculate_midpoint_of_shared_line(short polygon1, short polygon2, wo
 void allocate_pathfinding_memory()
 {
 	// Made reentrant because this is called every time MAXIMUM_PATHS is changed
-	if (paths) delete []paths;
-	paths= new path_definition[MAXIMUM_PATHS];
+	if (paths) 
+		delete []paths;
+	paths = new path_definition[MAXIMUM_PATHS];
 	assert(paths);
-
-#ifdef VERIFY_PATH_SYNC
-	if (path_validation_area) delete []path_validation_area;
-	path_validation_area= new byte[PATH_VALIDATION_AREA_SIZE];
-	assert(path_validation_area);
-	path_run_count= 0;
-#endif
 }
 
 void reset_paths()
 {
 	for (ix path_index = 0; path_index < MAXIMUM_PATHS; ++path_index) 
 		paths[path_index].step_count = NONE;
-
-#ifdef VERIFY_PATH_SYNC
-	path_run_count++;
-	path_validation_area_index = 0;
-#endif
 }
 
-short new_path(
-	world_point2d *source_point,
-	short source_polygon_index,
-	world_point2d *destination_point,
-	short destination_polygon_index,
-	world_distance minimum_separation,
-	cost_proc_ptr cost,
-	void *data)
+short new_path(world_point2d *source_point, short source_polygon_index, world_point2d *destination_point,
+	short destination_polygon_index, world_distance minimum_separation, cost_proc_ptr cost, void *data)
 {
-	short path_index;
+	ix path_index;
+	
 	/* used for calculating the source polygon, ages ago */
 	(void) (source_point);
 
-#ifdef VALIDATE_PATH_SPACE	
-	{
-		short i;
-		
-		for (i=0;i<MAXIMUM_PATHS;++i)
-		{
-			if (paths[i].step_count!=NONE)
-			{
-				vassert(paths[i].step_count>=0&&paths[i].step_count<=MAXIMUM_POINTS_PER_PATH&&paths[i].current_step>=0&&paths[i].current_step<=paths[i].step_count,
-					csprintf(temporary, "path #%d (%p) is fucked.", i, paths+i));
-			}
-		}
-	}
-#endif
-
 	/* find a free path */	
-	for (path_index=0;path_index<MAXIMUM_PATHS;++path_index)
-		if (paths[path_index].step_count==NONE) 
+	for( path_index = 0; path_index < MAXIMUM_PATHS; ++path_index )
+	{
+		if (paths[path_index].step_count == NONE) 
 			break;
+	}
 	
 	if (path_index == MAXIMUM_PATHS) 
 		path_index = NONE;
 	
-	if (path_index!=NONE)
+	if (path_index == NONE)
+		return NONE;
+
+	bool reached_destination;
+	short polygon_index;
+	short step_count;
+	short depth;
+
+	if (destination_polygon_index != NONE)
 	{
-		bool reached_destination;
-		short polygon_index;
-		short step_count;
-		short depth;
+		/* NON-RANDOM PATH: we have a valid destination point: flood out from the source_polygon_index
+			until we reach destination_polygon_index or we run out of stack space */
+		
+		polygon_index = flood_map(source_polygon_index, INT32_MAX, cost, _breadth_first, data);
+		
+		while (polygon_index != NONE && polygon_index != destination_polygon_index)
+			polygon_index = flood_map(NONE, INT32_MAX, cost, _breadth_first, data);
 
-		if (destination_polygon_index!=NONE)
-		{
-			/* NON-RANDOM PATH: we have a valid destination point: flood out from the source_polygon_index
-				until we reach destination_polygon_index or we run out of stack space */
-			
-			polygon_index= flood_map(source_polygon_index, INT32_MAX, cost, _breadth_first, data);
-			while (polygon_index!=NONE&&polygon_index!=destination_polygon_index)
-			{
-				polygon_index= flood_map(NONE, INT32_MAX, cost, _breadth_first, data);
-			}
-
-			/* if we reached destination_polygon_index, extract the path by calling
-				reverse_flood_map().  remember to add the destination to the end of the path */
-			reached_destination= polygon_index==destination_polygon_index ? true : false;
-		}
-		else
-		{
-			/* RANDOM PATH: our destination point is invalid (the caller wants a random path); flood
-				out from the source polygon until we run out of stack space or we reach a cost
-				of RANDOM_PATH_AREA, whichever comes first.  in fact, our destination_point, if
-				not NULL, is a 2d vector specifying a bias in the direction we want to travel
-				(usually this will be away from somewhere we donÕt want to be) */
-			polygon_index= flood_map(source_polygon_index, INT32_MAX, cost, _breadth_first, data);
-			while (polygon_index!=NONE)
-			{
-				polygon_index= flood_map(NONE, INT32_MAX, cost, _breadth_first, data);
-			}
-			
-			choose_random_flood_node((world_vector2d *)destination_point); /* choose a random destination */
-			reached_destination= false; /* we didnÕt even have one */
-		}
-
-		depth= flood_depth();
-		if (reached_destination)
-		{
-			/* a depth of zero yeilds one point (the destination), two and greater 2*depth */
-			step_count= depth+1; //depth ? 2*depth : 1;
-		}
-		else
-		{
-			/* two points for every polygon change, minus one point because we never walk into the
-				last polygon; therefore destinationless paths with a depth of zero are useless */
-			step_count= depth; //2*depth-1;
-		}
-	
-		if (step_count>0) /* if we have valid steps, extract the path */
-		{
-			path_definition *path= paths+path_index;
-			short last_polygon_index;
-
-			obj_set(*path, 0x80);
-
-			
-			path->step_count= step_count>MAXIMUM_POINTS_PER_PATH ? MAXIMUM_POINTS_PER_PATH : step_count;
-			assert(path->step_count!=NONE); /* this would be bad */
-			path->current_step= 0;
-
-			/* if we reached our destination (and itÕs not out-of-range), add it */
-			if (reached_destination && --step_count<MAXIMUM_POINTS_PER_PATH) path->points[step_count]= *destination_point;
-			
-			/* add all the points up to but not including the source (if we have room) */
-			last_polygon_index= reverse_flood_map();
-			while ((polygon_index= reverse_flood_map())!=NONE)
-			{
-				if (--step_count<MAXIMUM_POINTS_PER_PATH) calculate_midpoint_of_shared_line(last_polygon_index, polygon_index, minimum_separation, path->points+step_count);
-				last_polygon_index= polygon_index;
-			}
-			assert(!step_count); /* we should be out of points */
-	
-
-#ifdef VERIFY_PATH_SYNC
-			if (path_run_count==1)
-			{
-				objlist_copy(path_validation_area+path_validation_area_index, path->points, path->step_count);
-				path_validation_area_index+= sizeof(world_point2d)*path->step_count;
-				assert(path_validation_area_index<PATH_VALIDATION_AREA_SIZE);
-			}
-			else
-			{
-				if (memcmp(path_validation_area+path_validation_area_index, path->points, sizeof(world_point2d)*path->step_count))
-				{
-					dprintf("path #%d at %p didnÕt match point list at %p", path_index, path, path_validation_area+path_validation_area_index);
-				}
-				path_validation_area_index+= sizeof(world_point2d*)*path->step_count;
-			}
-#endif
-		}
-		else
-		{
-			path_index= NONE;
-		}
+		/* if we reached destination_polygon_index, extract the path by calling
+			reverse_flood_map().  remember to add the destination to the end of the path */
+		reached_destination = polygon_index == destination_polygon_index;
+	}
+	else
+	{
+		/* RANDOM PATH: our destination point is invalid (the caller wants a random path); flood
+			out from the source polygon until we run out of stack space or we reach a cost
+			of RANDOM_PATH_AREA, whichever comes first.  in fact, our destination_point, if
+			not NULL, is a 2d vector specifying a bias in the direction we want to travel
+			(usually this will be away from somewhere we donÕt want to be) */
+		polygon_index = flood_map(source_polygon_index, INT32_MAX, cost, _breadth_first, data);
+		
+		while (polygon_index != NONE)
+			polygon_index = flood_map(NONE, INT32_MAX, cost, _breadth_first, data);
+		
+		choose_random_flood_node((world_vector2d *)destination_point); /* choose a random destination */
+		reached_destination = false; /* we didnÕt even have one */
 	}
 
-#ifdef VALIDATE_PATH_SPACE
-	{
-		for (ix i=0;i<MAXIMUM_PATHS;++i)
-		{
-			if (paths[i].step_count!=NONE)
-			{
-				vassert(paths[i].step_count>=0&&paths[i].step_count<=MAXIMUM_POINTS_PER_PATH&&paths[i].current_step>=0&&paths[i].current_step<=paths[i].step_count,
-					csprintf(temporary, "path #%d (%p) is fucked.", i, paths+i));
-			}
-		}
-	}
-#endif
+	depth = flood_depth();
 	
+	/* a depth of zero yeilds one point (the destination), two and greater 2*depth */
+	if (reached_destination)
+		step_count = depth + 1; 
+		
+	/* 
+		two points for every polygon change, minus one point because we never walk into the
+		last polygon; therefore destinationless paths with a depth of zero are useless 
+	*/
+	else
+		step_count = depth; 
+
+	if (step_count <= 0) 
+		return NONE;
+	/* if we have valid steps, extract the path */
+	path_definition *path = paths + path_index;
+	short last_polygon_index;
+
+	obj_set(*path, 0x80);
+
+	
+	path->step_count = step_count > MAXIMUM_POINTS_PER_PATH ? MAXIMUM_POINTS_PER_PATH : step_count;
+	assert(path->step_count != NONE); /* this would be bad */
+	path->current_step= 0;
+
+	/* if we reached our destination (and itÕs not out-of-range), add it */
+	if (reached_destination && --step_count<MAXIMUM_POINTS_PER_PATH) 
+		path->points[step_count] = *destination_point;
+	
+	/* add all the points up to but not including the source (if we have room) */
+	last_polygon_index = reverse_flood_map();
+	while ( (polygon_index = reverse_flood_map() ) != NONE)
+	{
+		if (--step_count < MAXIMUM_POINTS_PER_PATH) 
+			calculate_midpoint_of_shared_line(last_polygon_index, polygon_index, minimum_separation, 
+							path->points + step_count);
+		last_polygon_index = polygon_index;
+	}
+	assert(!step_count); /* we should be out of points */
+
 	return path_index;
 }
 
@@ -279,7 +210,7 @@ bool move_along_path(short path_index, world_point2d *p)
 	assert(path->step_count != NONE);
 	vassert(path->current_step>=0&&path->current_step<=path->step_count, csprintf(temporary, "invalid current path step: #%d/#%d", path->current_step, path->step_count));
 	
-	if ( (end_of_path = path->current_step==path->step_count))
+	if ( (end_of_path = path->current_step == path->step_count))
 		path->step_count = NONE;
 	else
 		*p = path->points[path->current_step++];
@@ -289,9 +220,14 @@ bool move_along_path(short path_index, world_point2d *p)
 
 void delete_path(short path_index)
 {
-	assert(path_index>=0&&path_index < MAXIMUM_PATHS);
-	assert(paths[path_index].step_count!=NONE);
-	vassert(paths[path_index].current_step >= 0 && paths[path_index].current_step<=paths[path_index].step_count, csprintf(temporary, "invalid current path step: #%d/#%d", paths[path_index].current_step, paths[path_index].step_count));
+	assert( path_index >= 0 && path_index < MAXIMUM_PATHS );
+	assert( paths[path_index].step_count != NONE );
+	vassert( 
+		paths[path_index].current_step >= 0 
+	&& 
+	paths[path_index].current_step <= paths[path_index].step_count, 
+	csprintf(temporary, "invalid current path step: #%d/#%d", 
+	paths[path_index].current_step, paths[path_index].step_count));
 	
 	paths[path_index].step_count = NONE;
 }
@@ -300,38 +236,40 @@ void delete_path(short path_index)
 
 static void calculate_midpoint_of_shared_line(short polygon1, short polygon2, world_distance minimum_separation, world_point2d *midpoint)
 {
-	short shared_line_index;
-	world_distance range, origin;
-	line_data *shared_line;
-	endpoint_data *endpoint0, *endpoint1;
+	auto shared_line_index = find_shared_line(polygon1, polygon2);
 	
-	shared_line_index= find_shared_line(polygon1, polygon2);
-	assert(shared_line_index!=NONE);
-	shared_line= get_line_data(shared_line_index);
+	assert(shared_line_index != NONE);
+	
+	Line &shared_line = Line::Get(shared_line_index);
 
-	endpoint0= get_endpoint_data(shared_line->endpoint_indexes[0]);
-	endpoint1= get_endpoint_data(shared_line->endpoint_indexes[1]);
+	Endpoint &endpoint0 = Endpoint::Get( shared_line.endpoint_indexes[0] );
+	Endpoint &endpoint1 = Endpoint::Get( shared_line.endpoint_indexes[1] );
 
-	origin= 0;
-	range= shared_line->length;
-	if (ENDPOINT_IS_ELEVATION(endpoint0)) 
-		origin+= minimum_separation, range-= minimum_separation;
-	if (ENDPOINT_IS_ELEVATION(endpoint1)) 
-		range-= minimum_separation;
-	if (range<=0)
+	world_distance origin = 0;
+	world_distance range = shared_line.length;
+	
+	if (ENDPOINT_IS_ELEVATION(&endpoint0) ) 
+	{
+		origin 	+= minimum_separation;
+		range 	-= minimum_separation;
+	}
+	if( ENDPOINT_IS_ELEVATION(&endpoint1) ) 
+		range 	-= minimum_separation;
+		
+	if (range <= 0)
 	{
 		/* uhh... this line is really too small for us to pass through */
-		midpoint->x= endpoint0->vertex.x + (endpoint1->vertex.x-endpoint0->vertex.x)/2;
-		midpoint->y= endpoint0->vertex.y + (endpoint1->vertex.y-endpoint0->vertex.y)/2;
+		midpoint->x = endpoint0.vertex.x + (endpoint1.vertex.x - endpoint0.vertex.x) / 2;
+		midpoint->y = endpoint0.vertex.y + (endpoint1.vertex.y - endpoint0.vertex.y) / 2;
 	}
 	else
 	{
-		world_distance dx 	= endpoint1->vertex.x - endpoint0->vertex.x;
-		world_distance dy 	= endpoint1->vertex.y - endpoint0->vertex.y;
+		world_distance dx 	= endpoint1.vertex.x - endpoint0.vertex.x;
+		world_distance dy 	= endpoint1.vertex.y - endpoint0.vertex.y;
 		world_distance offset	= origin + ( ( global_random() * range ) >> 16);
 		
-		midpoint->x		= endpoint0->vertex.x + (offset * dx) / shared_line->length;
-		midpoint->y		= endpoint0->vertex.y + (offset * dy) / shared_line->length;
+		midpoint->x		= endpoint0.vertex.x + (offset * dx) / shared_line.length;
+		midpoint->y		= endpoint0.vertex.y + (offset * dy) / shared_line.length;
 	}
 }
 
@@ -343,7 +281,8 @@ world_point2d *path_peek(short path_index, short *step_count)
 
 	if (path->step_count == NONE)
 		return nullptr;
-	*step_count	= path->step_count;
+		
+	*step_count = path->step_count;
 	return path->points;
 }
 
