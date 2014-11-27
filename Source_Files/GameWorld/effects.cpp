@@ -57,14 +57,21 @@ static effect_definition *get_effect_definition(const short type);
 
 /* ---------- code */
 
-effect_data *get_effect_data(const short effect_index)
+Effect *get_effect_data(const short effect_index)
 {
-	struct effect_data *effect = GetMemberWithBounds(effects,effect_index,MAXIMUM_EFFECTS_PER_MAP);
+	Effect *effect = GetMemberWithBounds(effects,effect_index,MAXIMUM_EFFECTS_PER_MAP);
 	
 	vassert(effect, csprintf(temporary, "effect index #%d is out of range", effect_index));
 	vassert(SLOT_IS_USED(effect), csprintf(temporary, "effect index #%d (%p) is unused", effect_index, effect));
 	
 	return effect;
+}
+
+class Effect& Effect::Get(const ix index)
+{
+	assert(ix < MAXIMUM_EFFECTS_PER_MAP);
+	assert(ix >= 0);
+	return EffectList[ix];
 }
 
 // LP change: moved down here because it refers to effect definitions
@@ -81,7 +88,7 @@ short new_effect(world_point3d *origin, short polygon_index, short type, angle f
 	if (polygon_index == NONE)
 		return NONE;
 		
-	effect_data *effect;
+	Effect *effect;
 	effect_definition *definition = get_effect_definition(type);
 	
 	// LP change: idiot-proofing
@@ -143,46 +150,45 @@ short new_effect(world_point3d *origin, short polygon_index, short type, angle f
 /* assumes ¶t==1 tick */
 void update_effects()
 {
-	effect_data *effect;
+	Effect *effect;
 	short effect_index;
 	
 	for (effect_index= 0, effect= effects; effect_index<MAXIMUM_EFFECTS_PER_MAP; ++effect_index, ++effect)
 	{
-		if (SLOT_IS_USED(effect))
+		if (!SLOT_IS_USED(effect))
+			continue;
+		Object *object 			= get_object_data(effect->object_index);
+		effect_definition *definition	= get_effect_definition(effect->type);
+		// LP change: idiot-proofing
+		if (!definition) 
+			continue;
+		
+		if (effect->delay)
 		{
-			struct object_data *object= get_object_data(effect->object_index);
-			struct effect_definition *definition= get_effect_definition(effect->type);
-			// LP change: idiot-proofing
-			if (!definition) continue;
-			
-			if (effect->delay)
+			/* handle invisible, delayed effects */
+			if (!--effect->delay)
 			{
-				/* handle invisible, delayed effects */
-				if (!(effect->delay-= 1))
-				{
-					SET_OBJECT_INVISIBILITY(object, false);
-					play_object_sound(effect->object_index, definition->delay_sound);
-				}
+				SET_OBJECT_INVISIBILITY(object, false);
+				play_object_sound(effect->object_index, definition->delay_sound);
 			}
-			else
+			continue;
+		}
+
+		/* update our object's animation */
+		animate_object(effect->object_index);
+		
+		/* if the effect's animation has terminated and we're supposed to deactive it, do so */
+		if (((GET_OBJECT_ANIMATION_FLAGS(object)&_obj_last_frame_animated)&&(definition->flags&_end_when_animation_loops)) ||
+			((GET_OBJECT_ANIMATION_FLAGS(object)&_obj_transfer_mode_finished)&&(definition->flags&_end_when_transfer_animation_loops)))
+		{
+			remove_effect(effect_index);
+			
+			/* if we're supposed to make another item visible, do so */
+			if (definition->flags & _make_twin_visible)
 			{
-				/* update our objectÕs animation */
-				animate_object(effect->object_index);
+				Object *object = get_object_data(effect->data);
 				
-				/* if the effectÕs animation has terminated and weÕre supposed to deactive it, do so */
-				if (((GET_OBJECT_ANIMATION_FLAGS(object)&_obj_last_frame_animated)&&(definition->flags&_end_when_animation_loops)) ||
-					((GET_OBJECT_ANIMATION_FLAGS(object)&_obj_transfer_mode_finished)&&(definition->flags&_end_when_transfer_animation_loops)))
-				{
-					remove_effect(effect_index);
-					
-					/* if weÕre supposed to make another item visible, do so */
-					if (definition->flags&_make_twin_visible)
-					{
-						struct object_data *object= get_object_data(effect->data);
-						
-						SET_OBJECT_INVISIBILITY(object, false);
-					}
-				}
+				SET_OBJECT_INVISIBILITY(object, false);
 			}
 		}
 	}
@@ -190,7 +196,7 @@ void update_effects()
 
 void remove_effect(int16 effect_index)
 {
-	effect_data *effect = get_effect_data(effect_index);
+	Effect *effect = get_effect_data(effect_index);
 	remove_map_object(effect->object_index);
 	
 	//lua hook
@@ -201,7 +207,7 @@ void remove_effect(int16 effect_index)
 
 void remove_all_nonpersistent_effects()
 {
-	effect_data *effect;
+	Effect *effect;
 	short effect_index;
 	
 	for (effect_index= 0, effect= effects; effect_index<MAXIMUM_EFFECTS_PER_MAP; ++effect_index, ++effect)
@@ -248,7 +254,7 @@ void teleport_object_out(short object_index)
 	if (effect_index==NONE)
 		return;
 	
-	effect_data *effect	= get_effect_data(effect_index);
+	Effect *effect		= get_effect_data(effect_index);
 	Object *effect_object 	= get_object_data(effect->object_index);
 	
 	// make the effect look like the object
@@ -268,41 +274,39 @@ void teleport_object_out(short object_index)
 // if the given object isnÕt already teleporting in, do so
 void teleport_object_in(short object_index)
 {
-	struct effect_data *effect;
+	Effect *effect;
 	short effect_index;
 
-	for (effect_index= 0, effect= effects; effect_index<MAXIMUM_EFFECTS_PER_MAP; ++effect_index, ++effect)
+	for (effect_index= 0, effect= effects; effect_index < MAXIMUM_EFFECTS_PER_MAP; ++effect_index, ++effect)
 	{
-		if (SLOT_IS_USED(effect))
+		if( !SLOT_IS_USED(effect) )
+			continue;
+		
+		if (effect->type == _effect_teleport_object_in && effect->data == object_index)
 		{
-			if (effect->type==_effect_teleport_object_in && effect->data==object_index)
-			{
-				object_index= NONE;
-				break;
-			}
+			object_index = NONE;
+			break;
 		}
 	}
 	
-	if (object_index!=NONE)
-	{
-		struct object_data *object= get_object_data(object_index);
+	if (object_index == NONE)
+		return;
+	
+	Object *object = get_object_data(object_index);
 
-		effect_index= new_effect(&object->location, object->polygon, _effect_teleport_object_in, object->facing);
-		if (effect_index!=NONE)
-		{
-			struct object_data *effect_object;
-			
-			effect= get_effect_data(effect_index);
-			effect->data= object_index;
-			
-			effect_object= get_object_data(effect->object_index);
-			effect_object->shape= object->shape;
-			effect_object->transfer_mode= _xfer_fold_in;
-			effect_object->transfer_period= TELEPORTING_MIDPOINT;
-			effect_object->transfer_phase= 0;
-			effect_object->flags|= object->flags&(_object_is_enlarged|_object_is_tiny);
-		}
-	}
+	effect_index = new_effect(&object->location, object->polygon, _effect_teleport_object_in, object->facing);
+	
+	if (effect_index == NONE)
+		return;
+	effect				= get_effect_data(effect_index);
+	
+	effect->data			= object_index;
+	Object *effect_object		= get_object_data(effect->object_index);
+	effect_object->shape		= object->shape;
+	effect_object->transfer_mode	= _xfer_fold_in;
+	effect_object->transfer_period	= TELEPORTING_MIDPOINT;
+	effect_object->transfer_phase	= 0;
+	effect_object->flags		|= object->flags & ( _object_is_enlarged | _object_is_tiny );
 }
 
 
