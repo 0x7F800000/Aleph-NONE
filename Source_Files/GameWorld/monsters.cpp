@@ -1813,28 +1813,31 @@ bool legal_polygon_height_change(int16 polygon_index, world_distance new_floor_h
 	return new_polygon_height < minimum_height ? false : legal_change;
 }
 
-/* 
-	we've already checked and this monster is not obstructing the polygon from changing heights 
-*/
+//stubroutine
 void adjust_monster_for_polygon_height_change(int16 monster_index, int16 polygon_index, world_distance new_floor_height, 
 			world_distance new_ceiling_height)
 {
-	Polygon &polygon = Polygon::Get( polygon_index );
-	Monster &monster = Monster::Get( monster_index );
-	
-	world_distance radius, height;
-	monster.getDimensions(&radius, &height);
-	
-	if( monster.isPlayer() )
+	Monster::Get(monster_index).adjustForPolygonHeightChange(polygon_index, new_floor_height, new_ceiling_height);
+}
+
+/* 
+	we've already checked and this monster is not obstructing the polygon from changing heights 
+*/
+void Monster::adjustForPolygonHeightChange(int16 polygon_index, world_distance new_floor_height, 
+							world_distance new_ceiling_height)
+{
+	Polygon &polygon = Polygon::Get(polygon_index)
+
+	if( isPlayer() )
 	{
-		adjust_player_for_polygon_height_change( monster_index, polygon_index, new_floor_height, new_ceiling_height);
+		adjust_player_for_polygon_height_change(getIndex(), polygon_index, new_floor_height, new_ceiling_height);
 		return;
 	}
-	Object &object = Object::Get( monster.getObjectIndex() );
 	
-	if( object.location.z == polygon.floor_height ) 
+	Object &object = Object::Get( getObjectIndex() );
+	if( object.location.z == polygon.floor_height )
 		object.location.z = new_floor_height;
-}
+} 
 
 //stub for Monster:accelerate
 void accelerate_monster(int16 monster_index, world_distance vertical_velocity, angle direction, world_distance velocity)
@@ -2371,28 +2374,28 @@ static bool switch_target_check(int16 monster_index, int16 attacker_index, int16
 
 static int16 get_monster_attitude(int16 monster_index, int16 target_index)
 {
-	Monster *monster = get_monster_data(monster_index);
-	monsterDefinition* definition = monster->getDefinition();
-	Monster *target = get_monster_data(target_index);
-	auto target_type = target->type;
-	int16 attitude;
-
-	/* berserk monsters are hostile toward everything */
-	if (mTYPE_IS_ENEMY(definition, target_type) || monster->isBerserk() ||
-		(monster->hasValidTarget() && monster->isTarget(target_index)) ||
-		((definition->_class&_class_human_civilian) && target->isPlayer() && 
-		dynamic_world->civilians_killed_by_players >= CIVILIANS_KILLED_BY_PLAYER_THRESHHOLD))
-	{
-		attitude= _hostile;
-	}
-	else
-	{
-		attitude = (TYPE_IS_FRIEND(definition, target_type)) ? _friendly : _neutral;
-	}
-
-	return attitude;
+	return Monster::Get(monster_index).getAttitude(target_index);
 }
 
+int16 Monster::getAttitude(int16 targetIndex)
+{
+	monsterDefinition* definition 	= getDefinition();
+	Monster &target 		= Monster::Get(targetIndex);
+	auto target_type 		= target.type;
+	int16 attitude;
+	
+	const bool isEnemyType = mTYPE_IS_ENEMY(definition, target_type);
+	
+	const bool isVengefulAlly = definition->_class & _class_human_civilian && target.isPlayer() && 
+		dynamic_world->civilians_killed_by_players >= CIVILIANS_KILLED_BY_PLAYER_THRESHHOLD;
+		
+	/* berserk monsters are hostile toward everything */
+	if ( isEnemyType || isBerserk() || isTarget(targetIndex) || isVengefulAlly)
+		attitude = _hostile;
+	else
+		attitude = TYPE_IS_FRIEND(definition, target_type) ? _friendly : _neutral;
+	return attitude;
+}
 /* 
 	find_closest_appropriate_target() tries to do just that.  
 	
