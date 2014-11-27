@@ -505,7 +505,7 @@ class testCompiler : Monster
 	}
 	void changeTarget(const int16 targetIndex) override
 	{
-		if( Monster::Get(targetIndex).isPlayer() )
+		if( !isNONE(targetIndex) && Monster::Get(targetIndex).isPlayer() )
 			return;
 		Monster::changeTarget(targetIndex);
 	}
