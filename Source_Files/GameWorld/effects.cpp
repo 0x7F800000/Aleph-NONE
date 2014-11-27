@@ -69,9 +69,9 @@ Effect *get_effect_data(const short effect_index)
 
 class Effect& Effect::Get(const ix index)
 {
-	assert(ix < MAXIMUM_EFFECTS_PER_MAP);
-	assert(ix >= 0);
-	return EffectList[ix];
+	assert(index < MAXIMUM_EFFECTS_PER_MAP);
+	assert(index >= 0);
+	return EffectList[index];
 }
 
 // LP change: moved down here because it refers to effect definitions
