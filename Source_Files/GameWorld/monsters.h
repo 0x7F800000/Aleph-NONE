@@ -254,7 +254,21 @@ public:
 	
 	static class Monster& Get(const ix index);
 	
-	virtual void onDeath();
+	struct object_data* getObject();
+	
+	ix getIndex();
+	
+	virtual void accelerate(world_distance v_velocity, angle direction, world_distance velocity);
+	void changeTarget(const int16 targetIndex);
+	void changeMode(const int16 newMode, const int16 targetIndex);
+	void changeAction(const int16 newAction);
+	
+	void activate();
+	void deactivate();
+	void kill();
+	
+	void getDimensions(world_distance* radius, world_distance* height);
+	
 	
 	IS_MODE(isLocked, setLocked, _monster_locked)
 	IS_MODE(isLosingLock, setLosingLock, _monster_losing_lock)
@@ -313,20 +327,7 @@ public:
 	
 	inline void setActiveStatus(bool s)	{	SET_MONSTER_ACTIVE_STATUS(this, s);	}
 	
-	struct object_data* getObject();
-	
-	ix getIndex();
-	
-	void accelerate(world_distance v_velocity, angle direction, world_distance velocity);
-	void changeTarget(const int16 targetIndex);
-	void changeMode(const int16 newMode, const int16 targetIndex);
-	void changeAction(const int16 newAction);
-	
-	void activate();
-	void deactivate();
-	void kill();
-	
-	void getDimensions(world_distance* radius, world_distance* height);
+
 	
 	int16 getImpactEffect();
 	int16 getMeleeImpactEffect();
