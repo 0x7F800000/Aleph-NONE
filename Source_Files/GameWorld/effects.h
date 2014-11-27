@@ -136,6 +136,7 @@ enum /* effect types */
 class Effect /* 16 bytes LP: really 32 bytes */
 {
 public:
+	static class Effect& Get(const ix index);
 	short type;
 	short object_index;
 	
