@@ -218,7 +218,7 @@ struct attack_definition
 
 struct monsterDefinition /* <128 bytes */
 {
-	inline uint32 testFlags(uint32 test)	{	return flags & test;	}
+	inline const uint32 testFlags(const uint32 test)	{	return flags & test;	}
 	
 	FLAGTEST(makesSoundWhenActivated, setMakesSoundWhenActivated, _monster_makes_sound_when_activated)
 	
