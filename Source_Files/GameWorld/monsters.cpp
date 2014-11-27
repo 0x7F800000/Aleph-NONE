@@ -505,7 +505,7 @@ static void* Monster::operator new(size_t sz)
 		
 		if(monster->slotIsUsed())
 			continue;
-		obj_set(monster, 0x80);
+		//obj_set(monster, 0x80);
 		return (void*)monster;
 	}
 	assert(false);
