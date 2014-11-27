@@ -249,6 +249,8 @@ enum /* monster modes */
 class Monster 
 {
 public:
+	Monster(struct object_location* location, int16 monsterType);
+	
 	static class Monster& Get(const ix index);
 	
 	virtual void onDeath();
