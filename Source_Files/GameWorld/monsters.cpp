@@ -489,30 +489,30 @@ Monster::Monster(struct object_location* location, int16 monster_type)
 	if(static_world->mission_flags & _mission_rescue_m1 && definition->_class & _class_human_civilian_m1) 
 		dynamic_world->current_civilian_count++;
 }
-
+class testCompiler : Monster
+{
+	public:
+	testCompiler(): Monster() {}
+	
+	testCompiler(object_location* loc, int16 monster_type) : Monster(loc, monster_type)
+	{
+		
+	}
+	
+	void kill() override
+	{
+		Monster::kill();
+	}
+	
+	void* operator new(size_t sz)
+	{
+		return Monster::operator new(sz);
+	}
+};
 /* returns new monster index if successful, NONE otherwise */
 int16 new_monster(struct object_location *location, int16 monster_type)
 {
-	class testCompiler : Monster
-	{
-		public:
-		testCompiler(): Monster() {}
-		testCompiler(object_location* loc, int16 monster_type) :
-		Monster(loc, monster_type)
-		{
-			
-		}
-		
-		void kill()
-		{
-			Monster::kill();
-	
-		}
-		void* operator new(size_t sz)
-		{
-			return Monster::operator new(sz);
-		}
-	};
+
 	Monster *monster = nullptr;
 	
 	if(monster_type == _monster_compiler_major || monster_type == _monster_compiler_minor)
