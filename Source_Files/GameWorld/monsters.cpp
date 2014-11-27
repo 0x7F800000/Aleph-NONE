@@ -4444,3 +4444,8 @@ void Monster::accelerate(world_distance v_velocity, angle direction, world_dista
 		-TERMINAL_VERTICAL_MONSTER_VELOCITY, 
 		TERMINAL_VERTICAL_MONSTER_VELOCITY );
 }
+
+void Monster::onDeath()
+{
+
+}
