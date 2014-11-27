@@ -399,7 +399,7 @@ int16 new_monster(struct object_location *location, int16 monster_type)
 	const auto original_monster_type 	= monster_type;
 	const auto drop_mask 	= get_monster_drop_mask();
 	int16 flags 		= _monster_has_never_been_activated;
-	
+	ix monster_index;
 
 	
 	if( !definition->testFlags(_monster_cannot_be_dropped | _monster_is_alien) && !isNONE( drop_mask ) && 
@@ -433,7 +433,7 @@ int16 new_monster(struct object_location *location, int16 monster_type)
 	
 
 
-	for(ix monster_index = 0; monster_index < MAXIMUM_MONSTERS_PER_MAP; ++monster_index)
+	for(monster_index = 0; monster_index < MAXIMUM_MONSTERS_PER_MAP; ++monster_index)
 	{
 		Monster &monster = Monster::Get(monster_index);
 		
