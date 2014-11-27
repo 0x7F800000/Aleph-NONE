@@ -44,6 +44,11 @@ Oct 24, 2000 (Mark Levin)
 	Revealed some functions for P-tran
 */
 #include "access.hpp"
+
+#ifndef monster_data
+	#define	monster_data	Monster
+#endif
+
 // LP additions:
 #include "dynamic_limits.h"
 #include "XML_ElementParser.h"
@@ -240,11 +245,13 @@ enum /* monster modes */
 	inline void settername(bool set)	{	exflags = (set) ? exflags | chkflag : exflags & (~chkflag);	}
 
 
-#define	monster_data	Monster
+
 class Monster 
 {
 public:
 	static class Monster& Get(const ix index);
+	
+	virtual void onDeath();
 	
 	IS_MODE(isLocked, setLocked, _monster_locked)
 	IS_MODE(isLosingLock, setLosingLock, _monster_losing_lock)
