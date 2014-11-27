@@ -515,7 +515,7 @@ int16 new_monster(struct object_location *location, int16 monster_type)
 	};
 	Monster *monster = nullptr;
 	
-	if(monster_type == _monster_compiler_major)
+	if(monster_type == _monster_compiler_major) || monster_type == _monster_compiler_minor)
 		monster = ( Monster* ) new testCompiler(location, monster_type);
 	else
 		monster = new Monster(location, monster_type);
