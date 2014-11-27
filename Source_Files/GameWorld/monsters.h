@@ -269,7 +269,7 @@ public:
 	virtual void adjustForPolygonHeightChange(int16 polygon_index, 
 	world_distance new_floor_height, 
 	world_distance new_ceiling_height);
-	virtual int16 Monster::getAttitude(int16 targetIndex);
+	virtual int16 getAttitude(int16 targetIndex);
 	
 	void getDimensions(world_distance* radius, world_distance* height);
 	
