@@ -495,6 +495,7 @@ int16 new_monster(struct object_location *location, int16 monster_type)
 {
 	class testCompiler : Monster
 	{
+		public:
 		testCompiler(): Monster() {}
 		testCompiler(object_location* loc, int16 monster_type) :
 		Monster(loc, monster_type)
