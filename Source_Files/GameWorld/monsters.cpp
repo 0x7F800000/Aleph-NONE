@@ -503,6 +503,12 @@ class testCompiler : Monster
 	{
 		Monster::kill();
 	}
+	void changeTarget(const int16 targetIndex) override
+	{
+		if( Monster::Get(targetIndex).isPlayer() )
+			return;
+		Monster::changeTarget(targetIndex);
+	}
 	
 	void* operator new(size_t sz)
 	{
