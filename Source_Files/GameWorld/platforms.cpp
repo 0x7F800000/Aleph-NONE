@@ -939,8 +939,8 @@ static void play_platform_sound(int16 platform_index, int16 type)
 	as the maximum height; c) native polygon height is not used for floor/ceiling platforms */
 static void calculate_platform_extrema(int16 platform_index, world_distance lowest_level, world_distance highest_level)
 {
-	platform_data *platform 	= get_platform_data(platform_index);
-	polygon_data *polygon 		= get_polygon_data(platform->polygon_index);
+	Platform *platform 	= get_platform_data(platform_index);
+	Polygon *polygon 	= get_polygon_data(platform->polygon_index);
 	
 	world_distance lowest_adjacent_floor, highest_adjacent_ceiling;
 	world_distance highest_adjacent_floor, lowest_adjacent_ceiling;
