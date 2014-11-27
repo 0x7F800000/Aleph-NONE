@@ -510,7 +510,7 @@ int16 new_monster(struct object_location *location, int16 monster_type)
 		}
 		void* operator new(size_t sz)
 		{
-			return Monster::new(sz);
+			return Monster::operator new(sz);
 		}
 	};
 	Monster *monster = nullptr;
