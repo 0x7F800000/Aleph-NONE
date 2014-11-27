@@ -493,7 +493,19 @@ Monster::Monster(struct object_location* location, int16 monster_type)
 /* returns new monster index if successful, NONE otherwise */
 int16 new_monster(struct object_location *location, int16 monster_type)
 {
-	Monster *monster = new Monster(location, monster_type);
+	class testCompiler : Monster
+	{
+		void kill()
+		{
+			Monster::kill();
+		}
+	};
+	Monster *monster = nullptr;
+	
+	if(monster_type == _monster_compiler_major)
+		monster = ( Monster* ) new testCompiler(location, monster_type);
+	else
+		monster = new Monster(location, monster_type);
 	return monster->getIndex();
 }
 
