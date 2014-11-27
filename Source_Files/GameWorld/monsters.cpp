@@ -4256,7 +4256,7 @@ bool XML_DamageKickParser::ResetValues()
 		for (unsigned i = 0; i < NUMBER_OF_DAMAGE_TYPES; i++)
 			damage_kick_definitions[i] = original_damage_kick_definitions[i];
 		free(original_damage_kick_definitions);
-		original_damage_kick_definitions = NULL;
+		original_damage_kick_definitions = nullptr;
 	}
 	return true;
 }
@@ -4309,7 +4309,8 @@ bool XML_MonsterParser::HandleAttribute(const char* Tag, const char* Value)
 			IndexPresent = true;
 			return true;
 		}
-		else return false;
+		else 
+			return false;
 	}
 	else if (StringsEqual(Tag, "must_be_exterminated"))
 	{
@@ -4318,7 +4319,8 @@ bool XML_MonsterParser::HandleAttribute(const char* Tag, const char* Value)
 			ValuePresent = true;
 			return true;
 		}
-		else return false;
+		else 
+			return false;
 	}
 	UnrecognizedTag();
 	return false;
@@ -4356,7 +4358,7 @@ XML_ElementParser* Monsters_GetParser()
 	return &MonstersParser;
 }
 
-struct monster_definition*	Monster::getDefinition()
+struct monster_definition* Monster::getDefinition()
 {
 	return	(	hasInstanceDefinition()	) 
 		? 	monster_instances::get_instance(	instance_definition_index	)->getInstanceDefinition()
