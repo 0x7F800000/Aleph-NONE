@@ -397,9 +397,7 @@ int16 new_monster(struct object_location *location, int16 monster_type)
 {
 	monsterDefinition *definition 		= get_monster_definition(monster_type);
 	const auto original_monster_type 	= monster_type;
-	Monster *monster;
 	const auto drop_mask 	= get_monster_drop_mask();
-	ix monster_index 	= NONE;
 	int16 flags 		= _monster_has_never_been_activated;
 	
 
@@ -433,18 +431,24 @@ int16 new_monster(struct object_location *location, int16 monster_type)
 		}
 	}
 	
-	auto f = [=, &monster_index, &definition, &flags, &location, monster_type](Monster &m)
+
+
+	for(ix monster_index = 0; monster_index < MAXIMUM_MONSTERS_PER_MAP; ++monster_index)
 	{
-		if(	!m.slotIsFree()	)
-			return 0;
+		Monster &monster = Monster::Get(monster_index);
+		
+		if(!monster.slotIsFree())
+			continue;
 			
 		auto object_index = new_map_object(location, BUILD_DESCRIPTOR(definition->collection, definition->stationary_shape));
 		
-		/*	return nonzero == break	*/
 		if( isNONE(object_index) )
-			return (monster_index = NONE, -1);
+		{
+			monster_index = NONE;
+			break;
+		}
 			
-		Object*obj = get_object_data( object_index );
+		Object* object = get_object_data( object_index );
 		
 		obj_set(m, 0x80);
 		if( location->isBlind() )
@@ -454,52 +458,50 @@ int16 new_monster(struct object_location *location, int16 monster_type)
 		if( location->doesFloat() )
 			flags |= _monster_teleports_out_when_deactivated; //?
 			
-		/* initialize the monster_data structure; we don't touch most of the fields here
+		/* 
+			initialize the monster_data structure; we don't touch most of the fields here
 			because the monster is initially inactive (and they will be initialized when the
-			monster is activated) */
-		m.type = monster_type;
-		m.activation_bias = DECODE_ACTIVATION_BIAS(location->flags);
-		m.vitality = NONE; /* if a monster is activated with vitality==NONE, it will be properly initialized */
-		m.object_index = object_index;
-		m.flags = flags;
-		m.exflags = 0;
-		m.instance_definition_index = NONE;
-		m.goal_polygon_index = m.activation_bias == _activate_on_goal ?
+			monster is activated) 
+		*/
+		monster.type = monster_type;
+		monster.activation_bias = DECODE_ACTIVATION_BIAS(location->flags);
+		monster.vitality = NONE; /* if a monster is activated with vitality==NONE, it will be properly initialized */
+		monster.object_index = object_index;
+		monster.flags = flags;
+		monster.exflags = 0;
+		monster.instance_definition_index = NONE;
+		monster.goal_polygon_index = monster.activation_bias == _activate_on_goal ?
 			nearest_goal_polygon_index(location->polygon_index) : NONE;
-		m.sound_polygon_index = obj->polygon;
-		m.sound_location = obj->location;
-		m.markSlotAsUsed();
+		monster.sound_polygon_index = object->polygon;
+		monster.sound_location = object->location;
+		monster.markSlotAsUsed();
 		
 		monster_instances::new_definition_instance(definition, monster_index);
 		
 		
 		/* initialize the monster's object */
 		if(definition->testFlags(_monster_is_invisible))
-			obj->transfer_mode = _xfer_invisibility;
+			object->transfer_mode = _xfer_invisibility;
 			
 		if(definition->testFlags(_monster_is_subtly_invisible))
-			obj->transfer_mode = _xfer_subtle_invisibility;
+			object->transfer_mode = _xfer_subtle_invisibility;
 			
 		if(definition->testFlags(_monster_is_enlarged))
-			obj->flags |= _object_is_enlarged;
+			object->flags |= _object_is_enlarged;
 			
 		if(definition->testFlags(_monster_is_tiny))
-			obj->flags |= _object_is_tiny;
+			object->flags |= _object_is_tiny;
 			
-		SET_OBJECT_SOLIDITY(obj, true);
-		SET_OBJECT_OWNER(obj, _object_is_monster);
-		obj->permutation = monster_index;
-		obj->sound_pitch = definition->sound_pitch;
+		SET_OBJECT_SOLIDITY(object, true);
+		SET_OBJECT_OWNER(object, _object_is_monster);
+		object->permutation = monster_index;
+		object->sound_pitch = definition->sound_pitch;
 
 		/* make sure the object frequency stuff keeps track of how many monsters are
 			on the map */
 		object_was_just_added(_object_is_monster, original_monster_type);
-		return 1;	//break
-	};
-	for(monster_index = 0; monster_index < MAXIMUM_MONSTERS_PER_MAP; ++monster_index)
-		if(f(MonsterList[monster_index]))
-			break;
-			
+		break;
+	}
 	
 	if(monster_index == MAXIMUM_MONSTERS_PER_MAP) 
 		monster_index = NONE;
