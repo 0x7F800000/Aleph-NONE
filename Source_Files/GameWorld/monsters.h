@@ -259,13 +259,17 @@ public:
 	ix getIndex();
 	
 	virtual void accelerate(world_distance v_velocity, angle direction, world_distance velocity);
-	void changeTarget(const int16 targetIndex);
-	void changeMode(const int16 newMode, const int16 targetIndex);
-	void changeAction(const int16 newAction);
+	virtual void changeTarget(const int16 targetIndex);
+	virtual void changeMode(const int16 newMode, const int16 targetIndex);
+	virtual void changeAction(const int16 newAction);
 	
-	void activate();
-	void deactivate();
-	void kill();
+	virtual void activate();
+	virtual void deactivate();
+	virtual void kill();
+	virtual void adjustForPolygonHeightChange(int16 polygon_index, 
+	world_distance new_floor_height, 
+	world_distance new_ceiling_height);
+	virtual int16 Monster::getAttitude(int16 targetIndex);
 	
 	void getDimensions(world_distance* radius, world_distance* height);
 	
