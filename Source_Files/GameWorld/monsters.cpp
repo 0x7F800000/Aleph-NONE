@@ -392,15 +392,12 @@ static inline int16 get_minor_promotion_mask()
 	return NONE;
 }
 
-/* returns new monster index if successful, NONE otherwise */
-int16 new_monster(struct object_location *location, int16 monster_type)
+Monster::Monster(struct object_location* location, int16 monsterType)
 {
 	monsterDefinition *definition 		= get_monster_definition(monster_type);
 	const auto original_monster_type 	= monster_type;
-	const auto drop_mask 	= get_monster_drop_mask();
-	int16 flags 		= _monster_has_never_been_activated;
-	ix monster_index;
-
+	const auto drop_mask 			= get_monster_drop_mask();
+	flags 					= _monster_has_never_been_activated;
 	
 	if( !definition->testFlags(_monster_cannot_be_dropped | _monster_is_alien) && !isNONE( drop_mask ) && 
 		!(++dynamic_world->new_monster_vanishing_cookie & drop_mask))
@@ -426,90 +423,78 @@ int16 new_monster(struct object_location *location, int16 monster_type)
 
 		if( !isNONE( promote_mask ) && !(++dynamic_world->new_monster_mangler_cookie & promote_mask)) 
 		{
-			definition= get_monster_definition(++monster_type);
-			flags |= _monster_was_promoted;
+			definition 	= get_monster_definition(++monster_type);
+			flags 		|= _monster_was_promoted;
 		}
 	}
+		
+	object_index = new_map_object(location, BUILD_DESCRIPTOR(definition->collection, definition->stationary_shape));
 	
-
-
-	for(monster_index = 0; monster_index < MAXIMUM_MONSTERS_PER_MAP; ++monster_index)
-	{
-		Monster &monster = Monster::Get(monster_index);
+	assert(!isNONE(object_index));
 		
-		if(!monster.slotIsFree())
-			continue;
-			
-		auto object_index = new_map_object(location, BUILD_DESCRIPTOR(definition->collection, definition->stationary_shape));
-		
-		if( isNONE(object_index) )
-		{
-			monster_index = NONE;
-			break;
-		}
-			
-		Object* object = get_object_data( object_index );
-		
-		obj_set(monster, 0x80);
-		if( location->isBlind() )
-			flags |= _monster_is_blind;
-		if( location->isDeaf() )
-			flags |= _monster_is_deaf;
-		if( location->doesFloat() )
-			flags |= _monster_teleports_out_when_deactivated; //?
-			
-		/* 
-			initialize the monster_data structure; we don't touch most of the fields here
-			because the monster is initially inactive (and they will be initialized when the
-			monster is activated) 
-		*/
-		monster.type = monster_type;
-		monster.activation_bias = DECODE_ACTIVATION_BIAS(location->flags);
-		monster.vitality = NONE; /* if a monster is activated with vitality==NONE, it will be properly initialized */
-		monster.object_index = object_index;
-		monster.flags = flags;
-		monster.exflags = 0;
-		monster.instance_definition_index = NONE;
-		monster.goal_polygon_index = monster.activation_bias == _activate_on_goal ?
-			nearest_goal_polygon_index(location->polygon_index) : NONE;
-		monster.sound_polygon_index = object->polygon;
-		monster.sound_location = object->location;
-		monster.markSlotAsUsed();
-		
-		monster_instances::new_definition_instance(definition, monster_index);
-		
-		
-		/* initialize the monster's object */
-		if(definition->testFlags(_monster_is_invisible))
-			object->transfer_mode = _xfer_invisibility;
-			
-		if(definition->testFlags(_monster_is_subtly_invisible))
-			object->transfer_mode = _xfer_subtle_invisibility;
-			
-		if(definition->testFlags(_monster_is_enlarged))
-			object->flags |= _object_is_enlarged;
-			
-		if(definition->testFlags(_monster_is_tiny))
-			object->flags |= _object_is_tiny;
-			
-		SET_OBJECT_SOLIDITY(object, true);
-		SET_OBJECT_OWNER(object, _object_is_monster);
-		object->permutation = monster_index;
-		object->sound_pitch = definition->sound_pitch;
-
-		/* make sure the object frequency stuff keeps track of how many monsters are
-			on the map */
-		object_was_just_added(_object_is_monster, original_monster_type);
-		break;
-	}
+	Object* object = get_object_data( object_index );
 	
-	if(monster_index == MAXIMUM_MONSTERS_PER_MAP) 
-		monster_index = NONE;
+	if( location->isBlind() )
+		flags |= _monster_is_blind;
+	if( location->isDeaf() )
+		flags |= _monster_is_deaf;
+	if( location->doesFloat() )
+		flags |= _monster_teleports_out_when_deactivated; //?
 		
+	/* 
+		initialize the monster_data structure; we don't touch most of the fields here
+		because the monster is initially inactive (and they will be initialized when the
+		monster is activated) 
+	*/
+	type = monster_type;
+	activation_bias = DECODE_ACTIVATION_BIAS(location->flags);
+	vitality = NONE; /* if a monster is activated with vitality==NONE, it will be properly initialized */
+	exflags = 0;
+	instance_definition_index = NONE;
+	
+	goal_polygon_index = activation_bias == _activate_on_goal ?
+		nearest_goal_polygon_index(location->polygon_index) : NONE;
+		
+	sound_polygon_index = object->polygon;
+	sound_location = object->location;
+	markSlotAsUsed();
+	
+	monster_instances::new_definition_instance(definition, getIndex());
+	
+	
+	/* initialize the monster's object */
+	if(definition->testFlags(_monster_is_invisible))
+		object->transfer_mode = _xfer_invisibility;
+		
+	if(definition->testFlags(_monster_is_subtly_invisible))
+		object->transfer_mode = _xfer_subtle_invisibility;
+		
+	if(definition->testFlags(_monster_is_enlarged))
+		object->flags |= _object_is_enlarged;
+		
+	if(definition->testFlags(_monster_is_tiny))
+		object->flags |= _object_is_tiny;
+		
+	SET_OBJECT_SOLIDITY(object, true);
+	SET_OBJECT_OWNER(object, _object_is_monster);
+	object->permutation = getIndex();
+	object->sound_pitch = definition->sound_pitch;
+
+	/* make sure the object frequency stuff keeps track of how many monsters are
+		on the map */
+	object_was_just_added(_object_is_monster, original_monster_type);
+
+	
 	/* keep track of how many civilians we drop on this level */
-	if(static_world->mission_flags & _mission_rescue_m1 && !isNONE(monster_index) && definition->_class & _class_human_civilian_m1) 
+	if(static_world->mission_flags & _mission_rescue_m1 && definition->_class & _class_human_civilian_m1) 
 		dynamic_world->current_civilian_count++;
-	return monster_index;
+}
+
+/* returns new monster index if successful, NONE otherwise */
+int16 new_monster(struct object_location *location, int16 monster_type)
+{
+	Monster *monster = new Monster(location, monster_type);
+	return monster->getIndex();
 }
 
 static void* Monster::operator new(size_t sz)
