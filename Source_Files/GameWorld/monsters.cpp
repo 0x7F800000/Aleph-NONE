@@ -450,7 +450,7 @@ int16 new_monster(struct object_location *location, int16 monster_type)
 			
 		Object* object = get_object_data( object_index );
 		
-		obj_set(m, 0x80);
+		obj_set(monster, 0x80);
 		if( location->isBlind() )
 			flags |= _monster_is_blind;
 		if( location->isDeaf() )
