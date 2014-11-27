@@ -2931,7 +2931,7 @@ static void kill_monster(int16 monster_index)
 	too far during a certain turn (which was completely possible when the player was wearing the
 	red cloak in Pathways), but that was fixed.  i just recoded this for marathon and it looks
 	a hell of a lot better now. 
-	*/
+*/
 static bool translate_monster(int16 monster_index, world_distance distance)
 {
 	Monster *monster 		= get_monster_data(monster_index);
