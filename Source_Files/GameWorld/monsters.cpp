@@ -1826,7 +1826,7 @@ void adjust_monster_for_polygon_height_change(int16 monster_index, int16 polygon
 void Monster::adjustForPolygonHeightChange(int16 polygon_index, world_distance new_floor_height, 
 							world_distance new_ceiling_height)
 {
-	Polygon &polygon = Polygon::Get(polygon_index)
+	Polygon &polygon = Polygon::Get(polygon_index);
 
 	if( isPlayer() )
 	{
