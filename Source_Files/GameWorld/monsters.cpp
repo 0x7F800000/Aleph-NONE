@@ -392,7 +392,7 @@ static inline int16 get_minor_promotion_mask()
 	return NONE;
 }
 
-Monster::Monster(struct object_location* location, int16 monsterType)
+Monster::Monster(struct object_location* location, int16 monster_type)
 {
 	monsterDefinition *definition 		= get_monster_definition(monster_type);
 	const auto original_monster_type 	= monster_type;
