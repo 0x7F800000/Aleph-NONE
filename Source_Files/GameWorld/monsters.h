@@ -250,6 +250,7 @@ class Monster
 {
 public:
 	Monster(struct object_location* location, int16 monsterType);
+	Monster() {}
 	
 	static class Monster& Get(const ix index);
 	
