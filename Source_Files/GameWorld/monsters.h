@@ -411,6 +411,7 @@ public:
 	{
 		return getDefinition();
 	}
+	static void* operator new(size_t sz);
 
 };
 const int SIZEOF_monster_data = 64;
