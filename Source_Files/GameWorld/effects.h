@@ -39,7 +39,12 @@ Aug 30, 2000 (Loren Petrich):
 	Added stuff for unpacking and packing
 */
 
+#ifndef		effect_data
+	#define		effect_data	Effect
+#endif
+
 // LP addition:
+
 #include "dynamic_limits.h"
 
 /* ---------- effect structure */
@@ -128,8 +133,9 @@ enum /* effect types */
 
 /* uses SLOT_IS_USED(), SLOT_IS_FREE(), MARK_SLOT_AS_FREE(), MARK_SLOT_AS_USED() macros (0x8000 bit) */
 
-struct effect_data /* 16 bytes LP: really 32 bytes */
+class Effect /* 16 bytes LP: really 32 bytes */
 {
+public:
 	short type;
 	short object_index;
 	
@@ -148,7 +154,7 @@ const int SIZEOF_effect_definition = 14;
 
 // Turned the list of active effects into a variable array
 
-extern vector<effect_data> EffectList;
+extern vector<Effect> EffectList;
 #define effects (&EffectList[0])
 
 
@@ -165,13 +171,13 @@ void mark_effect_collections(short type, bool loading);
 void teleport_object_in(short object_index);
 void teleport_object_out(short object_index);
 
-effect_data *get_effect_data(const short effect_index);
+Effect *get_effect_data(const short effect_index);
 
 // LP: to pack and unpack this data;
 // these do not make the definitions visible to the outside world
 
-uint8 *unpack_effect_data(uint8 *Stream, effect_data *Objects, size_t Count);
-uint8 *pack_effect_data(uint8 *Stream, effect_data *Objects, size_t Count);
+uint8 *unpack_effect_data(uint8 *Stream, Effect *Objects, size_t Count);
+uint8 *pack_effect_data(uint8 *Stream, Effect *Objects, size_t Count);
 uint8 *unpack_effect_definition(uint8 *Stream, size_t Count);
 uint8 *pack_effect_definition(uint8 *Stream, size_t Count);
 uint8* unpack_m1_effect_definition(uint8* Stream, size_t Count);
