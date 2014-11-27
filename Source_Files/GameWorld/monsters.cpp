@@ -404,7 +404,7 @@ Monster::Monster(struct object_location* location, int16 monster_type)
 	{
 		if(static_world->mission_flags & _mission_rescue_m1 && !isNONE(monster_index) && definition->_class & _class_human_civilian_m1) 
 			dynamic_world->current_civilian_count++;
-		return NONE;
+		assert(false);//	return NONE;
 	}
 
 	/* check to see if we should promote or demote this monster based on difficulty level */
