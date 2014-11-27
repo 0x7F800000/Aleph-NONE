@@ -512,6 +512,20 @@ int16 new_monster(struct object_location *location, int16 monster_type)
 	return monster_index;
 }
 
+static void* Monster::operator new(size_t sz)
+{
+	for(ix i = 0; i < MAXIMUM_MONSTERS_PER_MAP; ++i)
+	{
+		Monster* monster = &MonsterList[i];
+		
+		if(monster->slotIsUsed())
+			continue;
+		obj_set(monster, 0x80);
+		return (void*)monster;
+	}
+	assert(false);
+	return nullptr;
+}
 
 /* assumes ¶t==1 tick */
 void move_monsters()
