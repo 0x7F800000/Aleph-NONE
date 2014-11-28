@@ -83,8 +83,7 @@ effect_definition *get_effect_definition(const short type)
 
 short new_effect(world_point3d *origin, short polygon_index, short type, angle facing)
 {
-	ix effect_index = NONE;
-
+	
 	if (polygon_index == NONE)
 		return NONE;
 
@@ -105,12 +104,12 @@ short new_effect(world_point3d *origin, short polygon_index, short type, angle f
 			return NONE;
 		
 		play_world_sound(polygon_index, origin, animation->first_frame_sound);
-		return effect_index;
+		return NONE;
 	}
 
-	for (effect_index = 0; effect_index < MAXIMUM_EFFECTS_PER_MAP; ++effect_index)
+	for (ix effectIndex = 0; effectIndex < MAXIMUM_EFFECTS_PER_MAP; ++effectIndex)
 	{
-		Effect &effect = Effect::Get(effect_index);
+		Effect &effect = Effect::Get(effectIndex);
 		if( !SLOT_IS_FREE(&effect) )
 			continue;
 		
@@ -119,10 +118,7 @@ short new_effect(world_point3d *origin, short polygon_index, short type, angle f
 			facing);
 		
 		if (object_index == NONE)
-		{
-			effect_index = NONE;
 			break;
-		}
 		
 		Object &object = Object::Get(object_index);
 		
@@ -142,12 +138,12 @@ short new_effect(world_point3d *origin, short polygon_index, short type, angle f
 			SET_OBJECT_INVISIBILITY(&object, true);
 		if (definition->flags & _media_effect) 
 			SET_OBJECT_IS_MEDIA_EFFECT(&object);
-		break;
+			
+		if(effectIndex == MAXIMUM_EFFECTS_PER_MAP) 
+			return NONE;
+		return effectIndex;
 	}
-	if(effect_index == MAXIMUM_EFFECTS_PER_MAP) 
-		effect_index = NONE;
-
-	return effect_index;
+	return NONE;
 }
 
 /* assumes ¶t==1 tick */
@@ -199,32 +195,31 @@ void update_effects()
 
 void remove_effect(int16 effect_index)
 {
-	Effect *effect = get_effect_data(effect_index);
-	remove_map_object(effect->object_index);
+	Effect &effect = Effect::Get(effect_index);
+	remove_map_object(effect.object_index);
 	
 	//lua hook
 	L_Invalidate_Effect(effect_index);
 	
-	MARK_SLOT_AS_FREE(effect);
+	MARK_SLOT_AS_FREE(&effect);
 }
 
 void remove_all_nonpersistent_effects()
 {
-	Effect *effect;
-	short effect_index;
-	
-	for (effect_index= 0, effect= effects; effect_index<MAXIMUM_EFFECTS_PER_MAP; ++effect_index, ++effect)
+	for(ix effectIndex = 0; effectIndex < MAXIMUM_EFFECTS_PER_MAP; ++effectIndex)
 	{
-		if (!SLOT_IS_USED(effect))
+		Effect &effect = Effect::Get(effectIndex);
+		
+		if (!SLOT_IS_USED(&effect))
 			continue;
 		
-		effect_definition *definition = get_effect_definition(effect->type);
+		const effect_definition *definition = get_effect_definition(effect.type);
 		// LP change: idiot-proofing
 		if (!definition) 
 			continue;
 
-		if (definition->flags&(_end_when_animation_loops|_end_when_transfer_animation_loops))
-			remove_effect(effect_index);
+		if (definition->flags & (_end_when_animation_loops | _end_when_transfer_animation_loops) )
+			remove_effect(effectIndex);
 	}
 }
 
@@ -233,7 +228,7 @@ void mark_effect_collections(short effect_type, bool loading)
 	if (effect_type == NONE)
 		return;
 	
-	effect_definition *definition = get_effect_definition(effect_type);
+	const effect_definition *definition = get_effect_definition(effect_type);
 	// LP change: idiot-proofing
 	if (!definition) 
 		return;
@@ -247,31 +242,34 @@ void mark_effect_collections(short effect_type, bool loading)
 
 void teleport_object_out(short object_index)
 {
-	Object *object = get_object_data(object_index);
+	Object &object = Object::Get(object_index);
 	
-	if (OBJECT_IS_INVISIBLE(object))
+	if( object.isInvisible() )
 		return;
 
-	auto effect_index = new_effect(&object->location, object->polygon, _effect_teleport_object_out, object->facing);
+	auto effect_index = new_effect(&object.location, 
+					object.polygon, 
+					_effect_teleport_object_out, 
+					object.facing);
 	
-	if (effect_index==NONE)
+	if (effect_index == NONE)
 		return;
 	
-	Effect *effect		= get_effect_data(effect_index);
-	Object *effect_object 	= get_object_data(effect->object_index);
+	Effect &effect		= Effect::Get(effect_index);
+	Object &effectObject 	= Object::Get(effect.object_index);
 	
 	// make the effect look like the object
-	effect_object->shape		= object->shape;
-	effect_object->sequence		= object->sequence;
-	effect_object->transfer_mode	= _xfer_fold_out;
-	effect_object->transfer_period	= TELEPORTING_MIDPOINT;
-	effect_object->transfer_phase	= 0;
-	effect_object->flags		|= object->flags & (_object_is_enlarged|_object_is_tiny);
+	effectObject.shape		= object.shape;
+	effectObject.sequence		= object.sequence;
+	effectObject.transfer_mode	= _xfer_fold_out;
+	effectObject.transfer_period	= TELEPORTING_MIDPOINT;
+	effectObject.transfer_phase	= 0;
+	effectObject.flags		|= object.flags & ( _object_is_enlarged | _object_is_tiny );
 	
 	// make the object invisible
-	SET_OBJECT_INVISIBILITY(object, true);
+	SET_OBJECT_INVISIBILITY(&object, true);
 
-	play_object_sound(effect->object_index, Sound_TeleportOut()); /* teleport in sound, at destination */
+	play_object_sound(effect.object_index, Sound_TeleportOut()); /* teleport in sound, at destination */
 }
 
 // if the given object isnÕt already teleporting in, do so
