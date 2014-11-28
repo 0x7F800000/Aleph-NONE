@@ -146,7 +146,7 @@ short new_effect(world_point3d *origin, short polygon_index, short type, angle f
 	return NONE;
 }
 
-/* assumes ¶t==1 tick */
+/* assumes t==1 tick */
 void update_effects()
 {
 	Effect *effect;
@@ -164,7 +164,9 @@ void update_effects()
 		
 		if (effect->delay)
 		{
-			/* handle invisible, delayed effects */
+			/* 
+				handle invisible, delayed effects 
+			*/
 			if (!--effect->delay)
 			{
 				SET_OBJECT_INVISIBILITY(object, false);
@@ -173,10 +175,14 @@ void update_effects()
 			continue;
 		}
 
-		/* update our object's animation */
+		/* 
+			update our object's animation 
+		*/
 		animate_object(effect->object_index);
 		
-		/* if the effect's animation has terminated and we're supposed to deactive it, do so */
+		/* 
+			if the effect's animation has terminated and we're supposed to deactive it, do so 
+		*/
 		if (((GET_OBJECT_ANIMATION_FLAGS(object)&_obj_last_frame_animated)&&(definition->flags&_end_when_animation_loops)) ||
 			((GET_OBJECT_ANIMATION_FLAGS(object)&_obj_transfer_mode_finished)&&(definition->flags&_end_when_transfer_animation_loops)))
 		{
@@ -233,7 +239,9 @@ void mark_effect_collections(short effect_type, bool loading)
 	if (!definition) 
 		return;
 
-	/* mark the effect collection */
+	/* 
+		mark the effect collection 
+	*/
 	if(loading)
 		mark_collection_for_loading(definition->collection);
 	else
@@ -272,18 +280,19 @@ void teleport_object_out(short object_index)
 	play_object_sound(effect.object_index, Sound_TeleportOut()); /* teleport in sound, at destination */
 }
 
-// if the given object isnÕt already teleporting in, do so
+/*
+	if the given object isn't already teleporting in, do so
+*/
 void teleport_object_in(short object_index)
 {
-	Effect *effect;
-	short effect_index;
-
-	for (effect_index= 0, effect= effects; effect_index < MAXIMUM_EFFECTS_PER_MAP; ++effect_index, ++effect)
+	for(ix effectIndex = 0; effectIndex < MAXIMUM_EFFECTS_PER_MAP; ++effectIndex)
 	{
-		if( !SLOT_IS_USED(effect) )
+		Effect &effect = Effect::Get(effectIndex);
+		
+		if( !SLOT_IS_USED(&effect) )
 			continue;
 		
-		if (effect->type == _effect_teleport_object_in && effect->data == object_index)
+		if (effect.type == _effect_teleport_object_in && effect.data == object_index)
 		{
 			object_index = NONE;
 			break;
@@ -293,21 +302,26 @@ void teleport_object_in(short object_index)
 	if (object_index == NONE)
 		return;
 	
-	Object *object = get_object_data(object_index);
+	Object &object = Object::Get(object_index);
 
-	effect_index = new_effect(&object->location, object->polygon, _effect_teleport_object_in, object->facing);
+	auto effect_index = new_effect(&object.location, 
+				object.polygon, 
+				_effect_teleport_object_in, 
+				object.facing
+				);
 	
 	if (effect_index == NONE)
 		return;
-	effect				= get_effect_data(effect_index);
+	Effect &effect			= Effect::Get(effect_index);
 	
-	effect->data			= object_index;
-	Object *effect_object		= get_object_data(effect->object_index);
-	effect_object->shape		= object->shape;
-	effect_object->transfer_mode	= _xfer_fold_in;
-	effect_object->transfer_period	= TELEPORTING_MIDPOINT;
-	effect_object->transfer_phase	= 0;
-	effect_object->flags		|= object->flags & ( _object_is_enlarged | _object_is_tiny );
+	effect.data			= object_index;
+	
+	Object &effectObject		= Object::Get(effect.object_index);
+	effectObject.shape		= object.shape;
+	effectObject.transfer_mode	= _xfer_fold_in;
+	effectObject.transfer_period	= TELEPORTING_MIDPOINT;
+	effectObject.transfer_phase	= 0;
+	effectObject.flags		|= object.flags & ( _object_is_enlarged | _object_is_tiny );
 }
 
 
