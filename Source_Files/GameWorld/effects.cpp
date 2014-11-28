@@ -83,12 +83,11 @@ effect_definition *get_effect_definition(const short type)
 
 short new_effect(world_point3d *origin, short polygon_index, short type, angle facing)
 {
-	int16 effect_index = NONE;
+	ix effect_index = NONE;
 
 	if (polygon_index == NONE)
 		return NONE;
-		
-	Effect *effect;
+
 	effect_definition *definition = get_effect_definition(type);
 	
 	// LP change: idiot-proofing
@@ -97,7 +96,11 @@ short new_effect(world_point3d *origin, short polygon_index, short type, angle f
 	
 	if (definition->flags & _sound_only)
 	{
-		shape_animation_data *animation = get_shape_animation_data(BUILD_DESCRIPTOR(definition->collection, definition->shape));
+		shape_animation_data *animation = 
+			get_shape_animation_data(
+				BUILD_DESCRIPTOR(definition->collection, definition->shape)
+				);
+			
 		if (!animation) 
 			return NONE;
 		
@@ -105,10 +108,10 @@ short new_effect(world_point3d *origin, short polygon_index, short type, angle f
 		return effect_index;
 	}
 
-	
-	for (effect_index= 0,effect= effects; effect_index<MAXIMUM_EFFECTS_PER_MAP; ++effect_index, ++effect)
+	for (effect_index = 0; effect_index < MAXIMUM_EFFECTS_PER_MAP; ++effect_index)
 	{
-		if( !SLOT_IS_FREE(effect) )
+		Effect &effect = Effect::Get(effect_index);
+		if( !SLOT_IS_FREE(&effect) )
 			continue;
 		
 		auto object_index = new_map_object3d(origin, polygon_index, 
@@ -121,24 +124,24 @@ short new_effect(world_point3d *origin, short polygon_index, short type, angle f
 			break;
 		}
 		
-		Object *object = get_object_data(object_index);
+		Object &object = Object::Get(object_index);
 		
-		effect->type		= type;
-		effect->flags		= 0;
-		effect->object_index	= object_index;
-		effect->data		= 0;
-		effect->delay		= definition->delay 
+		effect.type		= type;
+		effect.flags		= 0;
+		effect.object_index	= object_index;
+		effect.data		= 0;
+		effect.delay		= definition->delay 
 					? global_random( definition->delay )
 					: 0;
-		MARK_SLOT_AS_USED(effect);
+		MARK_SLOT_AS_USED(&effect);
 		
-		SET_OBJECT_OWNER(object, _object_is_effect);
-		object->sound_pitch = definition->sound_pitch;
+		SET_OBJECT_OWNER(&object, _object_is_effect);
+		object.sound_pitch = definition->sound_pitch;
 		
-		if (effect->delay) 
-			SET_OBJECT_INVISIBILITY(object, true);
+		if (effect.delay) 
+			SET_OBJECT_INVISIBILITY(&object, true);
 		if (definition->flags & _media_effect) 
-			SET_OBJECT_IS_MEDIA_EFFECT(object);
+			SET_OBJECT_IS_MEDIA_EFFECT(&object);
 		break;
 	}
 	if(effect_index == MAXIMUM_EFFECTS_PER_MAP) 
