@@ -1,6 +1,6 @@
 #pragma once
 /*
-	weapons2.h
+	weapons.h
 
 	Copyright (C) 1991-2001 and beyond by Bungie Studios, Inc.
 	and the "Aleph One" developers.
@@ -144,7 +144,7 @@ const int SIZEOF_player_weapon_data = 472;
 
 /* ----------------- prototypes */
 /* called once at startup */
-void initialize_weapon_manager(void);
+void initialize_weapon_manager();
 
 /* Initialize the weapons for a completely new game. */
 void initialize_player_weapons_for_new_game(short player_index);
@@ -153,8 +153,8 @@ void initialize_player_weapons_for_new_game(short player_index);
 void initialize_player_weapons(short player_index);
 
 // Old external-access stuff: superseded by the packing and unpacking routines below
-void *get_weapon_array(void);
-int32 calculate_weapon_array_length(void);
+void *get_weapon_array();
+int32 calculate_weapon_array_length();
 
 /* while this returns true, keep calling.. */
 bool get_weapon_display_information(short *count, 
@@ -174,7 +174,7 @@ void discharge_charged_weapons(short player_index);
 
 /* Called on entry to a level, and will change weapons if this one doesn't work */
 /*  in the given environment. */
-void check_player_weapons_for_environment_change(void);
+void check_player_weapons_for_environment_change();
 
 /* Tell me when one of my projectiles hits, and return the weapon_identifier I passed */
 /*  to new_projectile... */
@@ -194,9 +194,6 @@ short get_player_weapon_ammo_maximum(short player_index, short which_weapon, sho
 int16 get_player_weapon_ammo_type(short player_index, short which_weapon, short which_trigger);
 bool get_player_weapon_drawn(short player_index, short which_weapon, short which_trigger);
 
-#ifdef DEBUG
-void debug_print_weapon_status(void);
-#endif
 
 // LP: to pack and unpack this data;
 // these do not make the definitions visible to the outside world
