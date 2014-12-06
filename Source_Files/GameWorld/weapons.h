@@ -102,6 +102,7 @@ enum /* weapon display positioning modes */
 
 class weaponDisplayInfo
 {
+public:
 	// Has sequence info for 3D-model weapon display
 	int16 collection, shape_index, low_level_shape_index;
 	
@@ -126,6 +127,7 @@ const unsigned MAXIMUM_SHELL_CASINGS = 4;
 
 class Trigger 
 {
+public:
 	int16 state, phase;
 	int16 rounds_loaded;
 	int16 shots_fired, shots_hit;
@@ -136,6 +138,7 @@ class Trigger
 
 class Weapon 
 {
+public:
 	int16 weapon_type; /* stored here to make life easier.. */
 	uint16 flags;
 	uint16 unused; /* non zero-> weapon is powered up */
@@ -144,6 +147,7 @@ class Weapon
 
 class shellCasing
 {
+public:
 	int16 type;
 	int16 frame;
   
@@ -155,6 +159,7 @@ class shellCasing
 
 class playerWeapons 
 {
+public:
 	int16 current_weapon;
 	int16 desired_weapon;
 	
