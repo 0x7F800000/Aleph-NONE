@@ -4,10 +4,6 @@ class monsterBehavior
 {
 public:
  monsterBehavior() {}
- inline int operator()(Monster *me)
- {
-  return behave(me);
- }
  
  inline const char* getName()
  {
@@ -19,7 +15,7 @@ public:
  }
  
 private:
- virtual int behave(Monster *me) = 0;
+ virtual int behave(Monster *me, ...) = 0;
  /*
   the name of the behavior
  */
