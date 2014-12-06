@@ -9,6 +9,15 @@ public:
   return behave(me);
  }
  
+ inline const char* getName()
+ {
+  return behaviorName;
+ }
+ inline const char* getClass()
+ {
+  return behaviorClass;
+ }
+ 
 private:
  virtual int behave(Monster *me) = 0;
  /*
