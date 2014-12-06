@@ -15,7 +15,7 @@ public:
  }
  
 private:
- virtual int behave(Monster *me, ...) = 0;
+ virtual int behave(class Monster *me, ...) = 0;
  /*
   the name of the behavior
  */
