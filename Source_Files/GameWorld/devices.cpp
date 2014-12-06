@@ -606,7 +606,7 @@ static bool line_is_within_range(int16 monster_index, int16 line_index, world_di
 	world_distance radius, height;
 	monster.getDimensions(&radius, &height);
 	
-	monster_origin.z += height / 2;
+	mOrigin.z += height / 2;
 	
 	world_distance dx 	= mOrigin.x - lineOrigin.x;
 	world_distance dy 	= mOrigin.y - lineOrigin.y;
