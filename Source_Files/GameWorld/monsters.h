@@ -332,12 +332,6 @@ public:
 	
 	inline void setActiveStatus(bool s)	{	SET_MONSTER_ACTIVE_STATUS(this, s);	}
 	
-	inline bool hasBehavior(const char* behaviorClass)
-	{
-		for(int )
-	}
-
-	
 	int16 getImpactEffect();
 	int16 getMeleeImpactEffect();
 	
