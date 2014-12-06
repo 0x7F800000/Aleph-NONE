@@ -497,46 +497,6 @@ Monster::Monster(struct object_location* location, int16 monster_type)
 	if(static_world->mission_flags & _mission_rescue_m1 && definition->_class & _class_human_civilian_m1) 
 		dynamic_world->current_civilian_count++;
 }
-/*
-class testCompiler : Monster
-{
-	public:
-	testCompiler(): Monster() {}
-	
-	testCompiler(object_location* loc, int16 monster_type) : Monster(loc, monster_type)
-	{
-		
-	}
-	
-	void kill() override
-	{
-		Monster::kill();
-	}
-	void changeTarget(const int16 targetIndex) override
-	{
-		if( !isNONE(targetIndex) && Monster::Get(targetIndex).isPlayer() )
-			return;
-		Monster::changeTarget(targetIndex);
-	}
-	
-	void* operator new(size_t sz)
-	{
-		return Monster::operator new(sz);
-	}
-};
-*/
-/* returns new monster index if successful, NONE otherwise */
-int16 new_monster(struct object_location *location, int16 monster_type)
-{
-
-	Monster *monster = nullptr;
-	
-//	if(monster_type == _monster_compiler_major || monster_type == _monster_compiler_minor)
-	//	monster = ( Monster* ) new testCompiler(location, monster_type);
-//	else
-		monster = new Monster(location, monster_type);
-	return monster->getIndex();
-}
 
 static void* Monster::operator new(size_t sz)
 {
@@ -552,6 +512,14 @@ static void* Monster::operator new(size_t sz)
 	assert(false);
 	return nullptr;
 }
+/* returns new monster index if successful, NONE otherwise */
+int16 new_monster(struct object_location *location, int16 monster_type)
+{
+	Monster *monster = nullptr;
+	monster = new Monster(location, monster_type);
+	return monster->getIndex();
+}
+
 
 /* assumes ¶t==1 tick */
 void move_monsters()
@@ -4491,4 +4459,14 @@ void Monster::accelerate(world_distance v_velocity, angle direction, world_dista
 		-TERMINAL_VERTICAL_MONSTER_VELOCITY, 
 		TERMINAL_VERTICAL_MONSTER_VELOCITY );
 }
+
+ix Monster::countBehaviorsOfClass(const char* classname)
+{
+	ix behaviorsOfClass = 0;
+	for(monsterBehavior *behavior : behaviors)
+		if( !strcmp( behavior->getClass(), classname ) )
+			++behaviorsOfClass;
+	return behaviorsOfClass;
+}
+
 
