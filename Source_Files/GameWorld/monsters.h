@@ -44,6 +44,7 @@ Oct 24, 2000 (Mark Levin)
 	Revealed some functions for P-tran
 */
 #include "access.hpp"
+#include "./ai/behavior.hpp"
 
 #ifndef monster_data
 	#define	monster_data	Monster
@@ -65,15 +66,15 @@ Oct 24, 2000 (Mark Levin)
 
 enum /* constants for activate_nearby_monsters */
 {
-	_pass_one_zone_border= 0x0001,
-	_passed_zone_border= 0x0002,
-	_activate_invisible_monsters= 0x0004, // sound or teleport trigger
-	_activate_deaf_monsters= 0x0008, // i.e., trigger
-	_pass_solid_lines= 0x0010, // i.e., not a sound (trigger)
-	_use_activation_biases= 0x0020, // inactive monsters follow their editor instructions (trigger)
-	_activation_cannot_be_avoided= 0x0040, // cannot be suppressed because of recent activation (trigger)
-	_cannot_pass_superglue= 0x0080, // i.e., glue trigger
-	_activate_glue_monsters= 0x0100 // glue trigger
+	_pass_one_zone_border		= 1,
+	_passed_zone_border		= 2,
+	_activate_invisible_monsters	= 4, // sound or teleport trigger
+	_activate_deaf_monsters		= 8, // i.e., trigger
+	_pass_solid_lines		= 16, // i.e., not a sound (trigger)
+	_use_activation_biases		= 32, // inactive monsters follow their editor instructions (trigger)
+	_activation_cannot_be_avoided	= 64, // cannot be suppressed because of recent activation (trigger)
+	_cannot_pass_superglue		= 128, // i.e., glue trigger
+	_activate_glue_monsters		= 256 // glue trigger
 };
 
 /* activation biases are only used when the monster is activated by a trigger */
@@ -331,6 +332,10 @@ public:
 	
 	inline void setActiveStatus(bool s)	{	SET_MONSTER_ACTIVE_STATUS(this, s);	}
 	
+	inline bool hasBehavior(const char* behaviorClass)
+	{
+		for(int )
+	}
 
 	
 	int16 getImpactEffect();
@@ -420,7 +425,12 @@ public:
 		return getDefinition();
 	}
 	static void* operator new(size_t sz);
-
+	
+	ix countBehaviorsOfClass(const char* classname);
+	
+private:
+	vector<monsterBehavior*> behaviors;
+	
 };
 const int SIZEOF_monster_data = 64;
 
