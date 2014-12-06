@@ -8,7 +8,7 @@ libgameworld_a_SOURCES = dynamic_limits.h editor.h effect_definitions.h \
   physics_models.h platform_definitions.h platforms.h player.h \
   projectile_definitions.h projectiles.h scenery_definitions.h scenery.h \
   TickBasedCircularQueue.h weapon_definitions.h weapons.h world.h \
-  monsters_ext.h\
+  monsters_ext.h ./ai/behavior.hpp ./misc/damageKick.hpp \
   \
   devices.cpp dynamic_limits.cpp effects.cpp flood_map.cpp items.cpp \
   lightsource.cpp map_constructors.cpp map.cpp marathon2.cpp media.cpp \
