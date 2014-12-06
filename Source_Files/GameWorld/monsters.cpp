@@ -138,10 +138,14 @@ Jan 12, 2003 (Loren Petrich)
 
 #define MINIMUM_ACTIVATION_SEPARATION TICKS_PER_SECOND
 
-/* when looking for things under or at this light intensity the monster must use his dark visual range */
+/* 
+	when looking for things under or at this light intensity the monster must use his dark visual range 
+*/
 #define LOW_LIGHT_INTENSITY 0
 
-/* maximum area we will search out to find a new target */
+/* 
+	maximum area we will search out to find a new target 
+*/
 #define MAXIMUM_TARGET_SEARCH_AREA (7*WORLD_ONE*WORLD_ONE)
 
 #define MONSTER_PLATFORM_BUFFER_DISTANCE (WORLD_ONE/8)
@@ -249,51 +253,55 @@ static vector<int16> IntersectedObjects;
 
 /* ---------- private prototypes */
 
-static void monster_needs_path(int16 monster_index, bool immediately);
-static void generate_new_path_for_monster(int16 monster_index);
-void advance_monster_path(int16 monster_index);
+static void 	monster_needs_path(int16 monster_index, bool immediately);
+static void 	generate_new_path_for_monster(int16 monster_index);
+void 		advance_monster_path(int16 monster_index);
 
-static int16 get_monster_attitude(int16 monster_index, int16 target_index);
-void change_monster_target(int16 monster_index, int16 target_index);
-static bool switch_target_check(int16 monster_index, int16 attacker_index, int16 delta_vitality);
-static bool clear_line_of_sight(int16 viewer_index, int16 target_index, bool full_circle);
+static int16 	get_monster_attitude(int16 monster_index, int16 target_index);
 
-static void handle_moving_or_stationary_monster(int16 monster_index);
-static void execute_monster_attack(int16 monster_index);
-static void kill_monster(int16 monster_index);
-static bool translate_monster(int16 monster_index, world_distance distance);
-static bool try_monster_attack(int16 monster_index);
-			
-int32 monster_pathfinding_cost_function(int16 source_polygon_index, int16 line_index,
-	int16 destination_polygon_index, void *data);
-int32 monster_m1_trigger_flood_proc(int16 source_polygon_index, int16 line_index,
-                                    int16 destination_polygon_index, void *data);
+void 		change_monster_target(int16 monster_index, int16 target_index);
+static bool 	switch_target_check(int16 monster_index, int16 attacker_index, int16 delta_vitality);
 
-void set_monster_action(int16 monster_index, int16 action);
-void set_monster_mode(int16 monster_index, int16 new_mode, int16 target_index);
+static bool 	clear_line_of_sight(int16 viewer_index, int16 target_index, bool full_circle);
 
-static int16 find_obstructing_terrain_feature(int16 monster_index, int16 *feature_index, int16 *relevant_polygon_index);
+static bool 	translate_monster(int16 monster_index, world_distance distance);
+static void 	handle_moving_or_stationary_monster(int16 monster_index);
 
-static int16 position_monster_projectile(int16 aggressor_index, int16 target_index, struct attack_definition *attack,
+static bool 	try_monster_attack(int16 monster_index);
+static void 	execute_monster_attack(int16 monster_index);	
+static void 	kill_monster(int16 monster_index);
+
+int32 		monster_pathfinding_cost_function(int16 source_polygon_index, int16 line_index,
+		int16 destination_polygon_index, void *data);
+		
+int32 		monster_m1_trigger_flood_proc(int16 source_polygon_index, int16 line_index,
+                int16 destination_polygon_index, void *data);
+
+void 		set_monster_action(int16 monster_index, int16 action);
+void 		set_monster_mode(int16 monster_index, int16 new_mode, int16 target_index);
+
+static int16 	find_obstructing_terrain_feature(int16 monster_index, int16 *feature_index, int16 *relevant_polygon_index);
+
+static int16 	position_monster_projectile(int16 aggressor_index, int16 target_index, struct attack_definition *attack,
 	world_point3d *origin, world_point3d *destination, world_point3d *_vector, angle theta);
 
-static void update_monster_vertical_physics_model(int16 monster_index);
-static void update_monster_physics_model(int16 monster_index);
+static void 	update_monster_vertical_physics_model(	int16 monster_index	);
+static void 	update_monster_physics_model(	int16 monster_index	);
 
-static int32 monster_activation_flood_proc(int16 source_polygon_index, int16 line_index,
-	int16 destination_polygon_index, void *data);
+static int32 	monster_activation_flood_proc(int16 source_polygon_index, int16 line_index,
+       int16 	destination_polygon_index, void *data);
 
-static bool attempt_evasive_manouvers(int16 monster_index);
+static bool 	attempt_evasive_manouvers(int16 monster_index);
 
-static int16 nearest_goal_polygon_index(int16 polygon_index);
-static int32 nearest_goal_cost_function(int16 source_polygon_index, int16 line_index,
+static int16 	nearest_goal_polygon_index(int16 polygon_index);
+static int32 	nearest_goal_cost_function(int16 source_polygon_index, int16 line_index,
 	int16 destination_polygon_index, void *unused);
 
-static void cause_shrapnel_damage(int16 monster_index);
+static void 	cause_shrapnel_damage(int16 monster_index);
 
-static inline int16 get_monster_drop_mask();
-static inline int16 get_major_demotion_mask();
-static inline int16 get_minor_promotion_mask();
+static inline int16 	get_monster_drop_mask();
+static inline int16 	get_major_demotion_mask();
+static inline int16 	get_minor_promotion_mask();
 
 // For external use
 monsterDefinition *get_monster_definition_external(const int16 type);
