@@ -754,7 +754,7 @@ static void set_adjacent_platform_states(int16 platform_index, bool state)
 		if (adjacent_platform_index == NONE)
 			continue;
 		
-		polygon_data *adjacent_polygon 	= get_polygon_data(adjacent_polygon_index);
+		Polygon *adjacent_polygon 	= get_polygon_data(adjacent_polygon_index);
 		
 		if (!PLATFORM_DOES_NOT_ACTIVATE_PARENT(platform) || platform->parent_platform_index != adjacent_platform_index)
 			set_platform_state(adjacent_polygon->permutation, state, platform_index);
@@ -788,13 +788,12 @@ void adjust_platform_for_media(int16 platform_index, bool initialize)
 		return;
 	
 	// LP change: idiot-proofing
-	media_data *media 	= get_media_data(polygon->media_index);
+	Media *media 		= get_media_data(polygon->media_index);
 	if (!media)
 		return;
 	
-	bool floor_below_media 	= platform->floor_height < media->height;
-	
-	bool ceiling_below_media = platform->ceiling_height < media->height;
+	bool floor_below_media		= platform->floor_height   < media->height;
+	bool ceiling_below_media	= platform->ceiling_height < media->height;
 	
 	if (initialize)
 	{
@@ -942,7 +941,7 @@ static void play_platform_sound(int16 platform_index, int16 type)
 */
 static void calculate_platform_extrema(int16 platform_index, world_distance lowest_level, world_distance highest_level)
 {
-#if 0
+
 	Platform *platform 	= get_platform_data(platform_index);
 	Polygon *polygon 	= get_polygon_data(platform->polygon_index);
 	
@@ -1022,88 +1021,6 @@ static void calculate_platform_extrema(int16 platform_index, world_distance lowe
 	platform->minimum_ceiling_height = lowest_level == NONE ? lowest_adjacent_ceiling : lowest_level;
 	platform->maximum_ceiling_height = highest_level == NONE ? highest_adjacent_ceiling : highest_level;
 	platform->minimum_floor_height = platform->maximum_floor_height = polygon->floor_height;
-#endif
-	short i;
-	struct platform_data *platform= get_platform_data(platform_index);
-	struct polygon_data *polygon= get_polygon_data(platform->polygon_index);
-	world_distance lowest_adjacent_floor, highest_adjacent_ceiling;
-	world_distance highest_adjacent_floor, lowest_adjacent_ceiling;
-	
-	// LP change: no need for this test
-	// assert(lowest_level==NONE||highest_level==NONE||lowest_level<highest_level);
-	
-	/* calculate lowest and highest adjacent floors and ceilings */
-	lowest_adjacent_floor= highest_adjacent_floor= polygon->floor_height;
-	lowest_adjacent_ceiling= highest_adjacent_ceiling= polygon->ceiling_height;
-	for (i= 0; i<polygon->vertex_count; ++i)
-	{
-		if (polygon->adjacent_polygon_indexes[i]!=NONE)
-		{
-			struct polygon_data *adjacent_polygon= get_polygon_data(polygon->adjacent_polygon_indexes[i]);
-			
-			if (adjacent_polygon->floor_height<lowest_adjacent_floor) lowest_adjacent_floor= adjacent_polygon->floor_height;
-			if (adjacent_polygon->floor_height>highest_adjacent_floor) highest_adjacent_floor= adjacent_polygon->floor_height;
-			if (adjacent_polygon->ceiling_height<lowest_adjacent_ceiling) lowest_adjacent_ceiling= adjacent_polygon->ceiling_height;
-			if (adjacent_polygon->ceiling_height>highest_adjacent_ceiling) highest_adjacent_ceiling= adjacent_polygon->ceiling_height;
-		}
-	}
-
-	/* take into account the EXTENDS_FLOOR_TO_CEILING flag */
-	if (PLATFORM_EXTENDS_FLOOR_TO_CEILING(platform))
-	{
-		if (polygon->ceiling_height>highest_adjacent_floor) highest_adjacent_floor= polygon->ceiling_height;
-		if (polygon->floor_height<lowest_adjacent_ceiling) lowest_adjacent_ceiling= polygon->floor_height;
-	}
-	
-	/* calculate floor and ceiling min, max values as appropriate for the platform direction */
-	if (PLATFORM_GOES_BOTH_WAYS(platform))
-	{
-		/* split platforms always meet in the center */
-		platform->minimum_floor_height= lowest_level==NONE ? lowest_adjacent_floor : lowest_level;
-		platform->maximum_ceiling_height= highest_level==NONE ? highest_adjacent_ceiling : highest_level;
-		platform->maximum_floor_height= platform->minimum_ceiling_height=
-			(platform->minimum_floor_height+platform->maximum_ceiling_height)/2;
-	}
-	else
-	{
-		if (PLATFORM_COMES_FROM_FLOOR(platform))
-		{
-			if (PLATFORM_USES_NATIVE_POLYGON_HEIGHTS(platform))
-			{
-				if (polygon->floor_height<lowest_adjacent_floor || PLATFORM_EXTENDS_FLOOR_TO_CEILING(platform))
-				{
-					lowest_adjacent_floor= polygon->floor_height;
-				}
-				else
-				{
-					highest_adjacent_floor= polygon->floor_height;
-				}
-			}
-			
-			platform->minimum_floor_height= lowest_level==NONE ? lowest_adjacent_floor : lowest_level;
-			platform->maximum_floor_height= highest_level==NONE ? highest_adjacent_floor : highest_level;
-			platform->minimum_ceiling_height= platform->maximum_ceiling_height= polygon->ceiling_height;
-		}
-		else if (PLATFORM_COMES_FROM_CEILING(platform))
-		{
-
-			if (PLATFORM_USES_NATIVE_POLYGON_HEIGHTS(platform))
-			{
-				if (polygon->ceiling_height>highest_adjacent_ceiling || PLATFORM_EXTENDS_FLOOR_TO_CEILING(platform))
-				{
-					highest_adjacent_ceiling= polygon->ceiling_height;
-				}
-				else
-				{
-					lowest_adjacent_ceiling= polygon->ceiling_height;
-				}
-			}
-			
-			platform->minimum_ceiling_height= lowest_level==NONE ? lowest_adjacent_ceiling : lowest_level;
-			platform->maximum_ceiling_height= highest_level==NONE ? highest_adjacent_ceiling : highest_level;
-			platform->minimum_floor_height= platform->maximum_floor_height= polygon->floor_height;
-		}
-	}
 }
 
 static void adjust_platform_sides(int16 platform_index, world_distance old_ceiling_height, world_distance new_ceiling_height)
