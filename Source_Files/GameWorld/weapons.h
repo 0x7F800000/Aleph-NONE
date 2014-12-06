@@ -122,7 +122,7 @@ class weaponDisplayInfo
 // SB: This needs to be accessed in lua_script.cpp
 
 
-const MAXIMUM_SHELL_CASINGS = 4;
+const unsigned MAXIMUM_SHELL_CASINGS = 4;
 
 class Trigger 
 {
