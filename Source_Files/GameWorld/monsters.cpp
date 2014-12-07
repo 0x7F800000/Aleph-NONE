@@ -2223,39 +2223,40 @@ static void generate_new_path_for_monster(int16 monster_index)
 */
 static bool switch_target_check(int16 monster_index, int16 attacker_index, int16 delta_vitality)
 {
-	Monster *monster = get_monster_data(monster_index);
+	Monster &monster = Monster::Get(monster_index);
 	bool switched_target = false;
 	
 	/* don't mess with players or dying monsters */
-	if (monster->isPlayer() || monster->isDying()) 
+	if (monster.isPlayer() || monster.isDying()) 
 		return false;
 		
 	
-	if( monster->hasValidTarget() && monster->isTarget( attacker_index ) )
+	if( monster.hasValidTarget() && monster.isTarget( attacker_index ) )
 	{
 		/* 
 			if we didn't know where our target was and he just shot us, we sort of like, know
 			where he is now 
 		*/
-		if( monster->isLosingLock() )
+		if( monster.isLosingLock() )
 		{
-			set_monster_mode(monster_index, _monster_locked, attacker_index);
+			monster.changeMode(_monster_locked, attacker_index);
 			monster_needs_path(monster_index, false);
 		}
 
 		/* if we're already after this guy and he just did damage to us, remember that */
 		if (delta_vitality)
-			SET_TARGET_DAMAGE_FLAG(monster);
+			SET_TARGET_DAMAGE_FLAG(&monster);
 		
 		return true;
 	}
 
-	monsterDefinition* definition = monster->getDefinition();
-	int16 target_index = monster->hasValidTarget() ? monster->getTarget() : NONE;
+	monsterDefinition* definition = monster.getDefinition();
+	int16 target_index = monster.hasValidTarget() ? monster.getTarget() : NONE;
+	
 	Monster *attacker = get_monster_data(attacker_index);
 	int16 attacker_attitude, target_attitude;
 	
-	CLEAR_TARGET_DAMAGE_FLAG(monster);
+	CLEAR_TARGET_DAMAGE_FLAG(&monster);
 
 	if ( attacker->isDying() || definition->testFlags(_monster_cannot_attack) )
 		return switched_target;
@@ -2269,18 +2270,18 @@ static bool switch_target_check(int16 monster_index, int16 attacker_index, int16
 					f) attacker is a neutral and our current target is friendly, or,
 			g) we can't attack and somebody just did damage to us
 		then go kick his ass. */
-	attacker_attitude = get_monster_attitude(monster_index, attacker_index);
+	attacker_attitude = monster.getAttitude(attacker_index);
 	
 	if( !isNONE(target_index) )
-		target_attitude = get_monster_attitude(monster_index, target_index);
+		target_attitude = monster.getAttitude(target_index);
 		
-	if(mTYPE_IS_ENEMY(definition, attacker->type) || (TYPE_IS_NEUTRAL(definition, attacker->type) && delta_vitality) || monster->isBerserk() )
+	if(mTYPE_IS_ENEMY(definition, attacker->type) || (TYPE_IS_NEUTRAL(definition, attacker->type) && delta_vitality) || monster.isBerserk() )
 	{
-		if( !monster->isActive() || monster->isIdle() || !monster->isLocked() || !monster->hasTargetDoneDamage() )
+		if( !monster.isActive() || monster.isIdle() || !monster.isLocked() || !monster.hasTargetDoneDamage() )
 		{
-			change_monster_target(monster_index, attacker_index);
+			monster.changeTarget(attacker_index);
 			if (delta_vitality) 
-				SET_TARGET_DAMAGE_FLAG(monster);
+				SET_TARGET_DAMAGE_FLAG(&monster);
 			switched_target = true;
 		}
 	}
