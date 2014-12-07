@@ -4447,9 +4447,9 @@ bool Monster::anyBehaviorOfClass(const char* className)
 	return countBehaviorsOfClass(className) != 0;
 }
 
-std::unique_ptr<monsterBehaviors*> Monster::behaviorsForClass(const char* className)
+monsterBehaviors* Monster::behaviorsForClass(const char* className)
 {
-	vector<monsterBehavior*> *classBehaviors = new vector<monsterBehavior*>();
+	monsterBehaviors *classBehaviors = new vector<monsterBehavior*>();
 	assert(classBehaviors);
 	
 	for(monsterBehavior* behavior : behaviors)
@@ -4457,5 +4457,5 @@ std::unique_ptr<monsterBehaviors*> Monster::behaviorsForClass(const char* classN
 		if( !strcmp(behavior->getClass(), className) )
 			classBehaviors->push_back(behavior);
 	}
-	return make_unique<monsterBehavior*>(classBehaviors);
+	return classBehaviors;
 }
