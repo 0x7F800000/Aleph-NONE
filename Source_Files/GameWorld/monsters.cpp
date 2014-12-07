@@ -4457,5 +4457,5 @@ std::unique_ptr<monsterBehaviors*> Monster::behaviorsForClass(const char* classN
 		if( !strcmp(behavior->getClass(), className) )
 			classBehaviors->push_back(behavior);
 	}
-	return std::make_unique<monsterBehavior*>(classBehaviors);
+	return make_unique<monsterBehavior*>(classBehaviors);
 }
