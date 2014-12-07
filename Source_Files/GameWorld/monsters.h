@@ -424,7 +424,7 @@ public:
 	
 	ix countBehaviorsOfClass(const char* classname);
 	bool anyBehaviorOfClass(const char* className);
-	std::unique_ptr<monsterBehaviors*> behaviorsForClass(const char* className);
+	monsterBehaviors* behaviorsForClass(const char* className);
 	bool hasBehavior(const char* className, const char* behaviorName);
 	
 private:
