@@ -43,8 +43,10 @@ Oct 13, 2000 (Loren Petrich)
 Oct 24, 2000 (Mark Levin)
 	Revealed some functions for P-tran
 */
+#include <memory>
 #include "access.hpp"
 #include "./ai/behavior.hpp"
+
 
 #ifndef monster_data
 	#define	monster_data	Monster
