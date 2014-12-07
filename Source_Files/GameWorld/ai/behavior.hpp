@@ -4,6 +4,8 @@ class monsterBehavior
 {
 public:
  monsterBehavior() {}
+ static class monsterBehavior *Get(const char* className, const char* behaviorName);
+ 
  virtual int behave(class Monster *me, ...) = 0;
  
  inline const char* getName()
