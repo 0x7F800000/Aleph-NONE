@@ -13,6 +13,8 @@
 #define		bitsizeof(type)		(sizeof(type) * 8)
 
 #define		asmStart		__asm__ __volatile__
+#define		PUSH_FLAGS		"pushf\n\t"
+#define		POPX86(regname)		"pop %%"#regname#"\n\t"
 
 namespace x86Emu
 {
@@ -101,9 +103,9 @@ namespace x86Emu
 	class x86Register
 	{
 	public:
-		bool env64()
+		constexpr bool env64()
 		{
-			return sizeof(void*) == 8;
+			return sizeof(void*) == sizeof(int64);
 		}
 		
 		template<typename T> T operator *()
@@ -233,12 +235,51 @@ namespace x86Emu
 			T comparison = ARGUMENT_IS_REGISTER(against) ? comparison = against.Value<T, low>()
 					: comparison = against;
 			size_t tempflags = 0;
-			if(isInt8())
+			
+			static_assert( isInt8<T>() || isInt16<T>() || isInt32<T>(), 
+				"invalid type in x86Register::Compare");
+				
+			if(isInt8<T>())
 			{
 				asmStart 
 				(
+					"mov %1, %%al\n\t"
+					"cmp %2, %%al\n\t"
+					PUSH_FLAGS
+					POPX86("rax")
+					"mov %%rax, %0\n\t"
+					: "=r" (tempflags)
+					: "r" (casted), "r" (comparison)
 				);
 			}
+			else if( isInt16<T>() )
+			{
+				asmStart 
+				(
+					"mov %1, %%ax\n\t"
+					"cmp %2, %%ax\n\t"
+					PUSH_FLAGS
+					POPX86("rax")
+					"mov %%rax, %0\n\t"
+					: "=r" (tempflags)
+					: "r" (casted), "r" (comparison)
+				);
+			}
+			else if( isInt32<T>() )
+			{
+				asmStart 
+				(
+					"mov %1, %%eax\n\t"
+					"cmp %2, %%eax\n\t"
+					PUSH_FLAGS
+					POPX86("rax")
+					"mov %%rax, %0\n\t"
+					: "=r" (tempflags)
+					: "r" (casted), "r" (comparison)
+				);				
+			}
+			//update the global flags
+			flags.setFlags(tempflags);
 		}
 		
 		/*
