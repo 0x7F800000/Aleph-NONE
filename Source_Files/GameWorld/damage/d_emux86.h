@@ -12,6 +12,8 @@
 
 #define		bitsizeof(type)		(sizeof(type) * 8)
 
+#define		asmStart		__asm__ __volatile__
+
 namespace x86Emu
 {
 	//left bit rotation
@@ -110,8 +112,19 @@ namespace x86Emu
 				return *(T*)value;
 			return *(T*) (value & 0xFFFFFFFF);
 		}
-		#define		LVARMASK()	unsigned mask = maskForType<T, low>()
-		#define		ISBYTE()	(sizeof(T) == 1)
+		
+		#define		specificIntegral(fname, size)	\
+		template<typename T> constexpr bool fname()\
+		{\
+			return sizeof(T) == size;\
+		}
+		
+		specificIntegral(isInt8, 	sizeof(int8) )
+		specificIntegral(isInt16, 	sizeof(int16) )
+		specificIntegral(isInt32, 	sizeof(int32) )
+		specificIntegral(isInt64, 	sizeof(int64) )
+		
+		#define		LVARMASK()			const size_t mask = maskForType<T, low>()
 		
 		#define		maskedRegOprU(operation) 	((T)operation) | (uval & (~mask))
 		#define		maskedRegOprS(operation) 	((T)operation) | (sval & (~mask))
@@ -119,9 +132,9 @@ namespace x86Emu
 		
 		#define		ASSERT_TYPE_IS_POINTER(fname)	static_assert(std::is_pointer<T>::value, "Pointer to non-integral type required in x86Register::"#fname#".")
 		#define		SIZEOF_REFERENCED_TYPE()	(sizeof(std::remove_pointer<T>::type))
-		#define		UNPACK_BYTE_REG(v)		if(!low && ISBYTE() ) v >>= highByteShift
+		#define		UNPACK_BYTE_REG(v)		if(!low && isInt8() ) v >>= highByteShift
 		#define		ADJUST_BYTE_FOR_REPACKING(v)	\
-				!low && ISBYTE() ? \
+				!low && isInt8() ? \
 				static_cast<std::make_unsigned<decltype(v)>::type>(v) << highByteShift \
 				: v
 					
@@ -179,7 +192,7 @@ namespace x86Emu
 			uval -= SIZEOF_REFERENCED_TYPE();
 			return T(uval);
 		}
-		#define	__declshift(fname, castname, operation, signedness, capital_signedness)\
+		#define	__declbinaryOp(fname, castname, operation, signedness, capital_signedness)\
 		__declopr(T) fname(signedness factor)\
 		{\
 			##capital_signedness##_OPR_PROLOG(fullbits, castname);\
@@ -187,24 +200,45 @@ namespace x86Emu
 			##capital_signedness##_OPR_EPILOG(fullbits, castname);\
 		}
 		
+		#define	__declUnaryOp(fname, operation, capital_signedness)\
+		__declopr(T) fname()\
+		{\
+			##capital_signedness##_OPR_PROLOG(fullbits, casted);\
+			operation;\
+			##capital_signedness##_OPR_EPILOG(fullbits, casted);\
+		}
+		
 		//unsigned shift right
-		__declshift(ushr, casted, casted >>= factor, unsigned, UNSIGNED)
+		__declbinaryOp(ushr, casted, casted >>= factor, unsigned, UNSIGNED)
 		//unsigned shift left
-		__declshift(ushl, casted, casted <<= factor, unsigned, UNSIGNED)
+		__declbinaryOp(ushl, casted, casted <<= factor, unsigned, UNSIGNED)
 		
 		//signed shift right
-		__declshift(sshr, casted, casted >>= factor, signed, SIGNED)
+		__declbinaryOp(sshr, casted, casted >>= factor, signed, SIGNED)
 		//signed shift left
-		__declshift(sshl, casted, casted <<= factor, signed, SIGNED)
+		__declbinaryOp(sshl, casted, casted <<= factor, signed, SIGNED)
 		
 		__declopr(T) Value()
 		{
 			UNSIGNED_OPR_PROLOG(fullbits, casted);
 			UNSIGNED_OPR_EPILOG(fullbits, casted);
 		}
-		__declopr(void) compare(T against)
+		
+		__declopr(void, typename argT = T) compare(argT against)
 		{
+			UNSIGNED_OPR_PROLOG(fullbits, casted);
 			
+			static_assert( std::is_same<argT, T>::value || ARGUMENT_IS_REGISTER(against) );
+			
+			T comparison = ARGUMENT_IS_REGISTER(against) ? comparison = against.Value<T, low>()
+					: comparison = against;
+			size_t tempflags = 0;
+			if(isInt8())
+			{
+				asmStart 
+				(
+				);
+			}
 		}
 		
 		/*
@@ -226,60 +260,38 @@ namespace x86Emu
 			}
 			UNSIGNED_OPR_EPILOG(fullbits, casted);
 		}
+		__declbinaryOp(bor, casted, casted |= factor, T, UNSIGNED)
+		__declbinaryOp(band, casted, casted &= factor, T, UNSIGNED)
+		//xor ^
+		__declbinaryOp(bxor, casted, casted ^= factor, T, UNSIGNED)
+		//not ~
+		__declUnaryOp(bnot, casted = ~casted, UNSIGNED)
+		//neg -
+		__declUnaryOp(neg, casted = -casted, SIGNED)
+
 		
-		__declopr(T) bor(T bits)
-		{
-			UNSIGNED_OPR_PROLOG(fullbits, casted);
-			casted |= bits;
-			UNSIGNED_OPR_EPILOG(fullbits, casted);
-		}
-		
-		__declopr(T) band(T bits)
-		{
-			UNSIGNED_OPR_PROLOG(fullbits, casted);
-			casted &= bits;
-			UNSIGNED_OPR_EPILOG(fullbits, casted);
-		}
-		
-		__declopr(T) bxor(T bits)
-		{
-			UNSIGNED_OPR_PROLOG(fullbits, casted);
-			casted ^= bits;
-			UNSIGNED_OPR_EPILOG(fullbits, casted);
-		}
-		
-		__declopr(T) bnot()
-		{
-			UNSIGNED_OPR_PROLOG(fullbits, casted);
-			casted = ~casted;
-			UNSIGNED_OPR_EPILOG(fullbits, casted);
-		}
-		__declopr(T) neg()
-		{
-			SIGNED_OPR_PROLOG(fullbits, casted);
-			casted = -casted;
-			SIGNED_OPR_EPILOG(fullbits, casted);
-		}
-		
-		__declopr(bool) test(T testVal)
+		__declopr(bool, typename argT = T) test(argT testVal)
 		{
 			UNSIGNED_OPR_PROLOG(fullbits, casted);
 			
 			if( !ARGUMENT_IS_REGISTER(testVal) )
+			{
+				assert(std::is_same<argT, T>::value);
 				return casted & testVal;
+			}
 			T otherVal = testVal.Value<T, low>();
 			return casted & otherVal;
 		}
 		
-		__declopr(unsigned) maskForType()
+		__declopr(constexpr size_t) maskForType()
 		{
 			static_assert( std::is_integral<T>::value, "maskForType requires an integral typename" );
 			static_assert( sizeof(T) <= 4, "maskForType cannot use 64 bit values" );
 			
-			if( sizeof(T) == sizeof(uint8) )
+			if( isInt8<T>() )
 				return low ? lowByteRegMask : highByteRegMask;
 				
-			else if( sizeof(T) == sizeof(uint16) )
+			else if( isInt16<T>() )
 				return lowWordRegMask;
 				
 			return dwordRegMask;
