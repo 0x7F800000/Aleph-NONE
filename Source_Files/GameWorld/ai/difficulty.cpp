@@ -11,6 +11,7 @@
 #include "projectiles.h"
 #include "player.h"
 #include "platforms.h"
+#include "difficulty.hpp"
 
 int16 get_monster_drop_mask()
 {
