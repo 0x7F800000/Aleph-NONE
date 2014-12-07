@@ -246,7 +246,7 @@ enum /* monster modes */
 	inline void settername(bool set)	{	exflags = (set) ? exflags | chkflag : exflags & (~chkflag);	}
 
 
-
+typedef vector<monsterBehavior*> monsterBehaviors;
 class Monster 
 {
 public:
@@ -421,10 +421,12 @@ public:
 	static void* operator new(size_t sz);
 	
 	ix countBehaviorsOfClass(const char* classname);
+	bool anyBehaviorOfClass(const char* className);
+	std::unique_ptr<monsterBehaviors*> behaviorsForClass(const char* className);
+	bool hasBehavior(const char* className, const char* behaviorName);
 	
 private:
-	vector<monsterBehavior*> behaviors;
-	
+	monsterBehaviors behaviors;
 };
 const int SIZEOF_monster_data = 64;
 
