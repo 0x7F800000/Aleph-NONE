@@ -113,9 +113,8 @@ Jan 12, 2003 (Loren Petrich)
 #include "Packing.h"
 #include "lua_script.h"
 #include "Logging.h"
+#include "./ai/difficulty.hpp"
 
-//need set_platform_state for _ds_set_platform_state
-#include "platforms.h"
 
 /*
 //explosive deaths should cause damage during their key frame
@@ -256,10 +255,6 @@ static int32 	nearest_goal_cost_function(int16 source_polygon_index, int16 line_
 
 static void 	cause_shrapnel_damage(int16 monster_index);
 
-static inline int16 	get_monster_drop_mask();
-static inline int16 	get_major_demotion_mask();
-static inline int16 	get_minor_promotion_mask();
-
 // For external use
 monsterDefinition *get_monster_definition_external(const int16 type);
 
@@ -310,51 +305,6 @@ monsterDefinition *get_monster_definition(const int16 type)
 monsterDefinition *get_monster_definition_external(const int16 type)
 {
 	return get_monster_definition(type);
-}
-
-static inline int16 get_monster_drop_mask()
-{
-	switch( dynamic_world->game_information.difficulty_level )
-	{
-		/* drop every fourth monster */
-		case _wuss_level: 
-			return 3; 
-		/* drop every eighth monster */
-		case _easy_level: 
-			return 7; 
-	}
-	/* otherwise, drop no monsters */
-	return NONE;
-}
-
-static inline int16 get_major_demotion_mask()
-{
-	switch(dynamic_world->game_information.difficulty_level)
-	{
-		/* demote every other major */
-		case _wuss_level: 
-			return 1; 
-		/* demote every fourth major */
-		case _easy_level: 
-			return 3; 
-	}
-	/* otherwise, demote no monsters */
-	return NONE;
-}
-
-static inline int16 get_minor_promotion_mask()
-{
-	switch (dynamic_world->game_information.difficulty_level)
-	{
-		/* promote every other minor */
-		case _major_damage_level: 
-			return 1; 
-		 /* promote every minor */
-		case _total_carnage_level: 
-			return 0; 
-	}
-	/* otherwise, promote no monsters */ 
-	return NONE;
 }
 
 Monster::Monster(struct object_location* location, int16 monster_type)
@@ -3022,9 +2972,9 @@ static bool translate_monster(int16 monster_index, world_distance distance)
 				{
 					if( !obstacle_monster->hasValidTarget() || !switch_target_check(monster_index, obstacle_monster->getTarget(), 0))
 					{
-						if (monster->isUnlocked() && !(global_random()&OBSTRUCTION_DEACTIVATION_MASK) &&
-							(monster->goal_polygon_index == NONE || monster->goal_polygon_index == object->polygon))
-							deactivate_monster(monster_index);
+						if (monster->isUnlocked() && !( global_random() & OBSTRUCTION_DEACTIVATION_MASK ) &&
+							(monster->isGoalPolygonIndex(NONE) || monster->isGoalPolygonIndex(object->polygon) ))
+							monster->deactivate();
 						else
 						{
 							monster_needs_path(monster_index, false);
@@ -3046,29 +2996,29 @@ static bool translate_monster(int16 monster_index, world_distance distance)
 		else
 		{
 			monsterDefinition* obstacle_definition = obstacle_monster->getDefinition();
-			auto key_height = obstacle_object->location.z + ( obstacle_definition->height / 2 );
+			int32 key_height = obstacle_object->location.z + ( obstacle_definition->height / 2 );
 			
-			change_monster_target(monster_index, obstacle_object->permutation);
+			monster->changeTarget(obstacle_object->permutation);
 			
 			/* if we're a kamakazi and we're within range, pop */
 			if( definition->testFlags( _monster_is_kamakazi ) && object->location.z < key_height)
 			{
 				bool in_range = object->location.z + definition->height > key_height;
 				
-				/* if we're int16 and can't float, take out their knees! */
+				/* if we're short and can't float, take out their knees! */
 				if (!in_range && film_profile.allow_short_kamikaze && !definition->testFlags(_monster_floats))
 					in_range = object->location.z >= obstacle_object->location.z;
 				
 				if (in_range)
 				{
-					set_monster_action(monster_index, _monster_is_dying_hard);
+					monster->changeAction(_monster_is_dying_hard);
 					monster_died(monster_index);
 				}
 			}
 			
 			/* if we float and this is our target, go up */
 			if( definition->testFlags( _monster_floats ) )
-				monster->desired_height = obstacle_object->location.z;
+				monster->setDesiredHeight(obstacle_object->location.z);
 		}
 	}
 	
