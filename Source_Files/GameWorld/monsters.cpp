@@ -4417,13 +4417,45 @@ void Monster::accelerate(world_distance v_velocity, angle direction, world_dista
 		TERMINAL_VERTICAL_MONSTER_VELOCITY );
 }
 
-ix Monster::countBehaviorsOfClass(const char* classname)
+ix Monster::countBehaviorsOfClass(const char* className)
 {
 	ix behaviorsOfClass = 0;
 	for(monsterBehavior *behavior : behaviors)
-		if( !strcmp( behavior->getClass(), classname ) )
+		if( !strcmp( behavior->getClass(), className ) )
 			++behaviorsOfClass;
 	return behaviorsOfClass;
 }
 
+bool Monster::hasBehavior(const char* className, const char* behaviorName)
+{
+	bool foundBehavior = false;
+	
+	for(monsterBehavior *behavior : behaviors)
+	{
+		if(	!strcmp(behavior->getClass(), className) 
+		&& 	!strcmp(behavior->getName(), behaviorName))
+		{
+			assert(!foundBehavior);	//would be pretty awful if two of the same behavior existed
+			foundBehavior = true;
+		}
+	}
+	return foundBehavior;
+}
 
+bool Monster::anyBehaviorOfClass(const char* className)
+{
+	return countBehaviorsOfClass(className) != 0;
+}
+
+std::unique_ptr<monsterBehaviors*> Monster::behaviorsForClass(const char* className)
+{
+	vector<monsterBehavior*> *classBehaviors = new vector<monsterBehavior*>();
+	assert(classBehaviors);
+	
+	for(monsterBehavior* behavior : behaviors)
+	{
+		if( !strcmp(behavior->getClass(), className) )
+			classBehaviors->push_back(behavior);
+	}
+	return std::unique_ptr<monsterBehavior*>(classBehaviors);
+}
