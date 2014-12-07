@@ -1733,8 +1733,7 @@ struct shape_animation_data *get_shape_animation_data(
 	return (struct shape_animation_data *) &high_level_shape->number_of_views;
 }
 
-void *get_global_shading_table(
-	void)
+void *get_global_shading_table()
 {
 	void *shading_table = nullptr;
 
@@ -1771,16 +1770,13 @@ void *get_global_shading_table(
 		
 		default:
 			assert(false);
-			break;
 	}
 	assert(shading_table);
 	
 	return shading_table;
 }
 
-void load_collections(
-	bool with_progress_bar,
-	bool is_opengl)
+void load_collections(bool with_progress_bar, bool is_opengl)
 {
 	struct collection_header *header;
 	short collection_index;
@@ -1861,9 +1857,7 @@ void load_collections(
 		for (collection_index= 0, header= collection_headers; collection_index < MAXIMUM_COLLECTIONS; ++collection_index, ++header)
 		{
 			if (collection_loaded(header))
-			{
 				SW_Texture_Extras::instance()->Load(collection_index);
-			}
 		}
 	}
 }
@@ -1874,13 +1868,11 @@ int count_replacement_collections()
 {
 	int total_replacements = 0;
 	short collection_index;
-	struct collection_header *header;
+	collection_header *header;
 	for (collection_index = 0, header = collection_headers; collection_index < MAXIMUM_COLLECTIONS; ++collection_index, ++header)
 	{
 		if (collection_loaded(header))
-		{
 			total_replacements += OGL_CountModelsImages(collection_index);
-		}
 	}
 
 	return total_replacements;
@@ -1888,15 +1880,13 @@ int count_replacement_collections()
 
 void load_replacement_collections()
 {
-	struct collection_header *header;
+	collection_header *header;
 	short collection_index;
 
 	for (collection_index= 0, header= collection_headers; collection_index < MAXIMUM_COLLECTIONS; ++collection_index, ++header)
 	{
 		if (collection_loaded(header))
-		{
 			OGL_LoadModelsImages(collection_index);
-		}
 	}
 }
 
@@ -1904,47 +1894,45 @@ void load_replacement_collections()
 		
 /* ---------- private code */
 
-static void precalculate_bit_depth_constants(
-	void)
+static void precalculate_bit_depth_constants()
 {
 	switch (bit_depth)
 	{
 		case 8:
-			number_of_shading_tables= 32;
-			shading_table_fractional_bits= 5;
+			number_of_shading_tables	= 32;
+			shading_table_fractional_bits	= 5;
 
-			shading_table_size= PIXEL8_MAXIMUM_COLORS*sizeof(pixel8);
+			shading_table_size	= PIXEL8_MAXIMUM_COLORS * sizeof(pixel8);
 			break;
 		case 16:
-			number_of_shading_tables= 64;
-			shading_table_fractional_bits= 6;
+			number_of_shading_tables	= 64;
+			shading_table_fractional_bits	= 6;
 
-			shading_table_size= PIXEL8_MAXIMUM_COLORS*sizeof(pixel16);
+			shading_table_size	= PIXEL8_MAXIMUM_COLORS * sizeof(pixel16);
 			break;
 		case 32:
-			number_of_shading_tables= 256;
-			shading_table_fractional_bits= 8;
+			number_of_shading_tables	= 256;
+			shading_table_fractional_bits	= 8;
 
-			shading_table_size= PIXEL8_MAXIMUM_COLORS*sizeof(pixel32);
+			shading_table_size	= PIXEL8_MAXIMUM_COLORS * sizeof(pixel32);
 			break;
 	}
 }
 
-/* given a list of RGBColors, find out which one, if any, match the given color.  if there
-	arenÕt any matches, add a new entry and return that index. */
-static short find_or_add_color(
-	struct rgb_color_value *color,
-	register struct rgb_color_value *colors,
-	short *color_count, 
-	bool update_flags = true)
+/* 
+	given a list of RGBColors, find out which one, if any, match the given color.  if there
+	aren't any matches, add a new entry and return that index. 
+*/
+static short find_or_add_color(struct rgb_color_value *color,
+	register struct rgb_color_value *colors, short *color_count, bool update_flags = true)
 {
-	short i;
+	ix i;
 	
 	// LP addition: save initial color-table pointer, just in case we overflow
-	register struct rgb_color_value *colors_saved = colors;
+	rgb_color_value *colors_saved = colors;
 	
 	// = 1 to skip the transparent color
-	for (i= 1, colors+= 1; i<*color_count; ++i, ++colors)
+	for (i = 1, colors+= 1; i<*color_count; ++i, ++colors)
 	{
 		if (colors->red==color->red && colors->green==color->green && colors->blue==color->blue)
 		{
@@ -1968,11 +1956,12 @@ static short find_or_add_color(
 		
 		// Rescan
 		colors = colors_saved;
-		for (i= 1, colors+= 1; i<*color_count; ++i, ++colors)
+		for (i = 1, colors += 1; i < *color_count; ++i, ++colors)
 		{
-			double RedDiff = double(color->red) - double(colors->red);
-			double GreenDiff = double(color->green) - double(colors->green);
-			double BlueDiff = double(color->blue) - double(colors->blue);
+			double RedDiff 		= double(color->red) 	- double(colors->red);
+			double GreenDiff 	= double(color->green) 	- double(colors->green);
+			double BlueDiff 	= double(color->blue) 	- double(colors->blue);
+			
 			double DiffSq = RedDiff*RedDiff + GreenDiff*GreenDiff + BlueDiff*BlueDiff;
 			if (DiffSq < MinDiffSq)
 			{
@@ -1984,162 +1973,192 @@ static short find_or_add_color(
 	}
 	
 	// assert(*color_count<PIXEL8_MAXIMUM_COLORS);
-	*colors= *color;
+	*colors = *color;
 	
 	return (*color_count)++;
 }
 
-static void update_color_environment(
-	bool is_opengl)
+static void update_color_environment(bool is_opengl)
 {
-	short color_count;
-	short collection_index;
-	short bitmap_index;
-	
-	pixel8 remapping_table[PIXEL8_MAXIMUM_COLORS];
-	struct rgb_color_value colors[PIXEL8_MAXIMUM_COLORS];
+	pixel8 remapping_table[ PIXEL8_MAXIMUM_COLORS ];
+	rgb_color_value colors[ PIXEL8_MAXIMUM_COLORS ];
 
-	memset(remapping_table, 0, PIXEL8_MAXIMUM_COLORS*sizeof(pixel8));
+	memset( remapping_table, 0, PIXEL8_MAXIMUM_COLORS * sizeof(pixel8) );
 
 	// dummy color to hold the first index (zero) for transparent pixels
-	colors[0].red= colors[0].green= colors[0].blue= 65535;
-	colors[0].flags= colors[0].value= 0;
-	color_count= 1;
+	colors[0].red 	= 65535;
+	colors[0].green	= 65535;
+	colors[0].blue	= 65535;
+	colors[0].flags	= 0;
+	colors[0].value	= 0;
+	int16 color_count = 1;
 
-	/* loop through all collections, only paying attention to the loaded ones.  weÕre
-		depending on finding the gray run (white to black) first; so itÕs the responsibility
-		of the lowest numbered loaded collection to give us this */
-	for (collection_index=0;collection_index<MAXIMUM_COLLECTIONS;++collection_index)
+	/* 
+		loop through all collections, only paying attention to the loaded ones.  we're
+		depending on finding the gray run (white to black) first;
+		so it's the responsibility of the lowest numbered loaded collection to give us this 
+	*/
+	for( ix collection_index = 0; collection_index < MAXIMUM_COLLECTIONS; ++collection_index )
 	{
-		struct collection_definition *collection= get_collection_definition(collection_index);
+		const collection_definition *restrict collection 
+			= get_collection_definition(collection_index);
 
+		if( !collection || !collection->bitmap_count )
+			continue;
+		
+		rgb_color_value *primary_colors = 
+			get_collection_colors(collection_index, 0) + NUMBER_OF_PRIVATE_COLORS;
+			
+		assert(primary_colors);
 
-		if (collection && collection->bitmap_count)
+		/* 
+			add the colors from this collection's primary color table to the aggregate color
+			table and build the remapping table 
+		*/
+		for(ix colorIndex = 0; 
+			colorIndex < collection->color_count - NUMBER_OF_PRIVATE_COLORS; ++colorIndex )
 		{
-			struct rgb_color_value *primary_colors= get_collection_colors(collection_index, 0)+NUMBER_OF_PRIVATE_COLORS;
-			assert(primary_colors);
-			short color_index, clut_index;
-
-
-			/* add the colors from this collectionÕs primary color table to the aggregate color
-				table and build the remapping table */
-			for (color_index=0;color_index<collection->color_count-NUMBER_OF_PRIVATE_COLORS;++color_index)
-			{
-				primary_colors[color_index].value= remapping_table[primary_colors[color_index].value]= 
-					find_or_add_color(&primary_colors[color_index], colors, &color_count);
-			}
-			
-			/* then remap the collection and recalculate the base addresses of each bitmap */
-			for (bitmap_index= 0; bitmap_index<collection->bitmap_count; ++bitmap_index)
-			{
-				struct bitmap_definition *bitmap= get_bitmap_definition(collection_index, bitmap_index);
-				assert(bitmap);
-				
-				/* calculate row base addresses ... */
-				bitmap->row_addresses[0]= calculate_bitmap_origin(bitmap);
-				precalculate_bitmap_row_addresses(bitmap);
-
-				/* ... and remap it */
-				remap_bitmap(bitmap, remapping_table);
-			}
-			
-			/* build a shading table for each clut in this collection */
-			for (clut_index= 0; clut_index<collection->clut_count; ++clut_index)
-			{
-				void *primary_shading_table= get_collection_shading_tables(collection_index, 0);
-				short collection_bit_depth= collection->type==_interface_collection ? 8 : bit_depth;
-
-				if (clut_index)
-				{
-					struct rgb_color_value *alternate_colors= get_collection_colors(collection_index, clut_index)+NUMBER_OF_PRIVATE_COLORS;
-					assert(alternate_colors);
-					void *alternate_shading_table= get_collection_shading_tables(collection_index, clut_index);
-					pixel8 shading_remapping_table[PIXEL8_MAXIMUM_COLORS];
-					
-					memset(shading_remapping_table, 0, PIXEL8_MAXIMUM_COLORS*sizeof(pixel8));
-					
-
-					/* build a remapping table for the primary shading table which we can use to
-						calculate this alternate shading table */
-					for (color_index= 0; color_index<PIXEL8_MAXIMUM_COLORS; ++color_index) shading_remapping_table[color_index]= static_cast<pixel8>(color_index);
-					for (color_index= 0; color_index<collection->color_count-NUMBER_OF_PRIVATE_COLORS; ++color_index)
-					{
-						shading_remapping_table[find_or_add_color(&primary_colors[color_index], colors, &color_count, false)]= 
-							find_or_add_color(&alternate_colors[color_index], colors, &color_count);
-					}
-
-					switch (collection_bit_depth)
-					{
-						case 8:
-							/* duplicate the primary shading table and remap it */
-							memcpy(alternate_shading_table, primary_shading_table, get_shading_table_size(collection_index));
-							map_bytes((unsigned char *)alternate_shading_table, shading_remapping_table, get_shading_table_size(collection_index));
-							break;
-						
-						case 16:
-							build_shading_tables16(colors, color_count, (pixel16 *)alternate_shading_table, shading_remapping_table, is_opengl); break;
-							break;
-						
-						case 32:
-							build_shading_tables32(colors, color_count, (pixel32 *)alternate_shading_table, shading_remapping_table, is_opengl); break;
-							break;
-						
-						default:
-							assert(false);
-							break;
-					}
-				}
-				else
-				{
-					/* build the primary shading table */
-					switch (collection_bit_depth)
-					{
-					case 8: build_shading_tables8(colors, color_count, (unsigned char *)primary_shading_table); break;
-					case 16: build_shading_tables16(colors, color_count, (pixel16 *)primary_shading_table, (byte *) NULL, is_opengl); break;
-					case 32: build_shading_tables32(colors, color_count,  (pixel32 *)primary_shading_table, (byte *) NULL, is_opengl); break;
-						default:
-							assert(false);
-							break;
-					}
-				}
-			}
-			
-			build_collection_tinting_table(colors, color_count, collection_index, is_opengl);
-			
-			/* 8-bit interface, non-8-bit main window; remember interface CLUT separately */
-			if (collection_index==_collection_interface && interface_bit_depth==8 && bit_depth!=interface_bit_depth) _change_clut(change_interface_clut, colors, color_count);
-			
-			/* if weÕre not in 8-bit, we donÕt have to carry our colors over into the next collection */
-			if (bit_depth!=8) color_count= 1;
+			const auto tableValue = find_or_add_color(
+					&primary_colors[colorIndex], 
+					colors, &
+					color_count);
+			remapping_table[ 
+				primary_colors[ colorIndex ].value 
+				] = tableValue;
+			primary_colors[ colorIndex ].value = tableValue;
 		}
-	}
+		
+		/* 
+			then remap the collection and recalculate the base addresses of each bitmap 
+		*/
+		for( ix bmpIndex = 0; bmpIndex < collection->bitmap_count; ++bmpIndex )
+		{
+			bitmap_definition *bitmap = get_bitmap_definition(collection_index, bmpIndex);
+			assert(bitmap);
+			
+			/* calculate row base addresses ... */
+			bitmap->row_addresses[0] = calculate_bitmap_origin(bitmap);
+			precalculate_bitmap_row_addresses(bitmap);
 
-#ifdef DEBUG
-//	dump_colors(colors, color_count);
-#endif
+			/* ... and remap it */
+			remap_bitmap(bitmap, remapping_table);
+		}
+		
+		/* build a shading table for each clut in this collection */
+		for( ix clutIndex = 0; clutIndex < collection->clut_count; ++clutIndex)
+		{
+			void *primary_shading_table = get_collection_shading_tables(collection_index, 0);
+			
+			if( collection->type == _interface_collection )
+				collection_bit_depth = 8;
+			else
+				collection_bit_depth = bit_depth;
+				
+			if (!clutIndex)
+			{
+				/* build the primary shading table */
+				switch (collection_bit_depth)
+				{
+				case 8: 
+					build_shading_tables8(colors, color_count, (uint8 *)primary_shading_table); 
+					break;
+				case 16: 
+					build_shading_tables16(colors, color_count, (pixel16 *)primary_shading_table, nullptr, is_opengl); 
+					break;
+				case 32: 
+					build_shading_tables32(colors, color_count,  (pixel32 *)primary_shading_table, nullptr, is_opengl); 
+					break;
+				default:
+					assert(false);
+				}
+				continue;
+			}
+			
+			rgb_color_value *alternate_colors = 
+				get_collection_colors(collection_index, clutIndex) + NUMBER_OF_PRIVATE_COLORS;
+			assert(alternate_colors);
+			
+			void *alternate_shading_table = 
+				get_collection_shading_tables(collection_index, clutIndex);
+				
+			pixel8 shading_remapping_table[PIXEL8_MAXIMUM_COLORS];
+			
+			memset( shading_remapping_table, 0, PIXEL8_MAXIMUM_COLORS * sizeof(pixel8) );
+			
+
+			/* 
+				build a remapping table for the primary shading table which we can use to
+				calculate this alternate shading table 
+			*/
+			for( ix colorIndex = 0; colorIndex < static_cast<ix>(PIXEL8_MAXIMUM_COLORS); ++colorIndex) 
+				shading_remapping_table[colorIndex] = static_cast<pixel8>(colorIndex);
+			for( ix colorIndex = 0; colorIndex < collection->color_count - NUMBER_OF_PRIVATE_COLORS; ++colorIndex)
+			{
+				shading_remapping_table[find_or_add_color(
+							&primary_colors[colorIndex], colors, &color_count, false)]
+							= find_or_add_color(&alternate_colors[colorIndex], colors, &color_count);
+			}
+
+			switch (collection_bit_depth)
+			{
+				case 8:
+					/* duplicate the primary shading table and remap it */
+					memcpy(alternate_shading_table, primary_shading_table, get_shading_table_size(collection_index));
+					map_bytes(
+						(uint8 *)alternate_shading_table, 
+						shading_remapping_table, 
+						get_shading_table_size(collection_index)
+						);
+					break;
+				case 16:
+					build_shading_tables16(colors, color_count, (pixel16 *)alternate_shading_table, shading_remapping_table, is_opengl); 
+					break;
+				case 32:
+					build_shading_tables32(colors, color_count, (pixel32 *)alternate_shading_table, shading_remapping_table, is_opengl); 
+					break;
+				default:
+					assert(false);
+			}
+		
+		}
+		
+		build_collection_tinting_table(colors, color_count, collection_index, is_opengl);
+		
+		/* 
+			8-bit interface, non-8-bit main window; remember interface CLUT separately 
+		*/
+		if(collection_index == _collection_interface && interface_bit_depth == 8 && bit_depth != interface_bit_depth) 
+			_change_clut(change_interface_clut, colors, color_count);
+		
+		/* 
+			if we're not in 8-bit, we don't have to carry our colors over into the next collection 
+		*/
+		if (bit_depth != 8) 
+			color_count = 1;
+	
+	}
 
 	/* change the screen clut and rebuild our shading tables */
 	_change_clut(change_screen_clut, colors, color_count);
 }
 
-static void _change_clut(
-	void (*change_clut_proc)(struct color_table *color_table),
-	struct rgb_color_value *colors,
-	short color_count)
+static void _change_clut(void (*change_clut_proc)(struct color_table *color_table),
+	struct rgb_color_value *colors, int16 color_count)
 {
-	struct color_table color_table;
-	struct rgb_color *color;
-	short i;
+	color_table color_table;
+	rgb_color *color;
 	
-	color= color_table.colors;
-	color_table.color_count= PIXEL8_MAXIMUM_COLORS;
-	for (i= 0; i<color_count; ++i, ++color, ++colors)
+	color			= color_table.colors;
+	color_table.color_count	= PIXEL8_MAXIMUM_COLORS;
+	
+	for( ix i = 0; i < color_count; ++i, ++color, ++colors )
+		*color = *((rgb_color *)&colors->red);
+		
+	for( ix i = color_count; i < PIXEL8_MAXIMUM_COLORS; ++i, ++color )
 	{
-		*color= *((struct rgb_color *)&colors->red);
-	}
-	for (i= color_count; i<PIXEL8_MAXIMUM_COLORS; ++i, ++color)
-	{
-		color->red= color->green= color->blue= 0;
+		color->red 	= 0;
+		color->green	= 0;
+		color->blue	= 0;
 	}
 	change_clut_proc(&color_table);
 }
@@ -2364,8 +2383,7 @@ static void build_global_shading_table16(
 	}
 }
 
-static void build_global_shading_table32(
-	void)
+static void build_global_shading_table32()
 {
 	if (!global_shading_table32)
 	{
@@ -2557,10 +2575,7 @@ static short CollectionTints[NUMBER_OF_COLLECTIONS] =
 };
 
 
-static void build_collection_tinting_table(
-	struct rgb_color_value *colors,
-	short color_count,
-	short collection_index,
+static void build_collection_tinting_table(struct rgb_color_value *colors, short color_count, short collection_index,
 	bool is_opengl)
 {
 	struct collection_definition *collection= get_collection_definition(collection_index);
@@ -2608,90 +2623,92 @@ static void build_collection_tinting_table(
 	}
 }
 
-static void build_tinting_table8(
-	struct rgb_color_value *colors,
-	short color_count,
-	pixel8 *tint_table,
-	short tint_start,
-	short tint_count)
+static void build_tinting_table8(struct rgb_color_value *colors, short color_count, pixel8 *tint_table,
+	short tint_start, short tint_count)
 {
-	short start, count;
-	
-	start= count= 0;
-	while (get_next_color_run(colors, color_count, &start, &count))
-	{
-		short i;
 
-		for (i=0; i<count; ++i)
+	int16 start 	= 0;
+	int16 count	= 0;
+	while( get_next_color_run(colors, color_count, &start, &count))
+	{
+		for( ix i = 0; i < count; ++i )
 		{
-			short adjust= start ? 0 : 1;
-			short value= (i*(tint_count+adjust))/count;
-			
-			value= (value>=tint_count) ? iBLACK : tint_start + value;
-			tint_table[start+i]= value;
+			int16 adjust	= start ? 0 : 1;
+			int16 value	= (i * (tint_count + adjust) ) / count;
+			if(value >= tint_count)
+				value = iBLACK;
+			else
+				value += tint_start;
+			tint_table[start + i]= value;
 		}
 	}
 }
 
-static void build_tinting_table16(
-	struct rgb_color_value *colors,
+static void build_tinting_table16(struct rgb_color_value *colors,
 	short color_count,
 	pixel16 *tint_table,
 	struct rgb_color *tint_color)
 {
-	short i;
 
 #ifdef SDL
 	SDL_PixelFormat *fmt = &pixel_format_16;
 #endif
 
-	for (i= 0; i<color_count; ++i, ++colors)
+	for( ix i = 0; i < color_count; ++i, ++colors)
 	{
-		int32 magnitude= ((int32)colors->red + (int32)colors->green + (int32)colors->blue)/(short)3;
+		int32 magnitude = ((int32)colors->red + (int32)colors->green + (int32)colors->blue)/(short)3;
 		
 #ifdef SDL
 		// Find optimal pixel value for video display
 		*tint_table++= SDL_MapRGB(fmt,
-		  ((magnitude * tint_color->red) / 0xFFFF) >> 8,
-		  ((magnitude * tint_color->green) / 0xFFFF) >> 8,
-		  ((magnitude * tint_color->blue) / 0xFFFF) >> 8);
+		  ((magnitude * tint_color->red) / 65535) >> 8,
+		  ((magnitude * tint_color->green) / 65535) >> 8,
+		  ((magnitude * tint_color->blue) / 65535) >> 8);
 #else
 		// Mac xRGB 1555 pixel format
-		*tint_table++= RGBCOLOR_TO_PIXEL16((magnitude*tint_color->red)/0xFFFF,
-			(magnitude*tint_color->green)/0xFFFF, (magnitude*tint_color->blue)/0xFFFF);
+		*tint_table++= RGBCOLOR_TO_PIXEL16((magnitude*tint_color->red)/65535,
+			(magnitude*tint_color->green)/65535, (magnitude*tint_color->blue)/65535);
 #endif
 	}
 }
 
-static void build_tinting_table32(
-	struct rgb_color_value *colors,
-	short color_count,
+static void build_tinting_table32(struct rgb_color_value *colors, short color_count,
 	pixel32 *tint_table,
 	struct rgb_color *tint_color,
 	bool is_opengl)
 {
-	short i;
-
 #ifdef SDL
 	SDL_PixelFormat *fmt = &pixel_format_32;
 #endif
-
-	for (i= 0; i<color_count; ++i, ++colors)
+	ix colorCount = ix(color_count);
+	
+	for( ix i = 0; i < colorCount; ++i, ++colors)
 	{
-		int32 magnitude= ((int32)colors->red + (int32)colors->green + (int32)colors->blue)/(short)3;
+		const int32 rgbSum 	= int32(colors->red) + int32(colors->green) + int32(colors->blue);
+		const int32 magnitude 	= rgbSum / int16(3);
 		
+		auto optimalPixelVal = [magnitude](int32 colorVal)
+		{
+			return (magnitude * colorVal) / 65535;
+		};
 #ifdef SDL
 		// Find optimal pixel value for video display
 		if (!is_opengl)
-			*tint_table++= SDL_MapRGB(fmt,
-			  ((magnitude * tint_color->red) / 65535) >> 8,
-			  ((magnitude * tint_color->green) / 65535) >> 8,
-			  ((magnitude * tint_color->blue) / 65535) >> 8);
+		{
+			*tint_table++ = SDL_MapRGB(fmt,
+			  optimalPixelVal(tint_color->red) >> 8,
+			  optimalPixelVal(tint_color->green) >> 8,
+			  optimalPixelVal(tint_color->blue) >> 8
+			  );
+		}
 		else
 #endif
 		// Mac xRGB 8888 pixel format
-		*tint_table++= RGBCOLOR_TO_PIXEL32((magnitude*tint_color->red)/65535,
-			(magnitude*tint_color->green)/65535, (magnitude*tint_color->blue)/65535);
+		*tint_table++ = RGBCOLOR_TO_PIXEL32(
+			optimalPixelVal(tint_color->red),
+			optimalPixelVal(tint_color->green), 
+			optimalPixelVal(tint_color->blue)
+			);
 	}
 }
 
