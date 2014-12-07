@@ -76,11 +76,11 @@ Jan 17, 2001 (Loren Petrich):
 */
 
 /*
-//gracefully handle out-of-memory conditions when loading shapes.  it will happen.
-//get_shape_descriptors() needs to look at high-level instead of low-level shapes when fetching scenery instead of walls/ceilings/floors
-//get_shape_information() is called often, and is quite slow
-//it is possible to have more than 255 low-level shapes in a collection, which means the existing shape_descriptor is too small
-//must build different shading tables for each collection (even in 8-bit, for alternate color tables)
+gracefully handle out-of-memory conditions when loading shapes.  it will happen.
+get_shape_descriptors() needs to look at high-level instead of low-level shapes when fetching scenery instead of walls/ceilings/floors
+get_shape_information() is called often, and is quite slow
+it is possible to have more than 255 low-level shapes in a collection, which means the existing shape_descriptor is too small
+must build different shading tables for each collection (even in 8-bit, for alternate color tables)
 */
 
 #include "cseries.h"
@@ -133,22 +133,18 @@ Jan 17, 2001 (Loren Petrich):
 
 // Moved from shapes_macintosh.c:
 
-// Possibly of historical interest:
-// #define COLLECTIONS_RESOURCE_BASE 128
-// #define COLLECTIONS_RESOURCE_BASE16 1128
-
 enum /* collection status */
 {
 	markNONE,
-	markLOAD= 1,
-	markUNLOAD= 2,
-	markSTRIP= 4 /* we donÕt want bitmaps, just high/low-level shape data */,
-	markPATCHED = 8 /* force re-load */
+	markLOAD	= 1,
+	markUNLOAD	= 2,
+	markSTRIP	= 4 /* we don't want bitmaps, just high/low-level shape data */,
+	markPATCHED 	= 8 /* force re-load */
 };
 
 enum /* flags */
 {
-	_collection_is_stripped= 0x0001
+	_collection_is_stripped	= 1
 };
 
 /* ---------- macros */
@@ -191,10 +187,10 @@ static short find_or_add_color(struct rgb_color_value *color, struct rgb_color_v
 static void _change_clut(void (*change_clut_proc)(struct color_table *color_table), struct rgb_color_value *colors, short color_count);
 
 static void build_shading_tables8(struct rgb_color_value *colors, short color_count, pixel8 *shading_tables);
-static void build_shading_tables16(struct rgb_color_value *colors, short color_count, pixel16 *shading_tables, byte *remapping_table, bool is_opengl);
-static void build_shading_tables32(struct rgb_color_value *colors, short color_count, pixel32 *shading_tables, byte *remapping_table, bool is_opengl);
-static void build_global_shading_table16(void);
-static void build_global_shading_table32(void);
+static void build_shading_tables16(struct rgb_color_value *colors, short color_count, pixel16 *shading_tables, uint8 *remapping_table, bool is_opengl);
+static void build_shading_tables32(struct rgb_color_value *colors, short color_count, pixel32 *shading_tables, uint8 *remapping_table, bool is_opengl);
+static void build_global_shading_table16();
+static void build_global_shading_table32();
 
 static bool get_next_color_run(struct rgb_color_value *colors, short color_count, short *start, short *count);
 static bool new_color_run(struct rgb_color_value *_new, struct rgb_color_value *last);
@@ -206,7 +202,7 @@ static void build_tinting_table8(struct rgb_color_value *colors, short color_cou
 static void build_tinting_table16(struct rgb_color_value *colors, short color_count, pixel16 *tint_table, struct rgb_color *tint_color);
 static void build_tinting_table32(struct rgb_color_value *colors, short color_count, pixel32 *tint_table, struct rgb_color *tint_color, bool is_opengl);
 
-static void precalculate_bit_depth_constants(void);
+static void precalculate_bit_depth_constants();
 
 static bool collection_loaded(struct collection_header *header);
 static void unload_collection(struct collection_header *header);
@@ -214,17 +210,15 @@ static void unlock_collection(struct collection_header *header);
 static void lock_collection(struct collection_header *header);
 static bool load_collection(short collection_index, bool strip);
 #ifdef mac
-static byte *unpack_collection(byte *collection, int32 length, bool strip);
+static byte *unpack_collection(uint8 *collection, int32 length, bool strip);
 #endif
 
-static void shutdown_shape_handler(void);
-static void close_shapes_file(void);
+static void shutdown_shape_handler();
+static void close_shapes_file();
 
 #ifdef mac
 static byte *read_object_from_file(OpenedFile& OFile, int32 offset, int32 length);
 #endif
-
-// static byte *make_stripped_collection(byte *collection);
 
 /* --------- collection accessor prototypes */
 
@@ -232,7 +226,7 @@ static byte *read_object_from_file(OpenedFile& OFile, int32 offset, int32 length
 // This is to allow for more graceful degradation.
 
 static struct collection_header *get_collection_header(short collection_index);
-/*static*/ struct collection_definition *get_collection_definition(short collection_index);
+struct collection_definition *get_collection_definition(short collection_index);
 static void *get_collection_shading_tables(short collection_index, short clut_index);
 static void *get_collection_tint_tables(short collection_index, short tint_index);
 static struct rgb_color_value *get_collection_colors(short collection_index, short clut_number);
@@ -246,11 +240,8 @@ static struct bitmap_definition *get_bitmap_definition(short collection_index, s
 /*
  *  Initialize shapes handling
  */
-
-static void initialize_pixmap_handler()
-{
-	// nothing to do
-}
+// nothing to do
+static void initialize_pixmap_handler(){}
 
 
 /*
@@ -306,9 +297,9 @@ SDL_Surface *get_shape_surface(int shape, int inCollection, byte** outPointerToP
                     // Extract color table - ZZZ change to use shading table rather than CLUT.  Hope it works.
 
 		    SDL_PixelFormat *fmt = &pixel_format_16;
-		    for (int i = 0; i < 256; i++) {
+		    for (ix i = 0; i < 256; i++) 
 			    SDL_GetRGB(shading_tables[i], fmt, &colors[i].r, &colors[i].g, &colors[i].b);
-                    }
+                    
                 }
                 break;
                 
@@ -433,8 +424,8 @@ SDL_Surface *get_shape_surface(int shape, int inCollection, byte** outPointerToP
                     int		theLargerWidth		= bitmap->width;
                     int		theLargerHeight		= bitmap->height;
                     uint8*	theLargerPixelStorage	= pixel_storage;
-                    int		theSmallerWidth		= theLargerWidth / 2 + theLargerWidth % 2;
-                    int		theSmallerHeight	= theLargerHeight / 2 + theLargerHeight % 2;
+                    ix		theSmallerWidth		= theLargerWidth / 2 + theLargerWidth % 2;
+                    ix		theSmallerHeight	= theLargerHeight / 2 + theLargerHeight % 2;
                     uint8*	theSmallerPixelStorage	= (uint8*) malloc(theSmallerWidth * theSmallerHeight);
                     
                     for(ix y = 0; y < theSmallerHeight; y++) 
@@ -648,7 +639,7 @@ static void convert_m1_rle(std::vector<uint8>& bitmap, int scanlines, int scanli
 		// it needs the first nonblank pixel and the last nonblank one + 1
 		int16 first = 0;
 		int16 last = 0;
-		for (int i = 0; i < scanline_length; ++i)
+		for( ix i = 0; i < scanline_length; ++i )
 		{
 			if (scanline_data[i] != 0)
 			{
@@ -657,7 +648,7 @@ static void convert_m1_rle(std::vector<uint8>& bitmap, int scanlines, int scanli
 			}
 		}
 
-		for (int i = scanline_length - 1; i >= 0; --i)
+		for (ix i = scanline_length - 1; i >= 0; --i)
 		{
 			if (scanline_data[i] != 0)
 			{
@@ -666,7 +657,8 @@ static void convert_m1_rle(std::vector<uint8>& bitmap, int scanlines, int scanli
 			}
 		}
 
-		if (last < first) last = first;
+		if (last < first) 
+			last = first;
 
 		bitmap.push_back(first >> 8);
 		bitmap.push_back(first & 0xff);
@@ -708,7 +700,8 @@ static void load_bitmap(std::vector<uint8>& bitmap, SDL_RWops *p, int version)
 			// ugly--figure out how big it's going to be
 			
 			int32 size = 0;
-			for (int j = 0; j < rows; j++) {
+			for (int j = 0; j < rows; j++) 
+			{
 				int16 first = SDL_ReadBE16(p);
 				int16 last = SDL_ReadBE16(p);
 				size += 4;
@@ -728,46 +721,45 @@ static void load_bitmap(std::vector<uint8>& bitmap, SDL_RWops *p, int version)
 	}
 
 
-	uint8* c = &bitmap[0];
-	bitmap_definition *d = (bitmap_definition *) &bitmap[0];
-	d->width = b.width;
-	d->height = b.height;
-	d->bytes_per_row = b.bytes_per_row;
-	d->flags = b.flags;
-	d->flags &= ~_PATCHED_BIT; // Anvil sets unused flags :( we'll set it later
-	d->bit_depth = b.bit_depth;
-	c += sizeof(bitmap_definition);
+	uint8* c 		= &bitmap[0];
+	bitmap_definition *d 	= (bitmap_definition *) &bitmap[0];
+	d->width 		= b.width;
+	d->height 		= b.height;
+	d->bytes_per_row 	= b.bytes_per_row;
+	d->flags 		= b.flags;
+	d->flags 		&= ~_PATCHED_BIT; // Anvil sets unused flags :( we'll set it later
+	d->bit_depth 		= b.bit_depth;
+	c 			+= sizeof(bitmap_definition);
 
 	// Skip row address pointers
 	c += rows * sizeof(pixel8 *);
 
-	// Copy bitmap data
-	if (d->bytes_per_row == NONE) 
+	
+	if (d->bytes_per_row != NONE) 
 	{
-		// RLE format
-
-		if (version == M1_SHAPES_VERSION)
-		{
-			convert_m1_rle(bitmap, rows, row_len, p);
-		}
-		else
-		{
-			for (int j = 0; j < rows; j++) {
-				int16 first = SDL_ReadBE16(p);
-				int16 last = SDL_ReadBE16(p);
-				*(c++) = (uint8)(first >> 8);
-				*(c++) = (uint8)(first);
-				*(c++) = (uint8)(last >> 8);
-				*(c++) = (uint8)(last);
-				SDL_RWread(p, c, 1, last - first);
-				c += last - first;
-			}
-		}
-	} else {
 		SDL_RWread(p, c, d->bytes_per_row, rows);
 		c += rows * d->bytes_per_row;
+		return;
 	}
-
+	// RLE format
+	
+	// Copy bitmap data
+	if (version == M1_SHAPES_VERSION)
+		convert_m1_rle(bitmap, rows, row_len, p);
+	else
+	{
+		for (int j = 0; j < rows; j++) 
+		{
+			int16 first = SDL_ReadBE16(p);
+			int16 last = SDL_ReadBE16(p);
+			*(c++) = (uint8)(first >> 8);
+			*(c++) = (uint8)(first);
+			*(c++) = (uint8)(last >> 8);
+			*(c++) = (uint8)(last);
+			SDL_RWread(p, c, 1, last - first);
+			c += last - first;
+		}
+	}
 }
 
 static void allocate_shading_tables(short collection_index, bool strip)
@@ -779,7 +771,9 @@ static void allocate_shading_tables(short collection_index, bool strip)
 	else 
 	{
 		collection_definition *definition = get_collection_definition(collection_index);
-		header->shading_tables = (uint8 *)malloc(get_shading_table_size(collection_index) * definition->clut_count + shading_table_size * NUMBER_OF_TINT_TABLES);
+		header->shading_tables = 
+		(uint8 *)malloc(get_shading_table_size(collection_index) * 
+		definition->clut_count + shading_table_size * NUMBER_OF_TINT_TABLES);
 	}
 }
 
@@ -874,7 +868,8 @@ static bool load_collection(short collection_index, bool strip)
 
 	header->collection = cd.release();
 	
-	if (strip) {
+	if (strip) 
+	{
 		//!! don't know what to do
 		fprintf(stderr, "Stripped shapes not implemented\n");
 		abort();
@@ -903,8 +898,8 @@ static void unload_collection(struct collection_header *header)
 	assert(header->collection);
 	delete header->collection;
 	free(header->shading_tables);
-	header->collection = NULL;
-	header->shading_tables = NULL;
+	header->collection = nullptr;
+	header->shading_tables = nullptr;
 }
 
 #define ENDC_TAG FOUR_CHARS_TO_INT('e', 'n', 'd', 'c')
@@ -918,9 +913,7 @@ std::vector<uint8> shapes_patch;
 void set_shapes_patch_data(uint8 *data, size_t length)
 {
 	if (!length) 
-	{
 		shapes_patch.clear();
-	}
 	else
 	{
 		shapes_patch.resize(length);
@@ -958,9 +951,7 @@ void load_shapes_patch(SDL_RWops *p, bool override_replacements)
 				// read a tag
 				int32 tag = SDL_ReadBE32(p);
 				if (tag == ENDC_TAG) 
-				{
 					collection_end = true;
-				}
 				else if (tag == CLDF_TAG)
 				{
 					// a collection follows directly
@@ -972,7 +963,9 @@ void load_shapes_patch(SDL_RWops *p, bool override_replacements)
 						allocate_shading_tables(collection_index, false);
 						header->status|=markPATCHED;
 
-					} else {
+					} 
+					else 
+					{
 						// get the color count (it's the only way to skip the CTAB_TAG
 						SDL_RWseek(p, 6, SEEK_CUR);
 						color_counts[collection_index] = SDL_ReadBE16(p);
@@ -981,33 +974,26 @@ void load_shapes_patch(SDL_RWops *p, bool override_replacements)
 				} 
 				else if (tag == HLSH_TAG)
 				{
-					collection_definition *cd = get_collection_definition(collection_index);
-					int32 high_level_shape_index = SDL_ReadBE32(p);
-					int32 size = SDL_ReadBE32(p);
-					int32 pos = SDL_RWtell(p);
+					collection_definition *cd 	= get_collection_definition(collection_index);
+					int32 high_level_shape_index 	= SDL_ReadBE32(p);
+					int32 size 		= SDL_ReadBE32(p);
+					int32 pos 		= SDL_RWtell(p);
 					if (cd && patch_bit_depth == 8 && high_level_shape_index < cd->high_level_shapes.size())
 					{
 						load_high_level_shape(cd->high_level_shapes[high_level_shape_index], p);
 						SDL_RWseek(p, pos + size, SEEK_SET);
-						
 					}
 					else
-					{
 						SDL_RWseek(p, size, SEEK_CUR);
-					}
 				}
 				else if (tag == LLSH_TAG)
 				{
-					collection_definition *cd = get_collection_definition(collection_index);
-					int32 low_level_shape_index = SDL_ReadBE32(p);
+					collection_definition *cd 	= get_collection_definition(collection_index);
+					int32 low_level_shape_index 	= SDL_ReadBE32(p);
 					if (cd && patch_bit_depth == 8 && low_level_shape_index < cd->low_level_shapes.size())
-					{
 						load_low_level_shape(&cd->low_level_shapes[low_level_shape_index], p);
-					}
 					else
-					{
 						SDL_RWseek(p, 36, SEEK_CUR);
-					}
 				} 
 				else if (tag == BMAP_TAG)
 				{
@@ -1018,27 +1004,19 @@ void load_shapes_patch(SDL_RWops *p, bool override_replacements)
 					{
 						load_bitmap(cd->bitmaps[bitmap_index], p, M2_SHAPES_VERSION);
 						if (override_replacements)
-						{
 							get_bitmap_definition(collection_index, bitmap_index)->flags |= _PATCHED_BIT;
-						}
 					}
 					else
-					{
 						SDL_RWseek(p, size, SEEK_CUR);
-					}
 				}
 				else if (tag == CTAB_TAG)
 				{
 					collection_definition *cd = get_collection_definition(collection_index);
 					int32 color_table_index = SDL_ReadBE32(p);
 					if (cd && patch_bit_depth == 8 && (color_table_index * cd->color_count < cd->color_tables.size())) 
-					{
 						load_clut(&cd->color_tables[color_table_index], cd->color_count, p);
-					}
 					else
-					{
 						SDL_RWseek(p, color_counts[collection_index] * sizeof(rgb_color_value), SEEK_CUR);
-					}
 				}
 				else
 				{
@@ -1047,7 +1025,9 @@ void load_shapes_patch(SDL_RWops *p, bool override_replacements)
 			}
 					
 
-		} else {
+		} 
+		else 
+		{
 			done = true;
 		}
 	}
@@ -1133,13 +1113,9 @@ void open_shapes_file(FileSpecifier& File)
 static void close_shapes_file(void)
 {
 	if (shapes_file_version == M1_SHAPES_VERSION)
-	{
 		M1ShapesFile.Close();
-	}
 	else
-	{
 		ShapesFile.Close();
-	}
 }
 
 static void shutdown_shape_handler(void)
@@ -1156,17 +1132,18 @@ static int AdjustToPointerBoundary(int x)
 }
 
 // Creates an unpacked collection and puts it into a long, flat stream like the original.
-byte *unpack_collection(byte *collection, int32 length, bool strip)
+uint8 *unpack_collection(uint8 *collection, int32 length, bool strip)
 {
 
 	// Set up blank values of these quantities
-	byte *NewCollection = NULL;
-	int32 *OffsetTable = NULL;
+	uint8 *NewCollection = nullptr;
+	int32 *OffsetTable = nullptr;
 	
 	try
 	{
 		// First, unpack the header into a temporary area
-		if (length < SIZEOF_collection_definition) throw 13666;
+		if (length < SIZEOF_collection_definition) 
+			throw 13666;
 		
 		collection_definition Definition;
 		uint8 *SBase = collection;
@@ -1355,7 +1332,7 @@ byte *unpack_collection(byte *collection, int32 length, bool strip)
 		}
 		
 		delete []OffsetTable;
-		OffsetTable = NULL;
+		OffsetTable = nullptr;
 		
 		if (strip)
 		{
