@@ -1410,9 +1410,9 @@ int16 legal_monster_move(int16 monster_index,
 		
 		if (obstacle_location.z < new_location->z + height && obstacle_location.z + obstacle_height > new_location->z)
 		{
-			auto separation = radius + obstacle_radius;
-			auto dx = obstacle_location.x - new_location->x;
-			auto dy = obstacle_location.y - new_location->y;
+			world_distance separation = radius + obstacle_radius;
+			world_distance dx = obstacle_location.x - new_location->x;
+			world_distance dy = obstacle_location.y - new_location->y;
 			
 			if (GET_OBJECT_OWNER(obstacle) != _object_is_scenery && obstacle->permutation > monster_index 
 				&& !MONSTER_IS_PLAYER( get_monster_data( obstacle->permutation ) )) 
@@ -1423,7 +1423,7 @@ int16 legal_monster_move(int16 monster_index,
 				/* 
 					we intersect sloppily; get arctan to be sure 
 				*/
-				auto theta = NORMALIZE_ANGLE( arctangent(dx, dy) - facing );
+				angle theta = NORMALIZE_ANGLE( arctangent(dx, dy) - facing );
 				
 				if (theta < EIGHTH_CIRCLE || theta > FULL_CIRCLE - EIGHTH_CIRCLE)
 				{
