@@ -146,7 +146,7 @@ namespace x86Emu
 				static_cast<std::make_unsigned<decltype(v)>::type>(v) << highByteShift \
 				: v
 					
-		#define		__declopr(type, ...)	template<typename T, bool low = true, __VA_ARGS__> type
+		#define		__declopr(type, ...)	template<typename T, bool low = true, __VA_ARGS__ > type
 		
 		#define		UNSIGNED_OPR_PROLOG(fullreg, castreg)\
 			LVARMASK();\
