@@ -72,3 +72,8 @@ extern vector<sliding_door_data> SlidingDoorList;
 
 #define		swinging_doors	(&SwingingDoorList[0])
 #define		sliding_doors	(&SlidingDoorList[0])
+
+/*	prototypes	*/
+
+void update_doors();
+void update_swinging_doors();
