@@ -1,0 +1,4 @@
+/*
+	GAME_TYPEINFO.CPP
+	
+*/
