@@ -234,7 +234,7 @@ void play_door_sound(ix index, int16 sound_type, int16 def)
 	const swinging_door_data *restrict door = &swinging_doors[index];
 	const swinging_door_definition *restrict definition = &swinging_door_definitions[door->definition_index];
 	
-	auto polygon = get_object_data(door->center_object).polygon;
+	auto polygon = get_object_data(door->center_object)->polygon;
 	
 	auto playsound = [polygon](int16 s) 
 	{
