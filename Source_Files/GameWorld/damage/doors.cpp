@@ -84,6 +84,16 @@ static void calculate_hinge_point(swinging_door_data *door, world_point2d *obj, 
 static bool door_is_obstructed(short permutation);
 static void adjust_endpoints(short permutation);
 
+void update_doors()
+{
+	
+}
+
+void update_swinging_doors()
+{
+	
+}
+
 #define		SignbitMul4(x)		(x86Emu::Signbit<int>(x) * 4)
 /*
 	finds the center of a swinging door
