@@ -292,10 +292,13 @@ bool polygon_contains_swinging_door(const int16 polygon_index, int16 *restrict d
 {
 	bool contains_swinging_door = false;
 	*door_index = NONE;
+	Object *object;
 	
 	for( auto i = map_polygons[ polygon_index ].first_object; i != NONE; i = object->next_object )
 	{
-		if( (get_object_data(i)->flags & 7) == 6 )
+		object = get_object_data(i);
+		
+		if( (object->flags & 7) == 6 )
 		{
 			*door_index = i;
 			contains_swinging_door = true;
