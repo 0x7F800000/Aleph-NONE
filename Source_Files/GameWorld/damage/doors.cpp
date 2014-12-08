@@ -342,8 +342,8 @@ void swing_points(swinging_door_data* door, angle theta)
 {
 	theta &= 0x1FF;
 	
-	rotate_point2d(&door->p1, &door->p0, theta);
-	rotate_point2d(&door->p2, &door->p0, theta);
-	rotate_point2d(&door->p3, &door->p0, theta);
+	rotate_point2d((world_point2d*) &door->p1, (world_point2d*)&door->p0, theta);
+	rotate_point2d((world_point2d*) &door->p2, (world_point2d*)&door->p0, theta);
+	rotate_point2d((world_point2d*) &door->p3, (world_point2d*)&door->p0, theta);
 }
 #endif
