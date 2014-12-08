@@ -5,11 +5,6 @@
 */
 
 #define		MAX_SWINGING_DOORS	32
-extern vector<swinging_door_data> SwingingDoorList;
-extern vector<sliding_door_data> SlidingDoorList;
-
-#define		swinging_doors	(&SwingingDoorList[0])
-#define		sliding_doors	(&SlidingDoorList[0])
 
 struct swinging_door_data
 {
@@ -72,3 +67,8 @@ struct sliding_door_data
 	int16 field_48;
 };
 
+extern vector<swinging_door_data> SwingingDoorList;
+extern vector<sliding_door_data> SlidingDoorList;
+
+#define		swinging_doors	(&SwingingDoorList[0])
+#define		sliding_doors	(&SlidingDoorList[0])
