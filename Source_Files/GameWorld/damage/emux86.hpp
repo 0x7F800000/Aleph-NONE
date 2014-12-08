@@ -111,7 +111,7 @@ namespace x86Emu
 		template< typename T > T operator *()
 		{
 			assert(uval);
-			return *static_cast<std::add_pointer<T>::type>(uval);
+			return *static_cast<T*>(uval);
 		}
 		
 		#define		specificIntegral(fname, size)	\
