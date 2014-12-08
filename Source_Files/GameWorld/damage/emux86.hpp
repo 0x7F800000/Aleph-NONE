@@ -108,11 +108,10 @@ namespace x86Emu
 			return sizeof(void*) == sizeof(int64);
 		}
 		
-		template<typename T> T operator *()
+		template< typename T > T operator *()
 		{
-			if( env64() )
-				return *(T*)value;
-			return *(T*) (value & 0xFFFFFFFF);
+			assert(uval);
+			return *static_cast<std::add_pointer<T>::type>(uval);
 		}
 		
 		#define		specificIntegral(fname, size)	\
