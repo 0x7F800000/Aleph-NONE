@@ -31,7 +31,41 @@ DOORS.CPP
 #include "emux86.hpp"
 #include "doors.hpp"
 
-#define		copy_worldpoint3d(dest, src)	(dest->x = src->x, dest->y = src->y, dest->z = src->z)
+#define		sameType(t1, t2)	(std::is_same<t1, t2>::value)
+#define		isPtr(t)		(std::is_pointer<t>::value)
+
+template<typename T1, typename T2> 
+void copyWorldPoint(T1 destination, T2 src)
+{
+	static_assert( 
+		isPtr(T1) && isPtr(T2) &&
+		( sameType(T1, world_point3d) || sameType(T1, world_point2d))
+		&&
+		( sameType(T2, world_point3d) || sameType(T2, world_point2d)),
+		"copyWorldPoint requires that both types be world_point* types"
+		);
+	
+	const world_point2d* source 	= static_cast<world_point2d*>(src);
+	world_point2d* dest 		= static_cast<world_point2d*>(dest);
+	
+	if( sameType(T1, world_point2d) )
+	{
+		dest->x = source->x;
+		dest->y = source->y;
+	}
+	else if( sameType(T1, world_point3d) )
+	{
+		dest->x = source->x;
+		dest->y = source->y;
+		if(sameType(T1, T2))
+			((world_point3d*)dest)->z = ((world_point3d*)src)->z;
+	}
+}
+
+#define		copy_worldpoint3d(dest, src)	copyWorldPoint<decltype(dest), decltype(src)>(dest, src)
+
+
+
 #define		RIGHTANGLE(angle)				((angle + 128) & 0x1FF)
 
 enum swinging_door_flags
