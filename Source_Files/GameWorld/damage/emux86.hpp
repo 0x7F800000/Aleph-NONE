@@ -82,18 +82,18 @@ namespace x86Emu
 		{
 			struct
 			{
-				__declbit(carry),
-				__declbit(reserved0),
-				__declbit(parity),
-				__declbit(reserved1),
-				__declbit(adjust),
-				__declbit(reserved2),
-				__declbit(zero),
-				__declbit(sign),
-				__declbit(trap),
-				__declbit(interruptEnable),
-				__declbit(direction),
-				__declbit(overflow)
+				__declbit(carry);
+				__declbit(reserved0);
+				__declbit(parity);
+				__declbit(reserved1);
+				__declbit(adjust);
+				__declbit(reserved2);
+				__declbit(zero);
+				__declbit(sign);
+				__declbit(trap);
+				__declbit(interruptEnable);
+				__declbit(direction);
+				__declbit(overflow);
 			};	//the rest of the flags are unneeded
 			size_t __flags;
 		};
