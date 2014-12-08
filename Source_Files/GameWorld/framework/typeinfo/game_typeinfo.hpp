@@ -10,4 +10,16 @@ namespace alephType
 	{
 		return reinterpret_cast<size_t>( &reinterpret_cast<T*>(nullptr)->*M );
 	}
+	
+	void initTypeInfo();
+	
+	template< size_t memberOffset, typename memberTypename> struct alephMemberInfo
+	{
+		const std::type_info& getInfo()
+		{
+			return typeid(memberTypename);
+		}
+		const size_t offset = memberOffset;
+	};
+	
 };
