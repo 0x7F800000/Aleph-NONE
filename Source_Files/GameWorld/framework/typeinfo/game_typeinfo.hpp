@@ -9,7 +9,7 @@ namespace alephType
 	static constexpr size_t offset_of()
 	{
 		classType* classPtr = nullptr;
-		return reinterpret_cast<size_t>( &(*classPtr).*member );
+		return reinterpret_cast<size_t>( &(*classPtr).(*member) );
 	}
 	
 	void initTypeInfo();
