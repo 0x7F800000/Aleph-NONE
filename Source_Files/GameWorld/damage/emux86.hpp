@@ -18,6 +18,7 @@
 #define		POP(regname)		"pop %%"#regname"\n\t"
 #define		MOVL(a1, a2)		"movl " #a2 ", " #a1 "\n\t"
 #define		MOVQ(a1, a2)		"movq " #a2 ", " #a1 "\n\t"
+#define		MOVB(a1, a2)		"movb " #a2 ", " #a1 "\n\t"
 
 namespace x86Emu
 {
@@ -254,7 +255,7 @@ namespace x86Emu
 			{
 				asmStart 
 				(
-					"mov %1, %%al\n\t"
+					MOVB("%%al", "%1")
 					"cmp %2, %%al\n\t"
 					PUSHF
 					POP("rax")
