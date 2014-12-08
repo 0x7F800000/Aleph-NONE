@@ -238,7 +238,8 @@ namespace x86Emu
 			static_assert( 	std::is_same<argT, T>::value || ARGUMENT_IS_REGISTER(against),
 					"argT must either be the same as T or type X86Register");
 			
-			T comparison = ARGUMENT_IS_REGISTER(against) ? comparison = against.Value<T, low>()
+			T comparison = ARGUMENT_IS_REGISTER(against) 
+			? comparison = static_cast<x86Register>(against).Value<T, low>()
 					: comparison = against;
 			size_t tempflags = 0;
 			
