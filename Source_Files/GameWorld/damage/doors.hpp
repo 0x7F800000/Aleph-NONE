@@ -36,7 +36,7 @@ struct sliding_door_data
 	int16 sound_index;
 	int16 flags;
 	int16 field_4;
-	int16 field_6;
+	int16 polygon_index1;
 	int16 polygon_index;
 	int16 field_A;
 	int16 line_data_index0;
