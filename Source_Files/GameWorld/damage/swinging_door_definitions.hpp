@@ -16,7 +16,7 @@ struct swinging_door_definition
 
 #ifndef DONT_REPEAT_DEFINITIONS
 
-static const swinging_door_definition original_swinging_door_definitions[] =
+static const swinging_door_definition swinging_door_definitions[] =
 {
 };
 
