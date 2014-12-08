@@ -13,8 +13,11 @@
 #define		bitsizeof(type)		(sizeof(type) * 8)
 
 #define		asmStart		__asm__ __volatile__
-#define		PUSH_FLAGS		"pushf\n\t"
-#define		POPX86(regname)		"pop %%"#regname"\n\t"
+
+#define		PUSHF			"pushf\n\t"
+#define		POP(regname)		"pop %%"#regname"\n\t"
+#define		MOVL(a1, a2)		"movl " #a2 ", " #a1 "\n\t"
+#define		MOVQ(a1, a2)		"movq " #a2 ", " #a1 "\n\t"
 
 namespace x86Emu
 {
@@ -252,10 +255,11 @@ namespace x86Emu
 				asmStart 
 				(
 					"mov %1, %%al\n\t"
+					
 					"cmp %2, %%al\n\t"
-					PUSH_FLAGS
-					POPX86("rax")
-					"mov %%rax, %0\n\t"
+					PUSHF
+					POP("rax")
+					MOVQ("%0", "%%rax")
 					: "=r" (tempflags)
 					: "r" (casted), "r" (comparison)
 				);
