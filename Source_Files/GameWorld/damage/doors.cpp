@@ -91,6 +91,42 @@ struct swinging_door_data
 	bool a_boolean, door_open;
 };
 
+struct sliding_door_data
+{
+	int16 sound_index;
+	int16 flags;
+	int16 field_4;
+	int16 field_6;
+	int16 polygon_index;
+	int16 field_A;
+	int16 line_data_index0;
+	int16 endpoint_data_index0;
+	int16 endpoint_data_index1;
+	int field_12;
+	int16 field_16;
+	int16 field_18;
+	int16 line_data_index1;
+	int16 line_data_index2;
+	int16 line_data_index3;
+	int16 line_data_index4;
+	int field_22;
+	int field_26;
+	int field_2A;
+	int field_2E;
+	int16 endpoint_x_offset;
+	int16 endpoint_y_offset;
+	int field_36;
+	int field_3A;
+	int8 field_3E;
+	int8 field_3F;
+	int8 other_flags;
+	int8 field_41;
+	int16 field_42;
+	int16 field_44;
+	bool abool;
+	int8 field_47;
+	int16 field_48;
+};
 
 
 static void find_center_of_door(swinging_door_data *door, world_point2d *p);
