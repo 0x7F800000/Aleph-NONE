@@ -17,11 +17,11 @@
 
 using namespace x86Emu;
 
-x86Flags x86Emu::flags;
+x86Flags flags;
 
-x86Register X86Emu::EAX;
-x86Register X86Emu::EBX;
-x86Register X86Emu::ECX;
+x86Register EAX;
+x86Register EBX;
+x86Register ECX;
 x86Register X86Emu::EDX;
 x86Register X86Emu::EDI;
 x86Register X86Emu::ESI;
