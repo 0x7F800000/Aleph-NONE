@@ -8,7 +8,8 @@ namespace alephType
 	template< typename classType, typename memberType, memberType classType::*member > 
 	static constexpr size_t offset_of()
 	{
-		return reinterpret_cast<size_t>( &(static_cast<classType*>(nullptr))->*member );
+		const classType* const classPtr = nullptr;
+		return reinterpret_cast<size_t>( &classPtr->*member );
 	}
 	
 	void initTypeInfo();
