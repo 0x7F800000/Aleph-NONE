@@ -233,7 +233,7 @@ bool move_along_path(int16 path_index, world_point2d *p)
 	assert(path->step_count != NONE);
 	assert(path->current_step >=0 && path->current_step <= path->step_count);
 	
-	bool endOfPath = path->current_step == path->step_count
+	bool endOfPath = path->current_step == path->step_count;
 	if( endOfPath )
 		path->step_count = NONE;
 	else
