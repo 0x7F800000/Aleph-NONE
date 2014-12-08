@@ -235,7 +235,8 @@ namespace x86Emu
 		{
 			UNSIGNED_OPR_PROLOG(fullbits, casted);
 			
-			static_assert( std::is_same<argT, T>::value || ARGUMENT_IS_REGISTER(against) );
+			static_assert( 	std::is_same<argT, T>::value || ARGUMENT_IS_REGISTER(against),
+					"argT must either be the same as T or type X86Register");
 			
 			T comparison = ARGUMENT_IS_REGISTER(against) ? comparison = against.Value<T, low>()
 					: comparison = against;
