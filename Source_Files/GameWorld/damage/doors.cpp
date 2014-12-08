@@ -1,5 +1,5 @@
 /*
-D_DOORS.CPP
+DOORS.CPP
 	Original code by Paranoid Productions. 
 	Reverse engineering done by Asylum with help from Hopper.
 	...am I doing it right?
