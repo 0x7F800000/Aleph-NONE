@@ -27,4 +27,7 @@ x86Register EDI;
 x86Register ESI;
 x86Register EBP;
 
-
+void fooo()
+{
+	EAX.compare<int16, false>(0xFFFF);
+}
