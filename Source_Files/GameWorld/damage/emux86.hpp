@@ -270,8 +270,8 @@ namespace x86Emu
 				(
 					"mov %1, %%ax\n\t"
 					"cmp %2, %%ax\n\t"
-					PUSH_FLAGS
-					POPX86("rax")
+					PUSHF
+					POP("rax")
 					"mov %%rax, %0\n\t"
 					: "=r" (tempflags)
 					: "r" (casted), "r" (comparison)
@@ -283,8 +283,8 @@ namespace x86Emu
 				(
 					"mov %1, %%eax\n\t"
 					"cmp %2, %%eax\n\t"
-					PUSH_FLAGS
-					POPX86("rax")
+					PUSHF
+					POP("rax")
 					"mov %%rax, %0\n\t"
 					: "=r" (tempflags)
 					: "r" (casted), "r" (comparison)
