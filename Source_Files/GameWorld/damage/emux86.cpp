@@ -15,19 +15,19 @@
 #include <type_traits>
 #include "emux86.hpp"
 
-using namespace x86Emu;
 
-x86Flags flags;
 
-x86Register EAX;
-x86Register EBX;
-x86Register ECX;
-x86Register EDX;
-x86Register EDI;
-x86Register ESI;
-x86Register EBP;
+x86Emu::x86Flags x86Emu::flags;
+
+x86Emu::x86Register x86Emu::EAX;
+x86Emu::x86Register x86Emu::EBX;
+x86Emu::x86Register x86Emu::ECX;
+x86Emu::x86Register x86Emu::EDX;
+x86Emu::x86Register x86Emu::EDI;
+x86Emu::x86Register x86Emu::ESI;
+x86Emu::x86Register x86Emu::EBP;
 
 void fooo()
 {
-	EAX.compare<int16, false>(0xFFFF);
+	x86Emu::EAX.compare<int16, false>(0xFFFF);
 }
