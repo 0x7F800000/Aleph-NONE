@@ -116,7 +116,7 @@ namespace x86Emu
 		}
 		
 		#define		specificIntegral(fname, size)	\
-			template<typename T> constexpr bool fname()\
+			template<typename T> static constexpr bool fname()\
 			{\
 				return sizeof(T) == size;\
 			}
