@@ -93,6 +93,9 @@ Feb 8, 2003 (Woody Zenfell):
 #include "fades.h"
 #include "items.h"
 #include "weapons.h"
+
+#include "./damage/doors.hpp"
+
 #include "game_window.h"
 #include "SoundManager.h"
 #include "network_games.h"
@@ -399,6 +402,9 @@ static int update_world_elements_one_tick()
 		
 		handle_random_sound_image();
 		animate_scenery();
+		
+		update_doors();
+		update_swinging_doors();
 		
 		// LP additions:
 		if (film_profile.animate_items)
