@@ -141,8 +141,9 @@ namespace x86Emu
 			if(!low && isInt8<T>() ) v >>= highByteShift
 			
 		#define		ADJUST_BYTE_FOR_REPACKING(v)	\
-				!low && isInt8<T>() ? \
-				(static_cast<std::make_unsigned<T>::type>(v)) << highByteShift \
+				( !low && isInt8<T>() ) ? \
+				(cast<std::make_unsigned<T>::type>(v)) \
+				<< highByteShift \
 				: v
 					
 		#define		__declopr(type, ...)	template<class T, bool low = true, ##__VA_ARGS__ > type
