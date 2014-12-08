@@ -115,10 +115,10 @@ namespace x86Emu
 		}
 		
 		#define		specificIntegral(fname, size)	\
-		template<typename T> constexpr bool fname()\
-		{\
-			return sizeof(T) == size;\
-		}
+			template<typename T> constexpr bool fname()\
+			{\
+				return sizeof(T) == size;\
+			}
 		
 		specificIntegral(isInt8, 	sizeof(int8) )
 		specificIntegral(isInt16, 	sizeof(int16) )
@@ -195,7 +195,7 @@ namespace x86Emu
 				UNSIGNED_OPR_EPILOG(fullbits, casted);
 			}
 			//not an integral type. no masking needed
-			ASSERT_TYPE_IS_POINTER("increment");
+			ASSERT_TYPE_IS_POINTER("decrement");
 			uval -= SIZEOF_REFERENCED_TYPE();
 			return T(uval);
 		}
@@ -332,7 +332,7 @@ namespace x86Emu
 		__declopr(constexpr size_t) maskForType()
 		{
 			static_assert( std::is_integral<T>::value, "maskForType requires an integral typename" );
-			static_assert( sizeof(T) <= 4, "maskForType cannot use 64 bit values" );
+			static_assert( sizeof(T) <= sizeof(int32), "maskForType cannot use 64 bit values" );
 			
 			if( isInt8<T>() )
 				return low ? lowByteRegMask : highByteRegMask;
