@@ -350,4 +350,11 @@ namespace x86Emu
 			ptrdiff_t sval;
 		};
 	};
+	
+	/*
+		we dont need ESP or EIP
+		we already know where our local variables are/what size they are
+		EBP is only present because the Watcom compiler likes to use it as another index reg
+	*/
+	static x86Register EAX, EBX, ECX, EDX, EDI, ESI, EBP;
 };
