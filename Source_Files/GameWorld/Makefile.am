@@ -9,13 +9,16 @@ libgameworld_a_SOURCES = dynamic_limits.h editor.h effect_definitions.h \
   projectile_definitions.h projectiles.h scenery_definitions.h scenery.h \
   TickBasedCircularQueue.h weapon_definitions.h weapons.h world.h \
   monsters_ext.h ./ai/behavior.hpp ./misc/damageKick.hpp ./ai/difficulty.hpp\
-  ./damage/doors.hpp ./damage/emux86.hpp ./damage/swinging_door_definitions.hpp\
+  ./damage/doors.hpp ./framework/emulation/x86/emux86.hpp ./damage/swinging_door_definitions.hpp\
+  ./framework/error/gameworld_exception.hpp ./framework/typeinfo/game_typeinfo.hpp \
   \
   devices.cpp dynamic_limits.cpp effects.cpp flood_map.cpp items.cpp \
   lightsource.cpp map_constructors.cpp map.cpp marathon2.cpp media.cpp \
   monsters.cpp pathfinding.cpp physics.cpp placement.cpp platforms.cpp \
-  player.cpp projectiles.cpp scenery.cpp weapons.cpp world.cpp monsters_ext.cpp\
-  ./ai/behavior.cpp ./ai/difficulty.cpp ./damage/doors.cpp ./damage/emux86.cpp
+  player.cpp projectiles.cpp scenery.cpp weapons.cpp world.cpp monsters_ext.cpp \
+  ./ai/behavior.cpp ./ai/difficulty.cpp ./damage/doors.cpp ./framework/emulation/x86/emux86.cpp \
+  ./framework/typeinfo/game_typeinfo.cpp
+  
 
 INCLUDES = -I$(top_srcdir)/Source_Files/CSeries -I$(top_srcdir)/Source_Files/Files \
   -I$(top_srcdir)/Source_Files/Input -I$(top_srcdir)/Source_Files/Lua \
@@ -23,4 +26,11 @@ INCLUDES = -I$(top_srcdir)/Source_Files/CSeries -I$(top_srcdir)/Source_Files/Fil
   -I$(top_srcdir)/Source_Files/Network -I$(top_srcdir)/Source_Files/FFmpeg \
   -I$(top_srcdir)/Source_Files/RenderMain -I$(top_srcdir)/Source_Files/RenderOther \
   -I$(top_srcdir)/Source_Files/Sound -I$(top_srcdir)/Source_Files/XML \
-  -I$(top_srcdir)/Source_Files
+  -I$(top_srcdir)/Source_Files -I$(top_srcdir)/Source_Files/GameWorld/framework \
+  -I$(top_srcdir)/Source_Files/GameWorld/framework/typeinfo \
+  -I$(top_srcdir)/Source_Files/GameWorld/framework/error \
+  -I$(top_srcdir)/Source_Files/GameWorld/framework/emulation/x86 \
+  -I$(top_srcdir)/Source_Files/GameWorld/framework/emulation \
+  -I$(top_srcdir)/Source_Files/GameWorld/damage \
+  -I$(top_srcdir)/Source_Files/GameWorld/ai \
+  -I$(top_srcdir)/Source_Files/GameWorld/misc 
