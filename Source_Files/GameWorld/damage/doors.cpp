@@ -86,14 +86,17 @@ static void calculate_doors_points(swinging_door_data *door, world_point2d *hing
 static void calculate_hinge_point(swinging_door_data *door, world_point2d *obj, world_point3d *hinge);
 static bool door_is_obstructed(int16 permutation);
 static void adjust_endpoints(int16 permutation);
-static void calculate_moving_lines(sliding_door_data *door);
+
 static void swing_points(swinging_door_data* door, angle theta);
 static void play_door_sound(ix index, int16 sound_type, int16 def);
 static void reverse_direction_of_door(const ix index);
 static bool polygon_contains_swinging_door(const int16 polygon_index, int16 * door_index);
 
 static void get_swinging_door_dimensions(const ix swinging_door_index, world_distance * radius, world_distance * height);
-	
+
+static void calculate_doors_moving_points(sliding_door_data *door);
+static void calculate_moving_lines(sliding_door_data *door);
+
 void update_doors()
 {
 	//stub :C
@@ -438,3 +441,27 @@ void calculate_moving_lines(sliding_door_data *door)
 		door->field_24 = v9->clockwise_polygon_side_index;
 }
 
+/*
+	this one looks a bit off.
+	need to step through the original one
+*/
+static void calculate_doors_moving_points(sliding_door_data *door)
+{
+	int v2 = 0;
+	polygon_data *v3 = &map_polygons[door->polygon_index1];
+	
+	while( v2 < v3->vertex_count )
+	{
+		//oh hexrays
+		polygon_data* v4 = (polygon_data*) ((uint8 *)v3 + 2 * v2);
+		
+		if( find_adjacent_polygon(door->polygon_index1, v4->line_indexes[0]) == door->polygon_index )
+		{
+			line_data* line = &map_lines[v4->line_indexes[0]];
+			door->line_data_index0 = v2;
+			door->endpoint_indexes[0] = line->endpoint_indexes[0];
+			door->endpoint_indexes[1] = line->endpoint_indexes[1];
+		}
+		++v2;
+	}
+}
