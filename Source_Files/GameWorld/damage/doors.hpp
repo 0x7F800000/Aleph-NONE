@@ -40,15 +40,31 @@ struct sliding_door_data
 	int16 polygon_index;
 	int16 field_A;
 	int16 line_data_index0;
-	int16 endpoint_data_index0;
-	int16 endpoint_data_index1;
+	
+	union
+	{
+		struct
+		{
+			int16 endpoint_data_index0;
+			int16 endpoint_data_index1;
+		};
+		int16 endpoint_indexes[2];
+	};
+	
 	int field_12;
 	int16 field_16;
 	int16 field_18;
-	int16 line_data_index1;
-	int16 line_data_index2;
-	int16 line_data_index3;
-	int16 line_data_index4;
+	union
+	{
+		struct
+		{
+			int16 line_data_index1;
+			int16 line_data_index2;
+			int16 line_data_index3;
+			int16 line_data_index4;
+		};
+		int16 line_indexes[4];
+	};
 	int field_22;
 	int field_26;
 	int field_2A;
