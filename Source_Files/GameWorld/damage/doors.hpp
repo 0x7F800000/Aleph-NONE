@@ -5,6 +5,7 @@
 */
 
 #define		MAX_SWINGING_DOORS	32
+#define		MAX_SLIDING_DOORS	64
 
 struct swinging_door_data
 {
