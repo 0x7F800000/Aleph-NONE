@@ -171,7 +171,7 @@ namespace x86Emu
 			return castreg	
 			
 		#define		ARGUMENT_IS_REGISTER(argument)	\
-		( std::is_same< decltype(this), std::remove_pointer<decltype(argument)>::type >::value)
+		( std::is_same< decltype(this), decltype(argument) >::value)
 		
 		__declopr(T) increment()
 		{
