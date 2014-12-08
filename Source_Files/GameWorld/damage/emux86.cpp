@@ -18,5 +18,5 @@
 
 void fooo()
 {
-	x86Emu::EAX.compare<int16, false>(0xFFFF);
+	x86Emu::EAX.compare<int16, false, int16>(0xFFFF);
 }
