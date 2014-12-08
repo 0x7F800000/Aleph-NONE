@@ -22,9 +22,9 @@ x86Flags flags;
 x86Register EAX;
 x86Register EBX;
 x86Register ECX;
-x86Register X86Emu::EDX;
-x86Register X86Emu::EDI;
-x86Register X86Emu::ESI;
-x86Register X86Emu::EBP;
+x86Register EDX;
+x86Register EDI;
+x86Register ESI;
+x86Register EBP;
 
 
