@@ -6,6 +6,8 @@ DOORS.CPP
 */
 //#define		DONT_COMPILE_YET
 
+#define		DISABLE_DOOR_SFX
+
 #include "cseries.h"
 
 #include "map.h"
@@ -239,7 +241,10 @@ void play_door_sound(ix index, int16 sound_type, int16 def)
 	auto playsound = [polygon](int16 s) 
 	{
 		play_polygon_sound(polygon, s);
+		
+		#ifndef	DISABLE_DOOR_SFX
 		cause_ambient_sound_source_update();
+		#endif	
 	};
 	
 	if (sound_type < 1 )
