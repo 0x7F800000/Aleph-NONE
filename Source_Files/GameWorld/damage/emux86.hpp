@@ -104,7 +104,7 @@ namespace x86Emu
 	{
 	public:
 		x86Register(){}
-		constexpr bool env64()
+		static constexpr bool env64()
 		{
 			return sizeof(void*) == sizeof(int64);
 		}
