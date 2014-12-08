@@ -240,7 +240,7 @@ namespace x86Emu
 					"argT must either be the same as T or type X86Register");
 			
 			T comparison = ARGUMENT_IS_REGISTER(against) 
-				? static_cast< x86Register* >(against)->Value< T, low >()
+				? ((x86Register*)against)->Value< T, low >()
 				: against;
 			
 			size_t tempflags = 0;
