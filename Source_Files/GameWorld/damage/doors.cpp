@@ -38,6 +38,9 @@ DOORS.CPP
 #define		sameType(t1, t2)	(std::is_same<t1, t2>::value)
 #define		isPtr(t)		(std::is_pointer<t>::value)
 
+std::vector<swinging_door_data> SwingingDoorList(MAX_SWINGING_DOORS);
+std::vector<sliding_door_data> SlidingDoorList(MAX_SLIDING_DOORS);
+
 template<typename T1, typename T2> 
 void copyWorldPoint(T1 destination, T2 src)
 {
