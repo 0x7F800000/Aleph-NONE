@@ -320,12 +320,12 @@ namespace x86Emu
 		__declopr(bool, typename argT = T) test(argT testVal)
 		{
 			UNSIGNED_OPR_PROLOG(fullbits, casted);
-			
+			static_assert(ARGUMENT_IS_REGISTER(testVal) || 
+							std::is_same<argT, T>::value, 
+				"type argT in x86Register::test must either be x86Register or the same as T");
 			if( !ARGUMENT_IS_REGISTER(testVal) )
-			{
-				assert(std::is_same<argT, T>::value);
 				return casted & testVal;
-			}
+				
 			T otherVal = testVal.Value<T, low>();
 			return casted & otherVal;
 		}
