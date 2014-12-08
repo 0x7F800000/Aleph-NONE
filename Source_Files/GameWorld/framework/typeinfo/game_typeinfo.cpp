@@ -19,7 +19,7 @@
 
 #include "./damage/doors.hpp"
 
-#include <type_info>
+#include <typeinfo>
 #include <type_traits>
 
 #include <string>
