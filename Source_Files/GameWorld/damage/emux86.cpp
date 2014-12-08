@@ -12,7 +12,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <limits.h>
-
+#include <type_traits>
 #include "emux86.hpp"
 
 using namespace x86Emu;
