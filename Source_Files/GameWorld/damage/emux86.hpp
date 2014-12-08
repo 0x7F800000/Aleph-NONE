@@ -171,7 +171,7 @@ namespace x86Emu
 			return castreg	
 			
 		#define		ARGUMENT_IS_REGISTER(argument)	\
-		( std::is_same< decltype(this), decltype(argument) >::value)
+		( std::is_same< decltype(this), std::remove_pointer<decltype(argument)>::type >::value)
 		
 		__declopr(T) increment()
 		{
@@ -240,8 +240,9 @@ namespace x86Emu
 					"argT must either be the same as T or type X86Register");
 			
 			T comparison = ARGUMENT_IS_REGISTER(against) 
-			? comparison = static_cast<x86Register>(against).Value<T, low>()
-					: comparison = against;
+				? static_cast< x86Register* >(against)->Value< T, low >()
+				: against;
+			
 			size_t tempflags = 0;
 			
 			static_assert( isInt8<T>() || isInt16<T>() || isInt32<T>(), 
