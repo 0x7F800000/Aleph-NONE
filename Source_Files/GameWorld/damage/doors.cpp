@@ -29,6 +29,8 @@ DOORS.CPP
 #include <type_traits>
 #include <cassert>
 #include "emux86.hpp"
+
+#include "swinging_door_definitions.hpp"
 #include "doors.hpp"
 
 #define		sameType(t1, t2)	(std::is_same<t1, t2>::value)
@@ -65,7 +67,6 @@ void copyWorldPoint(T1 destination, T2 src)
 #define		copy_worldpoint3d(dest, src)	copyWorldPoint<decltype(dest), decltype(src)>(dest, src)
 
 
-
 #define		RIGHTANGLE(angle)				((angle + 128) & 0x1FF)
 
 enum swinging_door_flags
@@ -95,6 +96,8 @@ static void find_center_of_door(swinging_door_data *door, world_point2d *p)
 	p->x = (door->p3.x + v3 - SignbitMul4(door->p3.x + v3) + SignbitMul4(door->p3.x + v3)) * 4;
 	p->y = (v4 - ((SignbitMul4(v4) + SignbitMul4(v4)))) * 4;
 }
+
+
 #ifndef		DONT_COMPILE_YET
 /*
 	Sets up all four corners of a swinging door
