@@ -58,8 +58,8 @@ we should cut corners instead of blindly following map geometry (i.e., separate 
 /* ---------- constants */
 
 // LP change: made this settable from the resource fork
-#define MAXIMUM_PATHS (get_dynamic_limit(_dynamic_limit_paths))
-#define MAXIMUM_POINTS_PER_PATH 63
+#define MAXIMUM_PATHS 			(get_dynamic_limit(_dynamic_limit_paths))
+#define MAXIMUM_POINTS_PER_PATH 	63
 
 
 /* ---------- structures */
@@ -75,7 +75,7 @@ struct path_definition /* 256 bytes */
 
 /* ---------- globals */
 
-static struct path_definition *paths = nullptr;
+static path_definition *paths = nullptr;
 
 
 /* ---------- private prototypes */
@@ -95,19 +95,18 @@ void allocate_pathfinding_memory()
 
 void reset_paths()
 {
-	for (ix path_index = 0; path_index < MAXIMUM_PATHS; ++path_index) 
+	for( ix path_index = 0; path_index < MAXIMUM_PATHS; ++path_index ) 
 		paths[path_index].step_count = NONE;
 }
 
-short new_path(world_point2d *source_point, short source_polygon_index, world_point2d *destination_point,
-	short destination_polygon_index, world_distance minimum_separation, cost_proc_ptr cost, void *data)
+int16 new_path(world_point2d *source_point, int16 source_polygon_index, world_point2d *destination_point,
+	int16 destination_polygon_index, world_distance minimum_separation, cost_proc_ptr cost, void *data)
 {
-	ix path_index;
-	
 	/* used for calculating the source polygon, ages ago */
 	(void) (source_point);
 
 	/* find a free path */	
+	ix path_index;
 	for( path_index = 0; path_index < MAXIMUM_PATHS; ++path_index )
 	{
 		if (paths[path_index].step_count == NONE) 
@@ -121,49 +120,60 @@ short new_path(world_point2d *source_point, short source_polygon_index, world_po
 		return NONE;
 
 	bool reached_destination;
-	short polygon_index;
-	short step_count;
-	short depth;
-
 	if (destination_polygon_index != NONE)
 	{
-		/* NON-RANDOM PATH: we have a valid destination point: flood out from the source_polygon_index
-			until we reach destination_polygon_index or we run out of stack space */
+		/* 
+			NON-RANDOM PATH:
+			we have a valid destination point: flood out from the source_polygon_index
+			until we reach destination_polygon_index or we run out of stack space 
+		*/
 		
-		polygon_index = flood_map(source_polygon_index, INT32_MAX, cost, _breadth_first, data);
+		auto polygon_index = flood_map(source_polygon_index, INT32_MAX, cost, _breadth_first, data);
 		
 		while (polygon_index != NONE && polygon_index != destination_polygon_index)
 			polygon_index = flood_map(NONE, INT32_MAX, cost, _breadth_first, data);
 
-		/* if we reached destination_polygon_index, extract the path by calling
-			reverse_flood_map().  remember to add the destination to the end of the path */
+		/* 
+			if we reached destination_polygon_index, extract the path by calling
+			reverse_flood_map().  remember to add the destination to the end of the path 
+		*/
 		reached_destination = polygon_index == destination_polygon_index;
 	}
 	else
 	{
-		/* RANDOM PATH: our destination point is invalid (the caller wants a random path); flood
+		/* 
+			RANDOM PATH: 
+			our destination point is invalid (the caller wants a random path); flood
 			out from the source polygon until we run out of stack space or we reach a cost
 			of RANDOM_PATH_AREA, whichever comes first.  in fact, our destination_point, if
 			not NULL, is a 2d vector specifying a bias in the direction we want to travel
-			(usually this will be away from somewhere we donÕt want to be) */
-		polygon_index = flood_map(source_polygon_index, INT32_MAX, cost, _breadth_first, data);
+			(usually this will be away from somewhere we don't want to be) 
+		*/
+		auto polygon_index = flood_map(source_polygon_index, INT32_MAX, cost, _breadth_first, data);
 		
 		while (polygon_index != NONE)
 			polygon_index = flood_map(NONE, INT32_MAX, cost, _breadth_first, data);
-		
-		choose_random_flood_node((world_vector2d *)destination_point); /* choose a random destination */
-		reached_destination = false; /* we didnÕt even have one */
+		/* 
+			choose a random destination 
+		*/	
+		choose_random_flood_node(reinterpret_cast<world_vector2d *>(destination_point)); 
+
+		reached_destination = false; /* we didn't even have one */
 	}
 
-	depth = flood_depth();
+	auto depth = flood_depth();
+	int16 step_count;
 	
-	/* a depth of zero yeilds one point (the destination), two and greater 2*depth */
+	/* 
+		a depth of zero yeilds one point (the destination), two and greater 2*depth 
+	*/
 	if (reached_destination)
 		step_count = depth + 1; 
 		
 	/* 
 		two points for every polygon change, minus one point because we never walk into the
-		last polygon; therefore destinationless paths with a depth of zero are useless 
+		last polygon; 
+		therefore destinationless paths with a depth of zero are useless 
 	*/
 	else
 		step_count = depth; 
@@ -171,35 +181,46 @@ short new_path(world_point2d *source_point, short source_polygon_index, world_po
 	if (step_count <= 0) 
 		return NONE;
 	/* if we have valid steps, extract the path */
-	path_definition *path = paths + path_index;
-	short last_polygon_index;
+	path_definition *path = &paths[path_index];
 
 	obj_set(*path, 0x80);
 
+	if(step_count > MAXIMUM_POINTS_PER_PATH)
+		path->step_count = MAXIMUM_POINTS_PER_PATH;
+	else
+		path->step_count = step_count;
 	
-	path->step_count = step_count > MAXIMUM_POINTS_PER_PATH ? MAXIMUM_POINTS_PER_PATH : step_count;
-	assert(path->step_count != NONE); /* this would be bad */
-	path->current_step= 0;
+	assert( path->step_count != NONE ); /* this would be bad */
+	path->current_step = 0;
 
-	/* if we reached our destination (and itÕs not out-of-range), add it */
-	if (reached_destination && --step_count<MAXIMUM_POINTS_PER_PATH) 
+	/* 
+		if we reached our destination (and it's not out-of-range), add it 
+	*/
+	if( reached_destination && --step_count < MAXIMUM_POINTS_PER_PATH ) 
 		path->points[step_count] = *destination_point;
 	
-	/* add all the points up to but not including the source (if we have room) */
-	last_polygon_index = reverse_flood_map();
-	while ( (polygon_index = reverse_flood_map() ) != NONE)
+	/* 
+		add all the points up to but not including the source (if we have room) 
+	*/
+	auto last_polygon_index = reverse_flood_map();
+	
+	for(auto polygonIndex = reverse_flood_map(); polygonIndex != NONE; polygonIndex = reverse_flood_map())
 	{
 		if (--step_count < MAXIMUM_POINTS_PER_PATH) 
-			calculate_midpoint_of_shared_line(last_polygon_index, polygon_index, minimum_separation, 
-							path->points + step_count);
-		last_polygon_index = polygon_index;
+			calculate_midpoint_of_shared_line(
+				last_polygon_index, 
+				polygonIndex, 
+				minimum_separation, 
+				path->points + step_count
+				);
+		last_polygon_index = polygonIndex;
 	}
-	assert(!step_count); /* we should be out of points */
+	assert( !step_count ); /* we should be out of points */
 
 	return path_index;
 }
 
-bool move_along_path(short path_index, world_point2d *p)
+bool move_along_path(int16 path_index, world_point2d *p)
 {
 	path_definition *path;
 	bool end_of_path = false;
