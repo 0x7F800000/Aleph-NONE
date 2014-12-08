@@ -27,14 +27,44 @@
 
 #include "game_typeinfo.hpp"
 
-#define		__declmemberInfo(classname, membername)	\
-		\
-		alephType::alephMemberInfo<\
-		alephType::offset_of<classname, decltype(classname::membername), &classname::membername>()\
-		, decltype(classname::membername)>
+#define		getOffset(field)	offset = size_t(&dummy.field) - size_t(&dummy) 
+
+template<typename T> 
+struct memberTypeInfo
+{
+	const char* memberName;
+	const size_t memberOffset;
+	
+	const std::type_info& getInfo()
+	{
+		return typeid(T);
+	}
+};
+
+template<typename T>
+class alephTypeInfo : public vector<memberTypeInfo> 
+{
+public:
+	alephTypeInfo()
+	{
+
+	}
+	const std::type_info& getInfo()
+	{
+		return typeid(T);
+	}
+};
+
+static void initMonsterTypeInfo()
+{
+	static Monster dummy = {};
+	size_t offset = 0;
+	alephTypeInfo<Monster>* mTypeInfo = new alephTypeInfo<Monster>();
+}
+
 
 void alephType::initTypeInfo()
 {
-	__declmemberInfo(Monster, type) test;
+
 }
 
