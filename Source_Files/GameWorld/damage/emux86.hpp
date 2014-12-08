@@ -255,7 +255,6 @@ namespace x86Emu
 				asmStart 
 				(
 					"mov %1, %%al\n\t"
-					
 					"cmp %2, %%al\n\t"
 					PUSHF
 					POP("rax")
@@ -272,7 +271,7 @@ namespace x86Emu
 					"cmp %2, %%ax\n\t"
 					PUSHF
 					POP("rax")
-					"mov %%rax, %0\n\t"
+					MOVQ("%0", "%%rax")
 					: "=r" (tempflags)
 					: "r" (casted), "r" (comparison)
 				);
@@ -281,11 +280,11 @@ namespace x86Emu
 			{
 				asmStart 
 				(
-					"mov %1, %%eax\n\t"
+					MOVL("%%eax", "%1")
 					"cmp %2, %%eax\n\t"
 					PUSHF
 					POP("rax")
-					"mov %%rax, %0\n\t"
+					MOVQ("%0", "%%rax")
 					: "=r" (tempflags)
 					: "r" (casted), "r" (comparison)
 				);				
