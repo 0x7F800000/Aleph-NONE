@@ -325,7 +325,7 @@ namespace x86Emu
 				"type argT in x86Register::test must either be x86Register or the same as T");
 			if( !ARGUMENT_IS_REGISTER(testVal) )
 				return casted & testVal;
-				
+				//
 			T otherVal = testVal.Value<T, low>();
 			return casted & otherVal;
 		}
