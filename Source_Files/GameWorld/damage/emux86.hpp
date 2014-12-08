@@ -134,9 +134,9 @@ namespace x86Emu
 		
 		#define		ASSERT_TYPE_IS_POINTER(fname)	static_assert(std::is_pointer<T>::value, "Pointer to non-integral type required in x86Register::"#fname#".")
 		#define		SIZEOF_REFERENCED_TYPE()	(sizeof(std::remove_pointer<T>::type))
-		#define		UNPACK_BYTE_REG(v)		if(!low && isInt8() ) v >>= highByteShift
+		#define		UNPACK_BYTE_REG(v)		if(!low && isInt8<T>() ) v >>= highByteShift
 		#define		ADJUST_BYTE_FOR_REPACKING(v)	\
-				!low && isInt8() ? \
+				!low && isInt8<T>() ? \
 				static_cast<std::make_unsigned<decltype(v)>::type>(v) << highByteShift \
 				: v
 					
