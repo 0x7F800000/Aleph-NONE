@@ -330,7 +330,7 @@ namespace x86Emu
 			return casted & otherVal;
 		}
 		
-		__declopr(constexpr size_t) maskForType()
+		__declopr(size_t) maskForType()
 		{
 			static_assert( std::is_integral<T>::value, "maskForType requires an integral typename" );
 			static_assert( sizeof(T) <= sizeof(int32), "maskForType cannot use 64 bit values" );
