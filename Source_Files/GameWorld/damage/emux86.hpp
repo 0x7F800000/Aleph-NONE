@@ -38,7 +38,7 @@ namespace x86Emu
 	}
 	static inline unsigned char __MKCSHR__(int v, unsigned int count)
 	{
-		return (value >> (count - 1)) & 1;
+		return (v >> (count - 1)) & 1;
 	}
 	
 	template <typename T> T Signbit(T val)
