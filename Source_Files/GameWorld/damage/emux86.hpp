@@ -103,6 +103,7 @@ namespace x86Emu
 	class x86Register
 	{
 	public:
+		x86Register(){}
 		constexpr bool env64()
 		{
 			return sizeof(void*) == sizeof(int64);
