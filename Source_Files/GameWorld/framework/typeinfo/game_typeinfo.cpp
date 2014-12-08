@@ -32,27 +32,44 @@
 template<typename T> 
 struct memberTypeInfo
 {
-	const char* memberName;
-	const size_t memberOffset;
+	const char* name;
+	const size_t offset;
 	
-	const std::type_info& getInfo()
+	virtual const std::type_info& getInfo()
 	{
 		return typeid(T);
 	}
 };
 
 template<typename T>
-class alephTypeInfo : public vector<memberTypeInfo> 
+class alephTypeInfo : public vector< memberTypeInfo<void> > 
 {
 public:
-	alephTypeInfo()
-	{
-
-	}
+	const char* const name;
+	
+	alephTypeInfo() : name( getInfo().name() ) {}
+	
 	const std::type_info& getInfo()
 	{
 		return typeid(T);
 	}
+	
+	template<typename memberType> bool add(memberTypeInfo<memberType>* member)
+	{
+		push_back( *static_cast< memberTypeInfo<void>* >(member) );
+		return true;
+	}
+	
+	ix hasField(const char* fieldName)
+	{
+		for(memberTypeInfo<void> member : *this)
+		{
+			if( !strcmp(fieldName, member.name) )
+				return ix(reinterpret_cast<size_t>(&member) - reinterpret_cast<size_t>( &(*this)[0] ));
+		}
+		return NONE;
+	}
+
 };
 
 static void initMonsterTypeInfo()
