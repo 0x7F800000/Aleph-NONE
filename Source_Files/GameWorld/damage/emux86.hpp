@@ -150,7 +150,7 @@ namespace x86Emu
 		#define		UNSIGNED_OPR_PROLOG(fullreg, castreg)\
 			LVARMASK();\
 			size_t fullreg = uval & mask; \
-			ADJUST_BYTE_FOR_OP(fullreg);\
+			ADJUST_BYTE_FOR_REPACKING(fullreg);\
 			T castreg = fullreg
 			
 		#define		UNSIGNED_OPR_EPILOG(fullreg, castreg)\
@@ -161,7 +161,7 @@ namespace x86Emu
 		#define		SIGNED_OPR_PROLOG(fullreg, castreg)\
 			LVARMASK();\
 			decltype(this->sval) fullreg = uval & mask; \
-			ADJUST_BYTE_FOR_OP(fullreg);\
+			ADJUST_BYTE_FOR_REPACKING(fullreg);\
 			T castreg = fullreg
 			
 		#define		SIGNED_OPR_EPILOG(fullreg, castreg)\
