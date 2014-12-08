@@ -49,8 +49,8 @@ void copyWorldPoint(T1 destination, T2 src)
 		"copyWorldPoint requires that both types be world_point* types"
 		);
 	
-	const world_point2d* source 	= (world_point2d*)src;
-	world_point2d* dest 		= (world_point2d*)dest;
+	const world_point2d* source 	= reinterpret_cast<world_point2d*>(src);
+	world_point2d* dest 		= reinterpret_cast<world_point2d*>(dest);
 	
 	if( sameType(T1, world_point2d) )
 	{
@@ -62,7 +62,8 @@ void copyWorldPoint(T1 destination, T2 src)
 		dest->x = source->x;
 		dest->y = source->y;
 		if(sameType(T1, T2))
-			((world_point3d*)dest)->z = ((world_point3d*)src)->z;
+			reinterpret_cast<world_point3d*>(dest)->z 
+			= reinterpret_cast<world_point3d*>(src)->z;
 	}
 }
 
