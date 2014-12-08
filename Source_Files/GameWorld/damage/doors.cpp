@@ -4,6 +4,8 @@ DOORS.CPP
 	Reverse engineering done by Asylum with help from Hopper.
 	...am I doing it right?
 */
+#define		DONT_COMPILE_YET
+
 #include "cseries.h"
 
 #include "map.h"
@@ -52,6 +54,8 @@ struct swinging_door_data
 	short field_3A, field_3C, field_3E, field_40, field_42;
 	bool a_boolean, door_open;
 };
+
+#ifndef		DONT_COMPILE_YET
 
 static void find_center_of_door(swinging_door_data *door, world_point2d *p);
 
@@ -315,3 +319,4 @@ void swing_points(swinging_door_data* door, angle theta)
 	rotate_point2d(&door->p2, &door->p0, theta);
 	rotate_point2d(&door->p3, &door->p0, theta);
 }
+#endif
