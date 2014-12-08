@@ -49,8 +49,8 @@ void copyWorldPoint(T1 destination, T2 src)
 		"copyWorldPoint requires that both types be world_point* types"
 		);
 	
-	const world_point2d* source 	= static_cast<world_point2d*>(src);
-	world_point2d* dest 		= static_cast<world_point2d*>(dest);
+	const world_point2d* source 	= (world_point2d*)src;
+	world_point2d* dest 		= (world_point2d*)dest;
 	
 	if( sameType(T1, world_point2d) )
 	{
