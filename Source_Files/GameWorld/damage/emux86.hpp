@@ -289,7 +289,7 @@ namespace x86Emu
 		__declopr(T, bool extendSign = false) Value(T newValue)
 		{
 			UNSIGNED_OPR_PROLOG(fullbits, casted);
-			if( sizeof(T) == sizeof(int16) && extendSign)
+			if( isInt16<T>() && extendSign)
 			{
 				if(std::is_unsigned<T>::value)
 					uval = static_cast< decltype(uval) >(newValue);
