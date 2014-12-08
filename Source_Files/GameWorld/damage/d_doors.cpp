@@ -4,13 +4,28 @@ D_DOORS.CPP
 	Reverse engineering done by Asylum with help from Hopper.
 	...am I doing it right?
 */
-
 #include "cseries.h"
 
-#include "world.h"
 #include "map.h"
+#include "FilmProfile.h"
+#include "interface.h"
+#include "monsters.h"
+#include "preferences.h"
+#include "projectiles.h"
+#include "effects.h"
+#include "player.h"
+#include "platforms.h"
+#include "lightsource.h"
+#include "media.h"
+#include "scenery.h"
+
+#include <string.h>
+#include <stdlib.h>
+#include <limits.h>
+
+#include <list>
 #include "/damage/d_doors.h"
-#include "/damage/d_emux86.h"
+#include "/damage/emux86.hpp"
 
 #define		copy_worldpoint3d(dest, src)	(dest->x = src->x, dest->y = src->y, dest->z = src->z)
 #define		RIGHTANGLE(angle)				((angle + 128) & 0x1FF)
