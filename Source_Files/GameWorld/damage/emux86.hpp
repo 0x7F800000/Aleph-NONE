@@ -238,16 +238,15 @@ namespace x86Emu
 			
 			static_assert( 	std::is_same<argT, T>::value || ARGUMENT_IS_REGISTER(against),
 					"argT must either be the same as T or type X86Register");
-			
+					
+			static_assert( isInt8<T>() || isInt16<T>() || isInt32<T>(), 
+				"invalid type in x86Register::Compare");
 			T comparison = ARGUMENT_IS_REGISTER(against) 
 				? ((x86Register*)against)->Value< T, low >()
 				: against;
 			
 			size_t tempflags = 0;
 			
-			static_assert( isInt8<T>() || isInt16<T>() || isInt32<T>(), 
-				"invalid type in x86Register::Compare");
-				
 			if(isInt8<T>())
 			{
 				asmStart 
