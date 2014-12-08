@@ -57,7 +57,7 @@ struct swinging_door_data
 	bool a_boolean, door_open;
 };
 
-#ifndef		DONT_COMPILE_YET
+
 
 static void find_center_of_door(swinging_door_data *door, world_point2d *p);
 
@@ -81,7 +81,7 @@ static void find_center_of_door(swinging_door_data *door, world_point2d *p)
 	p->x = (door->p3.x + v3 - SignbitMul4(door->p3.x + v3) + SignbitMul4(door->p3.x + v3)) * 4;
 	p->y = (v4 - ((SignbitMul4(v4) + SignbitMul4(v4)))) * 4;
 }
-
+#ifndef		DONT_COMPILE_YET
 /*
 	Sets up all four corners of a swinging door
 */
