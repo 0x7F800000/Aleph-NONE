@@ -27,7 +27,7 @@ DOORS.CPP
 
 #include <list>
 #include <type_traits>
-
+#include <cassert>
 #include "emux86.hpp"
 #include "doors.hpp"
 
