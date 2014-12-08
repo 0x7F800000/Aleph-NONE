@@ -182,7 +182,7 @@ static bool door_is_obstructed(short permutation)
 		endpoint_data *endpoints = &map_endpoints[sliding_door->endpoint_data_index0];
 		if(xoffset)
 		{
-			if(xoffset <= 0 && offset + endpoints->vertex.x <= object->location.x + 256)
+			if(xoffset <= 0 && xoffset + endpoints->vertex.x <= object->location.x + 256)
 				return true;
 			else if ( endpoints->vertex.x + xoffset >= object->location.x - 256 )
 				return true;
