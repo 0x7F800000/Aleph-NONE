@@ -8,7 +8,7 @@
 	for implementing some of these
 	
 */
-#include <type_traits>
+
 
 #define		bitsizeof(type)		(sizeof(type) * 8)
 
