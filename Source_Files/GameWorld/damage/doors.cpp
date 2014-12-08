@@ -4,7 +4,7 @@ DOORS.CPP
 	Reverse engineering done by Asylum with help from Hopper.
 	...am I doing it right?
 */
-#define		DONT_COMPILE_YET
+//#define		DONT_COMPILE_YET
 
 #include "cseries.h"
 
