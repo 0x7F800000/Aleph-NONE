@@ -87,21 +87,36 @@ static void calculate_doors_points(swinging_door_data *door, world_point2d *hing
 static void calculate_hinge_point(swinging_door_data *door, world_point2d *obj, world_point3d *hinge);
 static bool door_is_obstructed(short permutation);
 static void adjust_endpoints(short permutation);
+static void calculate_moving_lines(sliding_door_data *door);
+static void swing_points(swinging_door_data* door, angle theta);
+static void play_door_sound(ix index, int16 sound_type, int16 def);
+static void reverse_direction_of_door(const ix index);
+static bool polygon_contains_swinging_door(const int16 polygon_index, int16 *restrict door_index);
 
+static void get_swinging_door_dimensions(const ix swinging_door_index, world_distance *restrict radius, 
+	world_distance *restrict height);
+	
 void update_doors()
 {
-	
+	//stub :C
 }
 
 void update_swinging_doors()
 {
-	
+	//stub :C
 }
 
 #define		SignbitMul4(x)		(x86Emu::Signbit<int>(x) * 4)
 /*
 	finds the center of a swinging door
 	if something isn't working right, check this one
+	
+	This is SO beyond me. For some reason this code sequence keeps popping up:
+	a sbb instruction, then a bit shift >> 31, which would be extracting the sign bit
+	then it multiplies the result of the shift
+	
+	that sequence really messes with hexrays, causing it to claim that there's a bitwise shift
+	by 60 bits or some ridiculous number
 */
 static void find_center_of_door(swinging_door_data *door, world_point2d *p)
 {
@@ -128,14 +143,16 @@ static void calculate_doors_points(swinging_door_data *door, world_point2d *hing
 	door->p0.z = polygon->floor_height;
 	
 	copy_worldpoint3d(&door->p2, &door->p0);
-	translate_point2d((world_point2d *)&door->p2, door->length, door->yaw);
+	translate_point2d(reinterpret_cast><world_point2d *>(&door->p2), 
+			door->length, door->yaw);
 	
 	copy_worldpoint3d(&door->p1, &door->p0);
-	translate_point2d((world_point2d *)&door->p1, door->width, v4);
+	translate_point2d(reinterpret_cast><world_point2d *>(&door->p1), 
+			door->width, v4);
 	
-
 	copy_worldpoint3d(&door->p3, &door->p2);
-	translate_point2d((world_point2d *)&door->p3, door->width, v4);
+	translate_point2d(reinterpret_cast><world_point2d *>(&door->p3), 
+				door->width, v4);
 }
 
 /*
@@ -157,7 +174,7 @@ static void calculate_hinge_point(swinging_door_data *door, world_point2d *obj, 
 	world_distance last_vertex_distance = NONE;
 	
 	//correct the map object placement
-	for(int i = 0; i < polygon->vertex_count; ++i)
+	for(ix i = 0; i < polygon->vertex_count; ++i)
 	{
 		endpoint_data *endpoint = &map_endpoints[polygon->endpoint_indexes[i]];
 		
@@ -174,8 +191,8 @@ static void calculate_hinge_point(swinging_door_data *door, world_point2d *obj, 
 			hinge->y = endpoint->vertex.y;
 		}
 	}
-	hinge->x += (hinge->x >= polygon->center.x) ? -2 : 2;
-	hinge->y += (hinge->y >= polygon->center.y) ? -2 : 2;
+	hinge->x += hinge->x >= polygon->center.x ? -2 : 2;
+	hinge->y += hinge->y >= polygon->center.y ? -2 : 2;
 }
 
 /*
@@ -242,7 +259,7 @@ static void adjust_endpoints(short permutation)
 /*
 	this one had a lot of gotos, so its a bit weird looking.
 */
-void play_door_sound(ix index, int16 sound_type, int16 def)
+static void play_door_sound(ix index, int16 sound_type, int16 def)
 {
 	int16 v2;
 	int16 sound;
@@ -294,7 +311,7 @@ void play_door_sound(ix index, int16 sound_type, int16 def)
 }
 
 /*	simple one	*/
-void get_swinging_door_dimensions(const ix swinging_door_index, 
+static void get_swinging_door_dimensions(const ix swinging_door_index, 
 	world_distance *restrict radius, world_distance *restrict height)
 {
 	const swinging_door_data *restrict swinging_door = &swinging_doors[ swinging_door_index ];
@@ -302,7 +319,7 @@ void get_swinging_door_dimensions(const ix swinging_door_index,
 	*height = swinging_door->height;
 }
 
-bool polygon_contains_swinging_door(const int16 polygon_index, int16 *restrict door_index)
+static bool polygon_contains_swinging_door(const int16 polygon_index, int16 *restrict door_index)
 {
 	bool contains_swinging_door = false;
 	*door_index = NONE;
@@ -322,7 +339,7 @@ bool polygon_contains_swinging_door(const int16 polygon_index, int16 *restrict d
 	return contains_swinging_door;
 }
 
-void reverse_direction_of_door(const ix index)
+static void reverse_direction_of_door(const ix index)
 {
 	int16 v5; 
 	
@@ -352,7 +369,7 @@ void reverse_direction_of_door(const ix index)
 	door->related_to_direction2 = v6 > 0 ? -v9 : v9;
 }
 
-void swing_points(swinging_door_data* door, angle theta)
+static void swing_points(swinging_door_data* door, angle theta)
 {
 	theta &= 0x1FF;
 	
