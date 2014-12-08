@@ -139,15 +139,15 @@ static void calculate_doors_points(swinging_door_data *door, world_point2d *hing
 	door->p0.z = polygon->floor_height;
 	
 	copy_worldpoint3d(&door->p2, &door->p0);
-	translate_point2d(reinterpret_cast><world_point2d *>(&door->p2), 
+	translate_point2d(reinterpret_cast<world_point2d *>(&door->p2), 
 			door->length, door->yaw);
 	
 	copy_worldpoint3d(&door->p1, &door->p0);
-	translate_point2d(reinterpret_cast><world_point2d *>(&door->p1), 
+	translate_point2d(reinterpret_cast<world_point2d *>(&door->p1), 
 			door->width, v4);
 	
 	copy_worldpoint3d(&door->p3, &door->p2);
-	translate_point2d(reinterpret_cast><world_point2d *>(&door->p3), 
+	translate_point2d(reinterpret_cast<world_point2d *>(&door->p3), 
 				door->width, v4);
 }
 
