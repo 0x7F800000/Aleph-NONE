@@ -2048,6 +2048,7 @@ static void update_color_environment(bool is_opengl)
 		for( ix clutIndex = 0; clutIndex < collection->clut_count; ++clutIndex)
 		{
 			void *primary_shading_table = get_collection_shading_tables(collection_index, 0);
+			int16 collection_bit_depth;
 			
 			if( collection->type == _interface_collection )
 				collection_bit_depth = 8;
