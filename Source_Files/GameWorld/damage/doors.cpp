@@ -361,5 +361,68 @@ void swing_points(swinging_door_data* door, angle theta)
 	rotate_point2d((world_point2d*) &door->p3, (world_point2d*)&door->p0, theta);
 }
 
+void calculate_moving_lines(sliding_door_data *door)
+{
+	polygon_data *poly1 = &map_polygons[door->polygon_index1];
+	int16 v14 = 0;
+	polygon_data *poly2 = &map_polygons[door->polygon_index];
+	
+	do
+	{
+		int16 v13 = door->endpoint_indexes[v14];
+		door->line_indexes[v14] = NONE;
+		int v5 = 0;
+		while( v5 < poly1->vertex_count )
+		{
+			if( v5 == door->line_data_index0 )
+				++v5;
+			else
+			{
+				line_data *v11 = &map_lines[ poly1->line_indexes[v5] ];
+				if ( v13 == v11->endpoint_indexes[0] || v13 == v11->endpoint_indexes[1] )
+				{
+					door->line_indexes[v14] = poly1->line_indexes[v5];
+					break;
+				}
+				++v5;
+			}
+		}
+		int v6 = 0;
+		while ( v6 < poly2->vertex_count )
+		{
+			auto v7 = poly2->line_indexes[ v6 ];
+			
+			if ( v7 == poly1->line_indexes[door->line_data_index0] )
+				++v6;
+			else
+			{
+				line_data *v12 = &map_lines[v7];
+				
+				if( v13 == v12->endpoint_indexes[0] || v13 == v12->endpoint_indexes[1] )
+				{
+					door->line_indexes[v14 + 2] = poly2->line_indexes[ v6 ];
+					break;
+				}
+				
+				++v6;
+			}
+		}
+		++v14;
+	}
+	while ( v14 < 2 );
+	
+	line_data *v8 = &map_lines[door->line_indexes[0]];
+	line_data *v9 = &map_lines[door->line_indexes[1]];
+	
+	if( v8->clockwise_polygon_side_index == NONE )
+		door->field_22 = v8->counterclockwise_polygon_side_index;
+	else
+		door->field_22 = v8->clockwise_polygon_side_index;
+	
+	if( v9->clockwise_polygon_side_index == NONE )
+		door->field_24 = v9->counterclockwise_polygon_side_index;
+	else
+		door->field_24 = v9->clockwise_polygon_side_index;
+}
 
 #endif
