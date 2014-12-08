@@ -46,13 +46,17 @@ Feb 10, 2000 (Loren Petrich):
 #include "dynamic_limits.h"
 
 /*
-we should cut corners instead of blindly following map geometry (i.e., separate pathfinding as
-	much as possible from the underlying polygon structure of the map), especially the final leg.
-
-//calculate_midpoint_of_shared_line should have some randomness (bad idea?)
-//it ocurrs to me that connecting midpoints of shared lines wonÕt always work (monsters will run through walls)
-//shadow polygons screw us up (a specific case of the general "weird polygon geometry" problem)
-//random paths arenÕt really random, and (even worse) tend to be symmetric
+	we should cut corners instead of blindly following map geometry (i.e., separate pathfinding as
+		much as possible from the underlying polygon structure of the map), especially the final leg.
+	
+	calculate_midpoint_of_shared_line should have some randomness (bad idea?)
+	
+	it ocurrs to me that connecting midpoints of shared lines won't always work 
+	(monsters will run through walls)
+	
+	shadow polygons screw us up (a specific case of the general "weird polygon geometry" problem)
+	
+	random paths aren't really random, and (even worse) tend to be symmetric
 */
 
 /* ---------- constants */
@@ -67,8 +71,8 @@ we should cut corners instead of blindly following map geometry (i.e., separate 
 struct path_definition /* 256 bytes */
 {
 	/* NONE is an empty path */
-	short current_step;
-	short step_count;
+	int16 current_step;
+	int16 step_count;
 	
 	world_point2d points[MAXIMUM_POINTS_PER_PATH];
 };
@@ -80,7 +84,8 @@ static path_definition *paths = nullptr;
 
 /* ---------- private prototypes */
 
-static void calculate_midpoint_of_shared_line(short polygon1, short polygon2, world_distance minimum_separation, world_point2d *midpoint);
+static void calculate_midpoint_of_shared_line(int16 polygon1, int16 polygon2, 
+	world_distance minimum_separation, world_point2d *midpoint);
 
 /* ---------- code */
 
@@ -222,40 +227,35 @@ int16 new_path(world_point2d *source_point, int16 source_polygon_index, world_po
 
 bool move_along_path(int16 path_index, world_point2d *p)
 {
-	path_definition *path;
-	bool end_of_path = false;
-	
 	assert(path_index >= 0 && path_index < MAXIMUM_PATHS);
-	path = paths+path_index;
+	path_definition *path = &paths[path_index];
 
 	assert(path->step_count != NONE);
-	vassert(path->current_step>=0&&path->current_step<=path->step_count, csprintf(temporary, "invalid current path step: #%d/#%d", path->current_step, path->step_count));
+	assert(path->current_step >=0 && path->current_step <= path->step_count);
 	
-	if ( (end_of_path = path->current_step == path->step_count))
+	bool endOfPath = path->current_step == path->step_count
+	if( endOfPath )
 		path->step_count = NONE;
 	else
 		*p = path->points[path->current_step++];
 	
-	return end_of_path;
+	return endOfPath;
 }
 
-void delete_path(short path_index)
+void delete_path(int16 path_index)
 {
 	assert( path_index >= 0 && path_index < MAXIMUM_PATHS );
 	assert( paths[path_index].step_count != NONE );
-	vassert( 
-		paths[path_index].current_step >= 0 
-	&& 
-	paths[path_index].current_step <= paths[path_index].step_count, 
-	csprintf(temporary, "invalid current path step: #%d/#%d", 
-	paths[path_index].current_step, paths[path_index].step_count));
+	assert( paths[path_index].current_step >= 0 &&  
+		paths[path_index].current_step <= paths[path_index].step_count);
 	
 	paths[path_index].step_count = NONE;
 }
 
 /* ---------- private code */
 
-static void calculate_midpoint_of_shared_line(short polygon1, short polygon2, world_distance minimum_separation, world_point2d *midpoint)
+static void calculate_midpoint_of_shared_line(int16 polygon1, int16 polygon2, 
+	world_distance minimum_separation, world_point2d *midpoint)
 {
 	auto shared_line_index = find_shared_line(polygon1, polygon2);
 	
@@ -266,10 +266,10 @@ static void calculate_midpoint_of_shared_line(short polygon1, short polygon2, wo
 	Endpoint &endpoint0 = Endpoint::Get( shared_line.endpoint_indexes[0] );
 	Endpoint &endpoint1 = Endpoint::Get( shared_line.endpoint_indexes[1] );
 
-	world_distance origin = 0;
-	world_distance range = shared_line.length;
+	world_distance origin 	= 0;
+	world_distance range 	= shared_line.length;
 	
-	if (ENDPOINT_IS_ELEVATION(&endpoint0) ) 
+	if( ENDPOINT_IS_ELEVATION(&endpoint0) ) 
 	{
 		origin 	+= minimum_separation;
 		range 	-= minimum_separation;
@@ -285,9 +285,9 @@ static void calculate_midpoint_of_shared_line(short polygon1, short polygon2, wo
 	}
 	else
 	{
-		world_distance dx 	= endpoint1.vertex.x - endpoint0.vertex.x;
-		world_distance dy 	= endpoint1.vertex.y - endpoint0.vertex.y;
-		world_distance offset	= origin + ( ( global_random() * range ) >> 16);
+		const world_distance dx 	= endpoint1.vertex.x - endpoint0.vertex.x;
+		const world_distance dy 	= endpoint1.vertex.y - endpoint0.vertex.y;
+		const world_distance offset	= origin + ( ( global_random() * range ) >> 16);
 		
 		midpoint->x		= endpoint0.vertex.x + (offset * dx) / shared_line.length;
 		midpoint->y		= endpoint0.vertex.y + (offset * dy) / shared_line.length;
@@ -296,7 +296,7 @@ static void calculate_midpoint_of_shared_line(short polygon1, short polygon2, wo
 
 /* for debug purposes only (called from OVERHEAD_MAP.C) */
 // LP: making these available for those wanting to check out the monster AI
-world_point2d *path_peek(short path_index, short *step_count)
+world_point2d *path_peek(int16 path_index, int16 *step_count)
 {
 	path_definition *path = &paths[path_index];
 
@@ -308,4 +308,4 @@ world_point2d *path_peek(short path_index, short *step_count)
 }
 
 // LP addition: the total number of paths
-short GetNumberOfPaths() {return MAXIMUM_PATHS;}
+int16 GetNumberOfPaths() {return MAXIMUM_PATHS;}
