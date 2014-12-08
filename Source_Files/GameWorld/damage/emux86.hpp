@@ -145,7 +145,7 @@ namespace x86Emu
 				v << highByteShift \
 				: v
 					
-		#define		__declopr(type, ...)	template<class T, bool low = true, ##__VA_ARGS__ > type
+		#define		__declopr(type, ...)	template<typename T, bool low = true, ##__VA_ARGS__ > type
 		
 		#define		UNSIGNED_OPR_PROLOG(fullreg, castreg)\
 			LVARMASK();\
