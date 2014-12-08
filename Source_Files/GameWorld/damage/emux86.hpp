@@ -197,17 +197,17 @@ namespace x86Emu
 		#define	__declbinaryOp(fname, castname, operation, signedness, capital_signedness)\
 		__declopr(T) fname(signedness factor)\
 		{\
-			##capital_signedness##_OPR_PROLOG(fullbits, castname);\
+			capital_signedness##_OPR_PROLOG(fullbits, castname);\
 			operation;\
-			##capital_signedness##_OPR_EPILOG(fullbits, castname);\
+			capital_signedness##_OPR_EPILOG(fullbits, castname);\
 		}
 		
 		#define	__declUnaryOp(fname, operation, capital_signedness)\
 		__declopr(T) fname()\
 		{\
-			##capital_signedness##_OPR_PROLOG(fullbits, casted);\
+			capital_signedness##_OPR_PROLOG(fullbits, casted);\
 			operation;\
-			##capital_signedness##_OPR_EPILOG(fullbits, casted);\
+			capital_signedness##_OPR_EPILOG(fullbits, casted);\
 		}
 		
 		//unsigned shift right
