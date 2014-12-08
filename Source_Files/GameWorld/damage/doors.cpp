@@ -41,11 +41,11 @@ DOORS.CPP
 template<typename T1, typename T2> 
 void copyWorldPoint(T1 destination, T2 src)
 {
-	static_assert( 
-		isPtr(T1) && isPtr(T2) &&
-		( sameType(T1, world_point3d) || sameType(T1, world_point2d))
+	static_assert( isPtr(T1) && isPtr(T2), "must be a pointer");
+		
+	static_assert(( sameType(T1, world_point3d*) || sameType(T1, world_point2d*))
 		&&
-		( sameType(T2, world_point3d) || sameType(T2, world_point2d)),
+		( sameType(T2, world_point3d*) || sameType(T2, world_point2d*)),
 		"copyWorldPoint requires that both types be world_point* types"
 		);
 	
