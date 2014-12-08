@@ -26,8 +26,10 @@ DOORS.CPP
 #include <limits.h>
 
 #include <list>
-#include "doors.hpp"
+#include <type_traits>
+
 #include "emux86.hpp"
+#include "doors.hpp"
 
 #define		copy_worldpoint3d(dest, src)	(dest->x = src->x, dest->y = src->y, dest->z = src->z)
 #define		RIGHTANGLE(angle)				((angle + 128) & 0x1FF)
