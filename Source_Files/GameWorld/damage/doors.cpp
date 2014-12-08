@@ -82,19 +82,18 @@ enum swinging_door_flags
 
 static void find_center_of_door(swinging_door_data *door, world_point2d *p);
 
-static void translate_door_object(swinging_door_data *door_, short door_object, world_point3d *translation);
+static void translate_door_object(swinging_door_data *door_, int16 door_object, world_point3d *translation);
 static void calculate_doors_points(swinging_door_data *door, world_point2d *hinge);
 static void calculate_hinge_point(swinging_door_data *door, world_point2d *obj, world_point3d *hinge);
-static bool door_is_obstructed(short permutation);
-static void adjust_endpoints(short permutation);
+static bool door_is_obstructed(int16 permutation);
+static void adjust_endpoints(int16 permutation);
 static void calculate_moving_lines(sliding_door_data *door);
 static void swing_points(swinging_door_data* door, angle theta);
 static void play_door_sound(ix index, int16 sound_type, int16 def);
 static void reverse_direction_of_door(const ix index);
-static bool polygon_contains_swinging_door(const int16 polygon_index, int16 *restrict door_index);
+static bool polygon_contains_swinging_door(const int16 polygon_index, int16 * door_index);
 
-static void get_swinging_door_dimensions(const ix swinging_door_index, world_distance *restrict radius, 
-	world_distance *restrict height);
+static void get_swinging_door_dimensions(const ix swinging_door_index, world_distance * radius, world_distance * height);
 	
 void update_doors()
 {
@@ -128,8 +127,6 @@ static void find_center_of_door(swinging_door_data *door, world_point2d *p)
 	p->y = (v4 - ((SignbitMul4(v4) + SignbitMul4(v4)))) * 4;
 }
 
-
-#ifndef		DONT_COMPILE_YET
 /*
 	Sets up all four corners of a swinging door
 */
@@ -198,10 +195,10 @@ static void calculate_hinge_point(swinging_door_data *door, world_point2d *obj, 
 /*
 	checks to see if something is in the way of a sliding door
 */
-static bool door_is_obstructed(short permutation)
+static bool door_is_obstructed(int16 permutation)
 {
 	sliding_door_data *sliding_door = &sliding_doors[permutation];
-	short object_index = map_polygons[sliding_door->polygon_index].first_object;
+	int16 object_index = map_polygons[sliding_door->polygon_index].first_object;
 
 	while(object_index != NONE)
 	{
@@ -213,8 +210,8 @@ static bool door_is_obstructed(short permutation)
 			continue;
 		}
 
-		short xoffset = sliding_door->endpoint_x_offset;
-		short yoffset = sliding_door->endpoint_y_offset;
+		int16 xoffset = sliding_door->endpoint_x_offset;
+		int16 yoffset = sliding_door->endpoint_y_offset;
 		endpoint_data *endpoints = &map_endpoints[sliding_door->endpoint_data_index0];
 		if(xoffset)
 		{
@@ -238,7 +235,7 @@ static bool door_is_obstructed(short permutation)
 */
 #define		IS_LINE_SOLID(line)				(line->flags & SOLID_LINE_BIT)
 #define		IS_LINE_TRANSPARENT(line)		(line->flags & TRANSPARENT_LINE_BIT)
-static void adjust_endpoints(short permutation)
+static void adjust_endpoints(int16 permutation)
 {
 	sliding_door_data *door = &sliding_doors[permutation];
 	line_data *l0 = &map_lines[door->line_data_index0];
@@ -264,8 +261,8 @@ static void play_door_sound(ix index, int16 sound_type, int16 def)
 	int16 v2;
 	int16 sound;
 	
-	const swinging_door_data *restrict door = &swinging_doors[index];
-	const swinging_door_definition *restrict definition = &swinging_door_definitions[door->definition_index];
+	const swinging_door_data * door = &swinging_doors[index];
+	const swinging_door_definition *definition = &swinging_door_definitions[door->definition_index];
 	
 	auto polygon = get_object_data(door->center_object)->polygon;
 	
@@ -312,14 +309,14 @@ static void play_door_sound(ix index, int16 sound_type, int16 def)
 
 /*	simple one	*/
 static void get_swinging_door_dimensions(const ix swinging_door_index, 
-	world_distance *restrict radius, world_distance *restrict height)
+	world_distance * radius, world_distance * height)
 {
-	const swinging_door_data *restrict swinging_door = &swinging_doors[ swinging_door_index ];
+	const swinging_door_data * swinging_door = &swinging_doors[ swinging_door_index ];
 	*radius = swinging_door->radius;
 	*height = swinging_door->height;
 }
 
-static bool polygon_contains_swinging_door(const int16 polygon_index, int16 *restrict door_index)
+static bool polygon_contains_swinging_door(const int16 polygon_index, int16 * door_index)
 {
 	bool contains_swinging_door = false;
 	*door_index = NONE;
@@ -442,4 +439,3 @@ void calculate_moving_lines(sliding_door_data *door)
 		door->field_24 = v9->clockwise_polygon_side_index;
 }
 
-#endif
