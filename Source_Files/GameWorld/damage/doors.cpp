@@ -24,7 +24,7 @@ DOORS.CPP
 #include <limits.h>
 
 #include <list>
-#include "/damage/d_doors.h"
+#include "/damage/doors.h"
 #include "/damage/emux86.hpp"
 
 #define		copy_worldpoint3d(dest, src)	(dest->x = src->x, dest->y = src->y, dest->z = src->z)
