@@ -29,7 +29,7 @@ DOORS.CPP
 #include <list>
 #include <type_traits>
 #include <cassert>
-#include "emux86.hpp"
+#include "../framework/emulation/x86/emux86.hpp"
 
 #include "swinging_door_definitions.hpp"
 #include "doors.hpp"
