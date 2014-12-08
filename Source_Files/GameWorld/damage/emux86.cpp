@@ -14,9 +14,3 @@
 #include <limits.h>
 #include <type_traits>
 #include "emux86.hpp"
-
-
-void fooo()
-{
-	x86Emu::EAX.compare<int16, false, int16>(0xFFFF);
-}
