@@ -52,7 +52,7 @@ namespace x86Emu
 	public:
 		#define		__declflag(flag, name)	inline void set##name##(bool status) \
 			{	flag = (status) ? 1 : 0;	}\
-			inline bool ##name##()	{	return bool(flag);	}
+			inline bool name##()	{	return bool(flag);	}
 			
 		x86Flags() {}
 		
