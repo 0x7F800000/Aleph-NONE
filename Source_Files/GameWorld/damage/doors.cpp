@@ -798,3 +798,22 @@ bool sliding_door_can_be_opened(int16 door_index, bool unknown)
 	}
 	return false;
 }
+
+void hit_door_trigger(int16 door_index, uint16 unknown)
+{
+	sliding_door_data *door = &sliding_doors[door_index];
+	
+	if( door->flags & 0x40 && door->other_flags & 2 || unknown < 0x14 )
+		return;
+	
+	if ( unknown > 0x14 )
+	{
+		if ( unknown == 21 && door->flags & 8 && door->state == _sliding_door_is_absolutely_open )
+			close_door(door_index);
+	}
+	else
+	{
+		if ( door->flags & 8 && door->state == _sliding_door_is_closed )
+			open_door(door_index);
+	}
+}
