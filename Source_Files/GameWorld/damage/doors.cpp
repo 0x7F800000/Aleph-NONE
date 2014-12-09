@@ -575,23 +575,51 @@ void activate_nearby_doors(int16 caller_index, bool state)
 
 static void open_door(int16 door_index)
 {
-	sliding_door_data *sliding_door = &sliding_doors[door_index];
+	sliding_door_data *door = &sliding_doors[door_index];
 	
-	sliding_door->state = _sliding_door_is_open;
+	door->state = _sliding_door_is_open;
 	
-	map_lines[ sliding_door->line_indexes[2] ].flags &= 0xBFFF;
-	map_lines[ sliding_door->line_indexes[3] ].flags &= 0xBFFF; 
+	map_lines[ door->line_indexes[2] ].flags &= 0xBFFF;
+	map_lines[ door->line_indexes[3] ].flags &= 0xBFFF; 
 	
 	adjust_endpoints(door_index);
 	play_door_sound(door_index, 0);
 	
-	if ( sliding_door->flags & 2 )
+	if ( door->flags & 2 )
 	{
-		sliding_door->other_flags |= 1u;
+		door->other_flags |= 1;
 		activate_nearby_doors(door_index, true);
-		sliding_door->other_flags &= 0xFEu;
+		door->other_flags &= 0xFE;
 	}
 	
-	sliding_door->other_flags |= 2u;
-	assume_correct_switch_position(9, sliding_door->polygon_index1, true);
+	door->other_flags |= 2;
+	assume_correct_switch_position(9, door->polygon_index1, true);
+}
+
+static void close_door(int16 door_index)
+{
+	sliding_door_data *door = &sliding_doors[door_index];
+	door->state 		= _sliding_door_is_active;
+	
+	if( door_is_obstructed(door_index) )
+	{
+		play_door_sound(door_index, 5);
+		door->abool = true;
+	}
+	else
+	{
+		map_lines[ door->line_indexes[0] ].flags |= 0x4000;
+		map_lines[ door->line_indexes[1] ].flags |= 0x4000;
+		adjust_endpoints(door_index);
+		play_door_sound(door_index, 2);
+		door->abool = false;
+	}
+	if ( door->flags & 2 )
+	{
+		door->other_flags |= 1;
+		activate_nearby_doors(door_index, false);
+		door->other_flags &= 0xFE;
+	}
+	door->other_flags |= 2;
+	assume_correct_switch_position(9, door->polygon_index1, true);
 }
