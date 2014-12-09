@@ -92,6 +92,116 @@ static std::map< size_t, //the type's hash code
 #define		INIT_TYPEINFO_END(typename)	\
 	aTypeMap[ typeid(typename).hash_code() ] = reinterpret_cast<alephTypeInfo<void>*>(mTypeInfo)
 	
+
+static void initPoint2DTypeInfo()
+{
+	INIT_TYPEINFO_START(world_point2d);
+		addMember(x)
+		addMember(y)
+	INIT_TYPEINFO_END(world_point2d);
+}
+
+static void initPoint3DTypeInfo()
+{
+	INIT_TYPEINFO_START(world_point3d);
+		addMember(x)
+		addMember(y)
+		addMember(z)
+	INIT_TYPEINFO_END(world_point3d);
+}
+
+static void initFixedPoint2DTypeInfo()
+{
+	INIT_TYPEINFO_START(fixed_point2d);
+		addMember(x)
+		addMember(y)
+	INIT_TYPEINFO_END(fixed_point2d);
+}
+
+static void initFixedPoint3DTypeInfo()
+{
+	INIT_TYPEINFO_START(fixed_point3d);
+		addMember(x)
+		addMember(y)
+		addMember(z)
+	INIT_TYPEINFO_END(fixed_point3d);
+}
+
+static void initVector2DTypeInfo()
+{
+	INIT_TYPEINFO_START(world_vector2d);
+		addMember(i)
+		addMember(j)
+	INIT_TYPEINFO_END(world_vector2d);
+}
+
+static void initVector3DTypeInfo()
+{
+	INIT_TYPEINFO_START(world_vector3d);
+		addMember(i)
+		addMember(j)
+		addMember(k)
+	INIT_TYPEINFO_END(world_vector3d);
+}
+
+static void initFixedVector3DTypeInfo()
+{
+	INIT_TYPEINFO_START(fixed_vector3d);
+		addMember(i)
+		addMember(j)
+		addMember(k)
+	INIT_TYPEINFO_END(fixed_vector3d);
+}
+
+static void initLocation3DTypeInfo()
+{
+	INIT_TYPEINFO_START(world_location3d);
+		addMember(point)
+		addMember(polygon_index)
+		addMember(yaw)
+		addMember(pitch)
+		addMember(velocity)
+	INIT_TYPEINFO_END(world_location3d);
+}
+
+static inline void initMathTypeInfo()
+{
+	initPoint2DTypeInfo();
+	initPoint3DTypeInfo();
+	
+	initFixedPoint2DTypeInfo();
+	initFixedPoint3DTypeInfo();
+	
+	initVector2DTypeInfo();
+	initVector3DTypeInfo();
+	
+	initFixedVector2DTypeInfo();
+	initFixedVector3DTypeInfo();
+	
+	initLocation3DTypeInfo();
+}
+
+static void initObjectTypeInfo()
+{
+	INIT_TYPEINFO_START(Object);
+		addMember(location)
+		addMember(polygon)
+		addMember(facing)
+		addMember(shape)
+		addMember(sequence)
+		addMember(flags)
+		addMember(transfer_mode)
+		addMember(transfer_period)
+		addMember(transfer_phase)
+		addMember(permutation)
+		addMember(next_object)
+		addMember(parasitic_object)
+		addMember(sound_pitch)
+	INIT_TYPEINFO_END(Object);
+}
+
+
+
 static void initMonsterTypeInfo()
 {
 	INIT_TYPEINFO_START(Monster);
@@ -120,44 +230,52 @@ static void initMonsterTypeInfo()
 	INIT_TYPEINFO_END(Monster);
 }
 
-static void initPoint2DTypeInfo()
+static void initPolygonTypeInfo()
 {
-	INIT_TYPEINFO_START(world_point2d);
-		addMember(x)
-		addMember(y)
-	INIT_TYPEINFO_END(world_point2d);
-}
-
-static void initPoint3DTypeInfo()
-{
-	INIT_TYPEINFO_START(world_point3d);
-		addMember(x)
-		addMember(y)
-		addMember(z)
-	INIT_TYPEINFO_END(world_point3d);
-}
-
-static void initObjectTypeInfo()
-{
-	INIT_TYPEINFO_START(Object);
-		addMember(location)
-		addMember(polygon)
-		addMember(facing)
-		addMember(shape)
-		addMember(sequence)
+	INIT_TYPEINFO_START(Polygon);
+		addMember(type)
 		addMember(flags)
-		addMember(transfer_mode)
-		addMember(transfer_period)
-		addMember(transfer_phase)
 		addMember(permutation)
-		addMember(next_object)
-		addMember(parasitic_object)
-		addMember(sound_pitch)
-	INIT_TYPEINFO_END(Object);
+		addMember(vertex_count)
+		addMember(endpoint_indexes)
+		addMember(line_indexes)
+		addMember(floor_texture)
+		addMember(ceiling_texture)
+		addMember(floor_height)
+		addMember(ceiling_height)
+		addMember(floor_lightsource_index)
+		addMember(ceiling_lightsource_index)
+		addMember(area)
+		addMember(first_object)
+		addMember(first_exclusion_zone_index)
+		addMember(line_exclusion_zone_count)
+		addMember(point_exclusion_zone_count)
+		addMember(floor_transfer_mode)
+		addMember(ceiling_transfer_mode)
+		addMember(adjacent_polygon_indexes)
+		addMember(first_neighbor_index)
+		addMember(neighbor_count)
+		addMember(center)
+		addMember(side_indexes)
+		addMember(floor_origin)
+		addMember(ceiling_origin)
+		addMember(media_index)
+		addMember(media_lightsource_index)
+		addMember(sound_source_indexes)
+		addMember(ambient_sound_image_index)
+		addMember(random_sound_image_index)
+	INIT_TYPEINFO_END(Polygon);
+}
+static void initGameTypeInfo()
+{
+	initPolygonTypeInfo();
+	initObjectTypeInfo();
+	initMonsterTypeInfo();
 }
 
 void alephType::initTypeInfo()
 {
-
+	initMathTypeInfo();
+	initGameTypeInfo();
 }
 
