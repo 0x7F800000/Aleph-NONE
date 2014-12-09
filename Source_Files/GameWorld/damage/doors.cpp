@@ -786,3 +786,15 @@ static void play_door_sound(int16 door_index, sliding_door_sound_t sound_code)
 	cause_ambient_sound_source_update();
 #endif
 }
+
+bool sliding_door_can_be_opened(int16 door_index, bool unknown)
+{
+	sliding_door_data *door = &sliding_doors[door_index];
+
+	if( door->flags & 4 )
+	{
+		if( unknown && door->flags & 0x10 || !unknown && door->flags & 8 )
+			return true;
+	}
+	return false;
+}
