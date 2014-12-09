@@ -177,3 +177,6 @@ bool try_and_change_sliding_door_state(int16 door_index, bool state);
 
 /*	needed for translate_monster	*/
 bool sliding_door_can_be_opened(int16 door_index, bool unknown);
+
+/*	needed for changed_polygon	*/
+void hit_door_trigger(int16 door_index, uint16 unknown);
