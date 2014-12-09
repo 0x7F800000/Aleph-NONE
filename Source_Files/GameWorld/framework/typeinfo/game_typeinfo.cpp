@@ -80,7 +80,7 @@ static std::map< size_t, //the type's hash code
 #define		addMember(memberName)		\
 		{\
 			memberTypeInfo<decltype(dummy.memberName)> member;\
-			member.name = #memberName"";\
+			member.name = #memberName;\
 			member.offset = getOffset(memberName);\
 			mTypeInfo->add<decltype(dummy.memberName)>(&member);\
 		}
