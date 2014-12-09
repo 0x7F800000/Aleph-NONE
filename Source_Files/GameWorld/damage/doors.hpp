@@ -98,7 +98,7 @@ struct sliding_door_data
 	int16 state;
 	bool abool;
 	int8 field_47;
-	int16 field_48;
+	int16 tag;
 };
 
 extern vector<swinging_door_data> SwingingDoorList;
