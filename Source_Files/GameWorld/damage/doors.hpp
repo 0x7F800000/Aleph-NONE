@@ -77,9 +77,13 @@ struct sliding_door_data
 		};
 		int16 line_indexes[4];
 	};
-	int16 field_22;
-	int16 field_24;
-	int16 field_26;
+	int16 side_indexes[2];
+	/*	
+		door_texture_side is an index into side_indexes 
+		it's used by adjust_door_texture to determine which side's primary
+		texture should be adjusted
+	*/
+	int16 door_texture_side;
 	int16 field_28;
 	int16 field_2A;
 	int16 field_2C;
