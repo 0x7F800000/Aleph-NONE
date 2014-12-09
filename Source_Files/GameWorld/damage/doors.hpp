@@ -115,3 +115,8 @@ void update_swinging_doors();
 bool door_is_open(int16 door_index);
 bool door_is_active(int16 door_index);
 bool door_is_absolutely_open(int16 door_index);
+
+/*	these need extern for update_action_key	*/
+void player_touch_sliding_door(int16 unused, int16 door_index, bool change);
+void player_touch_swinging_door(int16 door_index, int16 object_index);
+
