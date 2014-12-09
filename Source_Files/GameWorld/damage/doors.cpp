@@ -103,6 +103,8 @@ static void activate_nearby_doors(int16 caller_index, bool state);
 static void open_door(int16 door_index);
 static void close_door(int16 door_index);
 
+static void adjust_door_texture(sliding_door_data *door, int16 adjustment);
+
 void update_doors()
 {
 	//stub :C
@@ -719,4 +721,16 @@ bool try_and_change_sliding_door_state(int16 door_index, bool state)
 		}
 	}
 	return false;
+}
+
+static void adjust_door_texture(sliding_door_data *door, int16 adjustment)
+{
+	auto side_index = door->side_indexes[ door->door_texture_side ];
+	
+	if ( side_index == NONE )
+		return
+	side_data *side = &map_sides[side_index];
+
+	if ( side->type == 0 || side->type == 1 || side->type == 4 )
+		side->primary_texture.x0 -= adjustment;
 }
