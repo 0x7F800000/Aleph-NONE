@@ -31,8 +31,8 @@
 template<typename T> 
 struct memberTypeInfo
 {
-	const char* name;
-	const size_t offset;
+	char* name;
+	size_t offset;
 	
 	virtual const std::type_info& getInfo()
 	{
