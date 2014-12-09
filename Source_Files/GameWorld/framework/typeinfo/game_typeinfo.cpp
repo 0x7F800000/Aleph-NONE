@@ -275,10 +275,26 @@ static void initMediaTypeInfo()
 	INIT_TYPEINFO_END(Media);
 }
 
+static void initStaticPlatformDataTypeInfo()
+{
+	INIT_TYPEINFO_START(static_platform_data);
+		addMember(type)
+		addMember(speed)
+		addMember(delay)
+		addMember( maximum_height)
+		addMember( minimum_height )
+		addMember(static_flags)
+		addMember(polygon_index)
+		addMember(tag)
+	INIT_TYPEINFO_END(static_platform_data);
+}
+
 static void initGameTypeInfo()
 {
 	initPolygonTypeInfo();
 	initMediaTypeInfo();
+	initStaticPlatformDataTypeInfo();
+	
 	initObjectTypeInfo();
 	initMonsterTypeInfo();
 }
