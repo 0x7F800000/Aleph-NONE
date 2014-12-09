@@ -174,3 +174,6 @@ bool try_and_change_tagged_sliding_door_states(int16, bool state);
 
 /*	extern for try_and_toggle_control_panel, change_panel_state and translate_monster	*/
 bool try_and_change_sliding_door_state(int16 door_index, bool state);
+
+/*	needed for translate_monster	*/
+bool sliding_door_can_be_opened(int16 door_index, bool unknown);
