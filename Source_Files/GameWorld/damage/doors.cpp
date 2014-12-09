@@ -683,3 +683,25 @@ void player_touch_sliding_door(int16 unused, int16 door_index, bool change)
 	else
 		play_door_sound(door_index, 6);
 }
+
+bool try_and_change_tagged_sliding_door_states(int16 tag, bool state)
+{
+	if(!tag)
+		return false;
+		
+	bool changed_state 	= false;
+	sliding_door_data *door = sliding_doors;
+	int door_index 		= 0;
+	
+	while( door_index < sliding_door_count )
+	{
+		if( door->tag == tag )
+		{
+			if( try_and_change_sliding_door_state(door_index, state) )
+				changed_state = true;
+		}
+		++door_index;
+		++door;
+	}
+	return changed_state;
+}
