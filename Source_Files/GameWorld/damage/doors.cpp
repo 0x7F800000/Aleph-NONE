@@ -705,3 +705,18 @@ bool try_and_change_tagged_sliding_door_states(int16 tag, bool state)
 	}
 	return changed_state;
 }
+
+bool try_and_change_sliding_door_state(int16 door_index, bool state)
+{
+	sliding_door_data *door = &sliding_doors[door_index];
+	
+	if( state && door->flags & 8 )
+	{
+		if( !(door->flags & 0x40) || !(door->other_flags & 2) )
+		{
+			player_touch_sliding_door(NONE, door_index, false);
+			return true;
+		}
+	}
+	return false;
+}
