@@ -832,3 +832,8 @@ bool polygon_is_neighbor_to_door(int16 polygon_index, int16 *indexOut)
 	}
 	return *indexOut != NONE;
 }
+
+int16 get_neighbor_polygon_index(int16 door_index)
+{
+	return sliding_doors[door_index].polygon_index;
+}
