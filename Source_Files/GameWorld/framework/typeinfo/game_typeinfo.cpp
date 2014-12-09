@@ -116,7 +116,7 @@ static void initMonsterTypeInfo()
 	addMember(sound_polygon_index)
 	addMember(random_desired_height)
 	
-	aTypeMap[ typeid(Monster).hash_code() ] = static_cast<alephTypeInfo<void>*>(mTypeInfo);
+	aTypeMap[ typeid(Monster).hash_code() ] = mTypeInfo;
 }
 
 
