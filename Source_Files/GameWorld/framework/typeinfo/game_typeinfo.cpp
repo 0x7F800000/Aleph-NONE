@@ -256,9 +256,29 @@ static void initPolygonTypeInfo()
 		addMember(random_sound_image_index)
 	INIT_TYPEINFO_END(Polygon);
 }
+
+static void initMediaTypeInfo()
+{
+	INIT_TYPEINFO_START(Media);
+		addMember(type)
+		addMember(flags)
+		addMember(light_index)
+		addMember(current_direction)
+		addMember(current_magnitude)
+		addMember(low)
+		addMember(high)
+		addMember(origin)
+		addMember(height)
+		addMember(minimum_light_intensity)
+		addMember(texture)
+		addMember(transfer_mode)
+	INIT_TYPEINFO_END(Media);
+}
+
 static void initGameTypeInfo()
 {
 	initPolygonTypeInfo();
+	initMediaTypeInfo();
 	initObjectTypeInfo();
 	initMonsterTypeInfo();
 }
