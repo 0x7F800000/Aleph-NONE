@@ -120,3 +120,5 @@ bool door_is_absolutely_open(int16 door_index);
 void player_touch_sliding_door(int16 unused, int16 door_index, bool change);
 void player_touch_swinging_door(int16 door_index, int16 object_index);
 
+/*	needed for handle_tag_flipping		*/
+bool try_and_change_tagged_sliding_door_states(int16, bool state);
