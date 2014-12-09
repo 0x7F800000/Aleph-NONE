@@ -187,3 +187,6 @@ bool polygon_is_neighbor_to_door(int16 polygon_index, int16 *indexOut);
 
 /*	for translate_monster		*/
 int16 get_neighbor_polygon_index(int16 door_index);
+
+/*	for _sound_add_ambient_sources_proc	*/
+int16 get_door_moving_sound(int16 door_index);
