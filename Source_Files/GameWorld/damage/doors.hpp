@@ -63,7 +63,7 @@ struct door_sound_data
 	int16 field_8;
 	int16 field_A;
 	int16 field_C;
-	int16 field_E;
+	int16 moving_sound;
 	int16 field_10;
 	int16 field_12;
 	int16 field_14;
