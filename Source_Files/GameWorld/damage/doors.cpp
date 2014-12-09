@@ -99,6 +99,8 @@ static void calculate_moving_lines(sliding_door_data *door);
 static int16 door_associated_with_polygon(int16 polygon_index);
 static void activate_nearby_doors(int16 caller_index, bool state);
 
+static void open_door(int16 door_index);
+
 void update_doors()
 {
 	//stub :C
@@ -569,6 +571,27 @@ void activate_nearby_doors(int16 caller_index, bool state)
 			}
 		}
 	}
+}
+
+static void open_door(int16 door_index)
+{
+	sliding_door_data *sliding_door = &sliding_doors[door_index];
 	
+	sliding_door->state = _sliding_door_is_open;
 	
+	map_lines[ sliding_door->line_indexes[2] ].flags &= 0xBFFF;
+	map_lines[ sliding_door->line_indexes[3] ].flags &= 0xBFFF; 
+	
+	adjust_endpoints(door_index);
+	play_door_sound(door_index, 0);
+	
+	if ( sliding_door->flags & 2 )
+	{
+		sliding_door->other_flags |= 1u;
+		activate_nearby_doors(door_index, true);
+		sliding_door->other_flags &= 0xFEu;
+	}
+	
+	sliding_door->other_flags |= 2u;
+	assume_correct_switch_position(9, sliding_door->polygon_index1, true);
 }
