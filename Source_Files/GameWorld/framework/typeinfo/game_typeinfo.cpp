@@ -75,7 +75,7 @@ static std::map< size_t, //the type's hash code
 		alephTypeInfo<void> * //and the corresponding typeinfo
 > aTypeMap;
 
-#define		getOffset(field)	offset = size_t(&dummy.field) - size_t(&dummy) 
+#define		getOffset(field)	(size_t(&dummy.field) - size_t(&dummy) )
 
 #define		addMember(memberName)		\
 		{\
@@ -84,39 +84,40 @@ static std::map< size_t, //the type's hash code
 			member.offset = getOffset(memberName);\
 			mTypeInfo->add<decltype(dummy.memberName)>(&member);\
 		}
-		
 
+#define		INIT_TYPEINFO_START(typename)	 \
+		typename dummy = {}; \
+		alephTypeInfo<typename>* mTypeInfo = new alephTypeInfo<typename>()
+		
+#define		INIT_TYPEINFO_END(typename)	\
+	aTypeMap[ typeid(typename).hash_code() ] = reinterpret_cast<alephTypeInfo<void>*>(mTypeInfo)
+	
 static void initMonsterTypeInfo()
 {
-	static Monster dummy = {};
-	size_t offset = 0;
-	
-	alephTypeInfo<Monster>* mTypeInfo = new alephTypeInfo<Monster>();
-	
-	addMember(type)
-	addMember(vitality)
-	addMember(flags)
-	addMember(path)
-	addMember(path_segment_length)
-	addMember(desired_height)
-	addMember(mode)
-	addMember(action)
-	addMember(target_index)
-	addMember(external_velocity)
-	addMember(vertical_velocity)
-	addMember(ticks_since_attack)
-	addMember(attack_repetitions)
-	addMember(changes_until_lock_lost)
-	addMember(elevation)
-	addMember(object_index)
-	addMember(ticks_since_last_activation)
-	addMember(activation_bias)
-	addMember(goal_polygon_index)
-	addMember(sound_location)
-	addMember(sound_polygon_index)
-	addMember(random_desired_height)
-	
-	aTypeMap[ typeid(Monster).hash_code() ] = reinterpret_cast<alephTypeInfo<void>*>(mTypeInfo);
+	INIT_TYPEINFO_START(Monster);
+		addMember(type)
+		addMember(vitality)
+		addMember(flags)
+		addMember(path)
+		addMember(path_segment_length)
+		addMember(desired_height)
+		addMember(mode)
+		addMember(action)
+		addMember(target_index)
+		addMember(external_velocity)
+		addMember(vertical_velocity)
+		addMember(ticks_since_attack)
+		addMember(attack_repetitions)
+		addMember(changes_until_lock_lost)
+		addMember(elevation)
+		addMember(object_index)
+		addMember(ticks_since_last_activation)
+		addMember(activation_bias)
+		addMember(goal_polygon_index)
+		addMember(sound_location)
+		addMember(sound_polygon_index)
+		addMember(random_desired_height)
+	INIT_TYPEINFO_END(Monster);
 }
 
 
