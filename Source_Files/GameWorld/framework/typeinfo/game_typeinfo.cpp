@@ -23,11 +23,10 @@
 #include <type_traits>
 
 #include <string>
+#include <map>
 #include <limits.h>
 
 #include "game_typeinfo.hpp"
-
-#define		getOffset(field)	offset = size_t(&dummy.field) - size_t(&dummy) 
 
 template<typename T> 
 struct memberTypeInfo
@@ -49,7 +48,7 @@ public:
 	
 	alephTypeInfo() : name( getInfo().name() ) {}
 	
-	const std::type_info& getInfo()
+	virtual const std::type_info& getInfo()
 	{
 		return typeid(T);
 	}
@@ -60,7 +59,7 @@ public:
 		return true;
 	}
 	
-	ix hasField(const char* fieldName)
+	virtual ix hasField(const char* fieldName)
 	{
 		for(memberTypeInfo<void> member : *this)
 		{
@@ -72,11 +71,52 @@ public:
 
 };
 
+static std::map< const std::type_info&, alephTypeInfo<void> *> aTypeMap;
+
+#define		getOffset(field)	offset = size_t(&dummy.field) - size_t(&dummy) 
+
+#define		addMember(name)		\
+		{\
+			memberTypeInfo<decltype(dummy.name)> member = \
+			{\
+				#name"",\
+				getOffset(name)\
+			};\
+			mTypeInfo->add<decltype(dummy.name)>(&member);\
+		}
+		
+
 static void initMonsterTypeInfo()
 {
 	static Monster dummy = {};
 	size_t offset = 0;
+	
 	alephTypeInfo<Monster>* mTypeInfo = new alephTypeInfo<Monster>();
+	
+	addMember(type)
+	addMember(vitality)
+	addMember(flags)
+	addMember(path)
+	addMember(path_segment_length)
+	addMember(desired_height)
+	addMember(mode)
+	addMember(action)
+	addMember(target_index)
+	addMember(external_velocity)
+	addMember(vertical_velocity)
+	addMember(ticks_since_attack)
+	addMember(attack_repetitions)
+	addMember(changes_until_lock_lost)
+	addMember(elevation)
+	addMember(object_index)
+	addMember(ticks_since_last_activation)
+	addMember(activation_bias)
+	addMember(goal_polygon_index)
+	addMember(sound_location)
+	addMember(sound_polygon_index)
+	addMember(random_desired_height)
+	
+	aTypeMap[ typeid(Monster) ] = static_cast<alephTypeInfo<void>*>(mTypeInfo);
 }
 
 
