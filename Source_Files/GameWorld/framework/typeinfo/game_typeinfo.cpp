@@ -110,14 +110,6 @@ static void initPoint3DTypeInfo()
 	INIT_TYPEINFO_END(world_point3d);
 }
 
-static void initFixedPoint2DTypeInfo()
-{
-	INIT_TYPEINFO_START(fixed_point2d);
-		addMember(x)
-		addMember(y)
-	INIT_TYPEINFO_END(fixed_point2d);
-}
-
 static void initFixedPoint3DTypeInfo()
 {
 	INIT_TYPEINFO_START(fixed_point3d);
