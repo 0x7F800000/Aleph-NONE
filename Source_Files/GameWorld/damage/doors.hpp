@@ -15,7 +15,8 @@ enum : int16
 {
 	_sliding_door_is_open,
 	_sliding_door_is_absolutely_open,
-	_sliding_door_is_active
+	_sliding_door_is_active,
+	_sliding_door_is_closed
 };
 
 struct swinging_door_data
