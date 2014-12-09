@@ -88,7 +88,8 @@ static bool door_is_obstructed(int16 permutation);
 static void adjust_endpoints(int16 permutation);
 
 static void swing_points(swinging_door_data* door, angle theta);
-static void play_door_sound(ix index, int16 sound_type, int16 def);
+static void play_swinging_door_sound(ix index, int16 sound_type, int16 def);
+
 static void reverse_direction_of_door(const ix index);
 static bool polygon_contains_swinging_door(const int16 polygon_index, int16 * door_index);
 
@@ -263,7 +264,7 @@ static void adjust_endpoints(int16 permutation)
 /*
 	this one had a lot of gotos, so its a bit weird looking.
 */
-static void play_door_sound(ix index, int16 sound_type, int16 def)
+static void play_swinging_door_sound(ix index, int16 sound_type, int16 def)
 {
 	int16 v2;
 	int16 sound;
@@ -625,7 +626,7 @@ static void close_door(int16 door_index)
 	assume_correct_switch_position(9, door->polygon_index1, true);
 }
 
-void player_touch_sliding_door(int unused, int16 door_index, bool change)
+void player_touch_sliding_door(int16 unused, int16 door_index, bool change)
 {
 	sliding_door_data *door = &sliding_doors[door_index];
 
