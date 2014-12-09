@@ -817,3 +817,18 @@ void hit_door_trigger(int16 door_index, uint16 unknown)
 			open_door(door_index);
 	}
 }
+
+bool polygon_is_neighbor_to_door(int16 polygon_index, int16 *indexOut)
+{
+	assert(indexOut);
+	*indexOut = NONE;
+	for( ix i = 0; i < sliding_door_count; ++i )
+	{
+		if( sliding_doors[i].polygon_index == polygon_index )
+		{
+			*indexOut = i;
+			break;
+		}
+	}
+	return *indexOut != NONE;
+}
