@@ -38,7 +38,7 @@ struct swinging_door_data
 	int16 related_to_direction0;
 	int16 related_to_direction1;
 	int16 related_to_direction2;
-	int16 field_42;
+	int16 adjacent_door; 
 	bool a_boolean;
 	bool door_open;
 };
