@@ -71,7 +71,9 @@ public:
 
 };
 
-static std::map< const std::type_info&, alephTypeInfo<void> *> aTypeMap;
+static std::map< size_t, //the type's hash code
+		alephTypeInfo<void> * //and the corresponding typeinfo
+> aTypeMap;
 
 #define		getOffset(field)	offset = size_t(&dummy.field) - size_t(&dummy) 
 
@@ -116,7 +118,7 @@ static void initMonsterTypeInfo()
 	addMember(sound_polygon_index)
 	addMember(random_desired_height)
 	
-	aTypeMap[ typeid(Monster) ] = static_cast<alephTypeInfo<void>*>(mTypeInfo);
+	aTypeMap[ typeid(Monster).hash_code() ] = static_cast<alephTypeInfo<void>*>(mTypeInfo);
 }
 
 
