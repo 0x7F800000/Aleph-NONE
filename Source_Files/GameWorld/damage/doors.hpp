@@ -43,6 +43,46 @@ struct swinging_door_data
 	bool door_open;
 };
 
+enum sliding_door_sound_t : int16
+{
+	_sliding_door_sound_opening,
+	_sliding_door_sound_unknown_1,
+	_sliding_door_sound_closing,
+	_sliding_door_sound_unknown_3,
+	_sliding_door_sound_player_touched_active,
+	_sliding_door_sound_obstructed_closing,
+	_sliding_door_sound_player_touched_unchangeable
+};
+
+struct door_sound_data
+{
+	int16 field_0;
+	int16 field_2;
+	int16 field_4;
+	int16 field_6;
+	int16 field_8;
+	int16 field_A;
+	int16 field_C;
+	int16 field_E;
+	int16 field_10;
+	int16 field_12;
+	int16 field_14;
+	int16 field_16;
+	int16 field_18;
+	int16 field_1A;
+	int16 field_1C;
+	int16 field_1E;
+	int16 field_20;
+	int16 field_22;
+	int16 field_24;
+	int16 field_26;
+	int16 field_28;
+	int16 field_2A;
+	int16 field_2C;
+	int16 field_2E;
+	int16 field_30;
+};
+
 struct sliding_door_data
 {
 	int16 sound_index;
