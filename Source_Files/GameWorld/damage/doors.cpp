@@ -837,3 +837,8 @@ int16 get_neighbor_polygon_index(int16 door_index)
 {
 	return sliding_doors[door_index].polygon_index;
 }
+
+int16 get_door_moving_sound(int16 door_index)
+{
+	return door_sounds[sliding_doors[door_index].sound_index].moving_sound;
+}
