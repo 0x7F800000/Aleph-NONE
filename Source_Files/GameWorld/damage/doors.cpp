@@ -104,6 +104,7 @@ static void open_door(int16 door_index);
 static void close_door(int16 door_index);
 
 static void adjust_door_texture(sliding_door_data *door, int16 adjustment);
+static void play_door_sound(int16 door_index, sliding_door_sound_t sound_code);
 
 void update_doors()
 {
@@ -733,4 +734,55 @@ static void adjust_door_texture(sliding_door_data *door, int16 adjustment)
 
 	if ( side->type == 0 || side->type == 1 || side->type == 4 )
 		side->primary_texture.x0 -= adjustment;
+}
+
+static void play_door_sound(int16 door_index, sliding_door_sound_t sound_code)
+{
+	sliding_door_data *door = &sliding_doors[door_index];
+	door_sound_data *sounds = &door_sounds[door->sound_index];
+	
+	int16 sound = NONE;
+	
+	switch ( sound_code )
+	{
+		
+	case _sliding_door_sound_opening:
+		sound = sounds->field_0;
+		break;
+		
+	case _sliding_door_sound_unknown_1:
+		sound = sounds->field_2;
+		break;
+		
+	case _sliding_door_sound_unknown_3:
+		sound = sounds->field_6;
+		break;
+		
+	case _sliding_door_sound_closing:
+		sound = sounds->field_4;
+		break;
+		
+	case _sliding_door_sound_obstructed_closing:
+		sound = sounds->field_8;
+		break;
+		
+	case _sliding_door_sound_player_touched_unchangeable:
+		sound = sounds->field_A;
+		break;
+		
+	case _sliding_door_sound_player_touched_active:
+		sound = sounds->field_C;
+		break;
+		
+	default:
+		//could this ever happen?
+		assert(false);
+	}
+	if(sound == NONE)
+		return;
+	play_polygon_sound(door->polygon_index1, sound);
+		
+#ifndef	DISABLE_DOOR_SFX
+	cause_ambient_sound_source_update();
+#endif
 }
