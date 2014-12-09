@@ -93,30 +93,8 @@ struct sliding_door_data
 	int16 field_A;
 	int16 line_data_index0;
 	
-	union
-	{
-		struct
-		{
-			int16 endpoint_data_index0;
-			int16 endpoint_data_index1;
-		};
-		int16 endpoint_indexes[2];
-	};
-	
-	int field_12;
-	int16 field_16;
-	int16 field_18;
-	union
-	{
-		struct
-		{
-			int16 line_data_index1;
-			int16 line_data_index2;
-			int16 line_data_index3;
-			int16 line_data_index4;
-		};
-		int16 line_indexes[4];
-	};
+	int16 endpoint_indexes[6];
+	int16 line_indexes[4];
 	int16 side_indexes[2];
 	/*	
 		door_texture_side is an index into side_indexes 
