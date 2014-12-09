@@ -96,6 +96,7 @@ static void get_swinging_door_dimensions(const ix swinging_door_index, world_dis
 
 static void calculate_doors_moving_points(sliding_door_data *door);
 static void calculate_moving_lines(sliding_door_data *door);
+static int16 door_associated_with_polygon(int16 polygon_index);
 
 void update_doors()
 {
@@ -487,4 +488,16 @@ bool door_is_active(int16 door_index)
 bool door_is_absolutely_open(int16 door_index)
 {
 	  return sliding_doors[door_index].state == _sliding_door_is_absolutely_open;
+}
+
+static int16 door_associated_with_polygon(int16 polygon_index)
+{
+	for( ix i = 0;  i < dynamic_world->sliding_door_count; ++i )
+	{
+		sliding_door_data* door = &sliding_doors[i];
+		
+		if(door->polygon_index == polygon_index || door->polygon_index1 == polygon_index )
+			return i;
+	}
+	return NONE;
 }
