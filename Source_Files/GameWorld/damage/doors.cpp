@@ -624,3 +624,61 @@ static void close_door(int16 door_index)
 	door->other_flags |= 2;
 	assume_correct_switch_position(9, door->polygon_index1, true);
 }
+
+void player_touch_sliding_door(int unused, int16 door_index, bool change)
+{
+	sliding_door_data *door = &sliding_doors[door_index];
+
+	if( door->flags & 8 && (!change || door->flags & 4) )
+	{
+		if( door->flags & 0x40 && door->other_flags & 2 )
+		{
+			play_door_sound(door_index, 6);
+			return;
+		}
+		switch( door->state )
+		{
+		case _sliding_door_is_open:
+
+			door->state = _sliding_door_is_active;
+			
+			play_door_sound(door_index, 4);
+			if ( door->flags & 2 )
+			{
+				door->other_flags |= 1;
+				activate_nearby_doors(door_index, false);
+				door->other_flags &= 0xFE;
+			}
+			door->other_flags |= 2;
+			break;
+		case _sliding_door_is_absolutely_open:
+			close_door(door_index);
+			door->other_flags |= 2;
+			break;
+			
+		case _sliding_door_is_active:
+			door->state = _sliding_door_is_open;
+			play_door_sound(door_index, 4);
+			if ( door->flags & 2 )
+			{
+				door->other_flags |= 1;
+				activate_nearby_doors(door_index, true);
+				door->other_flags &= 0xFE;
+			}
+			door->other_flags |= 2;
+			break;
+			
+		case _sliding_door_is_closed:
+			open_door(door_index);
+			door->other_flags |= 2;
+			break;
+			
+		default:
+			door->other_flags |= 2;
+			break;
+		}
+
+	}
+	else
+		play_door_sound(door_index, 6);
+}
