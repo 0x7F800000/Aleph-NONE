@@ -112,8 +112,13 @@ extern vector<sliding_door_data> SlidingDoorList;
 void update_doors();
 void update_swinging_doors();
 
+/*	needed for translate_monster	*/
 bool door_is_open(int16 door_index);
+
+/*	needed for initialize_control_panels_for_level	*/
 bool door_is_active(int16 door_index);
+
+/*	needed for translate_monster	*/
 bool door_is_absolutely_open(int16 door_index);
 
 /*	these need extern for update_action_key	*/
@@ -122,3 +127,6 @@ void player_touch_swinging_door(int16 door_index, int16 object_index);
 
 /*	needed for handle_tag_flipping		*/
 bool try_and_change_tagged_sliding_door_states(int16, bool state);
+
+/*	extern for try_and_toggle_control_panel, change_panel_state and translate_monster	*/
+bool try_and_change_sliding_door_state(int16 door_index, bool state);
