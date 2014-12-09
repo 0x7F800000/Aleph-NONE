@@ -97,6 +97,7 @@ static void get_swinging_door_dimensions(const ix swinging_door_index, world_dis
 static void calculate_doors_moving_points(sliding_door_data *door);
 static void calculate_moving_lines(sliding_door_data *door);
 static int16 door_associated_with_polygon(int16 polygon_index);
+static void activate_nearby_doors(int16 caller_index, bool state);
 
 void update_doors()
 {
@@ -500,4 +501,73 @@ static int16 door_associated_with_polygon(int16 polygon_index)
 			return i;
 	}
 	return NONE;
+}
+
+void activate_nearby_doors(int16 caller_index, bool state)
+{
+	int16 associated_door_index; 
+
+	sliding_door_data *caller 	= &sliding_doors[caller_index];
+	int16 polygon_index 		= caller->polygon_index;
+	ix line_index 			= 0;
+	polygon_data *caller_polygon 	= &map_polygons[caller->polygon_index];
+	
+	while( line_index < caller_polygon->vertex_count )
+	{
+		auto adjacent_polygon = find_adjacent_polygon(polygon_index, 
+						caller_polygon->line_indexes[line_index]);
+						
+		if( adjacent_polygon == NONE || adjacent_polygon == caller->polygon_index1
+		|| (associated_door_index = door_associated_with_polygon(adjacent_polygon), associated_door_index == NONE) )
+		{
+			++line_index;
+			continue;
+		}
+		
+		sliding_door_data *target_door = &sliding_doors[associated_door_index];
+		if( target_door->flags & 0x40 && target_door->other_flags & 2 )
+		{
+			++line_index;
+			continue;
+		}
+		
+		if( state )
+		{
+			if ( target_door->state == _sliding_door_is_active )
+			{
+				target_door->state = _sliding_door_is_open;
+				++line_index;
+			}
+			else
+			{
+				if ( target_door->state != _sliding_door_is_closed || target_door->other_flags & 1 )
+				{
+					++line_index;
+					continue;
+				}
+				open_door(associated_door_index);
+				++line_index;
+			}
+		}
+		else
+		{
+			if ( target_door->state != _sliding_door_is_open )
+			{
+				if ( target_door->state != _sliding_door_is_absolutely_open || target_door->other_flags & 1 )
+				{
+					++line_index;
+					continue;
+				}
+				close_door(associated_door_index);
+				++line_index;
+			}
+			else
+			{
+				target_door->state = _sliding_door_is_active;
+				++line_index;
+			}
+		}
+	}
+	
+	
 }
