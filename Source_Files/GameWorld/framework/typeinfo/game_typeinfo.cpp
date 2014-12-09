@@ -55,7 +55,7 @@ public:
 	
 	template<typename memberType> bool add(memberTypeInfo<memberType>* member)
 	{
-		push_back( *static_cast< memberTypeInfo<void>* >(member) );
+		push_back( *reinterpret_cast< memberTypeInfo<void>* >(member) );
 		return true;
 	}
 	
