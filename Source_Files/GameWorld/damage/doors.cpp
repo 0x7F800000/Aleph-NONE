@@ -512,6 +512,7 @@ void activate_nearby_doors(int16 caller_index, bool state)
 	ix line_index 			= 0;
 	polygon_data *caller_polygon 	= &map_polygons[caller->polygon_index];
 	
+	//todo: this was obviously originally a for loop
 	while( line_index < caller_polygon->vertex_count )
 	{
 		auto adjacent_polygon = find_adjacent_polygon(polygon_index, 
