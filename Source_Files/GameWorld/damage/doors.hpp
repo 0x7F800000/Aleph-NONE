@@ -7,6 +7,17 @@
 #define		MAX_SWINGING_DOORS	32
 #define		MAX_SLIDING_DOORS	64
 
+/*	in original Damage this is a field of dynamic_data.	*/
+extern int16 sliding_door_count;
+
+//enum for sliding_door_data::state
+enum : int16
+{
+	_sliding_door_is_open,
+	_sliding_door_is_absolutely_open,
+	_sliding_door_is_active
+};
+
 struct swinging_door_data
 {
 	int16 textured_objects[4];
@@ -83,7 +94,7 @@ struct sliding_door_data
 	int8 other_flags;
 	int8 field_41;
 	int16 field_42;
-	int16 field_44;
+	int16 state;
 	bool abool;
 	int8 field_47;
 	int16 field_48;
@@ -99,3 +110,7 @@ extern vector<sliding_door_data> SlidingDoorList;
 
 void update_doors();
 void update_swinging_doors();
+
+bool door_is_open(int16 door_index);
+bool door_is_active(int16 door_index);
+bool door_is_absolutely_open(int16 door_index);
