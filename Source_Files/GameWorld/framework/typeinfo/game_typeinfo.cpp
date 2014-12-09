@@ -120,6 +120,41 @@ static void initMonsterTypeInfo()
 	INIT_TYPEINFO_END(Monster);
 }
 
+static void initPoint2DTypeInfo()
+{
+	INIT_TYPEINFO_START(world_point2d);
+		addMember(x)
+		addMember(y)
+	INIT_TYPEINFO_END(world_point2d);
+}
+
+static void initPoint3DTypeInfo()
+{
+	INIT_TYPEINFO_START(world_point3d);
+		addMember(x)
+		addMember(y)
+		addMember(z)
+	INIT_TYPEINFO_END(world_point3d);
+}
+
+static void initObjectTypeInfo()
+{
+	INIT_TYPEINFO_START(Object);
+		addMember(location)
+		addMember(polygon)
+		addMember(facing)
+		addMember(shape)
+		addMember(sequence)
+		addMember(flags)
+		addMember(transfer_mode)
+		addMember(transfer_period)
+		addMember(transfer_phase)
+		addMember(permutation)
+		addMember(next_object)
+		addMember(parasitic_object)
+		addMember(sound_pitch)
+	INIT_TYPEINFO_END(Object);
+}
 
 void alephType::initTypeInfo()
 {
