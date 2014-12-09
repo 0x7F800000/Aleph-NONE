@@ -465,3 +465,26 @@ static void calculate_doors_moving_points(sliding_door_data *door)
 		++v2;
 	}
 }
+
+bool door_is_open(int16 door_index)
+{
+	assert(door_index >= 0 && door_index < sliding_door_count);
+	
+	const sliding_door_data* door = &sliding_doors[door_index];
+	return door->state == _sliding_door_is_absolutely_open || door->state == _sliding_door_is_open;
+}
+
+bool door_is_active(int16 door_index)
+{
+	int16 doorState;
+	
+	assert(door_index >= 0 && door_index < sliding_door_count );
+
+	const sliding_door_data* door = &sliding_doors[door_index];
+	return door->state == _sliding_door_is_open || doorState == _sliding_door_is_active;
+}
+
+bool door_is_absolutely_open(int16 door_index)
+{
+	  return sliding_doors[door_index].state == _sliding_door_is_absolutely_open;
+}
