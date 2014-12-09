@@ -108,7 +108,7 @@ Feb 8, 2003 (Woody Zenfell):
 // AM additions:
 #define		EXCLUDE_INSTANCE_DATA_DECLARATION
 #include "monsters_ext.h"
-
+#include "./framework/typeinfo/game_typeinfo.hpp"
 // MH additions:
 #include "lua_script.h"
 #include "lua_hud_script.h"
@@ -153,6 +153,7 @@ static void game_timed_out();
 
 void initialize_marathon()
 {
+	alephType::initTypeInfo();
 	build_trig_tables();
 	allocate_map_memory();
 	// Rendering and flood-map done when starting a level,
