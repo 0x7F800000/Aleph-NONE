@@ -100,6 +100,7 @@ static int16 door_associated_with_polygon(int16 polygon_index);
 static void activate_nearby_doors(int16 caller_index, bool state);
 
 static void open_door(int16 door_index);
+static void close_door(int16 door_index);
 
 void update_doors()
 {
