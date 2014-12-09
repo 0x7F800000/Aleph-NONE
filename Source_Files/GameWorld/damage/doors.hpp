@@ -183,3 +183,6 @@ void hit_door_trigger(int16 door_index, uint16 unknown);
 
 /*	needed for find_action_key_target	*/
 bool polygon_is_neighbor_to_door(int16 polygon_index, int16 *indexOut);
+
+/*	for translate_monster		*/
+int16 get_neighbor_polygon_index(int16 door_index);
