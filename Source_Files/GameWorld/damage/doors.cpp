@@ -223,7 +223,7 @@ static bool door_is_obstructed(int16 permutation)
 
 		int16 xoffset = sliding_door->endpoint_x_offset;
 		int16 yoffset = sliding_door->endpoint_y_offset;
-		endpoint_data *endpoints = &map_endpoints[sliding_door->endpoint_data_index0];
+		endpoint_data *endpoints = &map_endpoints[sliding_door->endpoint_indexes[0]];
 		if(xoffset)
 		{
 			if(xoffset <= 0 && xoffset + endpoints->vertex.x <= object->location.x + 256)
@@ -249,13 +249,13 @@ static bool door_is_obstructed(int16 permutation)
 static void adjust_endpoints(int16 permutation)
 {
 	sliding_door_data *door = &sliding_doors[permutation];
-	line_data *l0 = &map_lines[door->line_data_index0];
-	line_data *l1 = &map_lines[door->line_data_index1];
-	line_data *l2 = &map_lines[door->line_data_index2];
-	line_data *l3 = &map_lines[door->line_data_index3];
-	line_data *l4 = &map_lines[door->line_data_index4];
-	endpoint_data *end0 = &map_endpoints[door->endpoint_data_index0];
-	endpoint_data *end1 = &map_endpoints[door->endpoint_data_index1];
+	line_data *l0 = &map_lines[door->line_indexes[0]];
+	line_data *l1 = &map_lines[door->line_indexes[1]];
+	line_data *l2 = &map_lines[door->line_indexes[2]];
+	line_data *l3 = &map_lines[door->line_indexes[3]];
+	line_data *l4 = &map_lines[door->line_indexes[4]];
+	endpoint_data *end0 = &map_endpoints[door->endpoint_indexes[0]];
+	endpoint_data *end1 = &map_endpoints[door->endpoint_indexes[1]];
 	
 	SET_ENDPOINT_SOLIDITY(		end0,	IS_LINE_SOLID(l0)		||	IS_LINE_SOLID(l1)		||	IS_LINE_SOLID(l3)		);
 	SET_ENDPOINT_TRANSPARENCY(	end0,	IS_LINE_TRANSPARENT(l0)	&&	IS_LINE_TRANSPARENT(l1)	&&	IS_LINE_TRANSPARENT(l3)	);
@@ -399,7 +399,7 @@ void calculate_moving_lines(sliding_door_data *door)
 		int v5 = 0;
 		while( v5 < poly1->vertex_count )
 		{
-			if( v5 == door->line_data_index0 )
+			if( v5 == door->line_indexes[0] )
 				++v5;
 			else
 			{
@@ -417,7 +417,7 @@ void calculate_moving_lines(sliding_door_data *door)
 		{
 			auto v7 = poly2->line_indexes[ v6 ];
 			
-			if ( v7 == poly1->line_indexes[door->line_data_index0] )
+			if ( v7 == poly1->line_indexes[door->line_indexes[0]] )
 				++v6;
 			else
 			{
@@ -467,7 +467,7 @@ static void calculate_doors_moving_points(sliding_door_data *door)
 		if( find_adjacent_polygon(door->polygon_index1, v4->line_indexes[0]) == door->polygon_index )
 		{
 			line_data* line = &map_lines[v4->line_indexes[0]];
-			door->line_data_index0 = v2;
+			door->line_indexes[0] = v2;
 			door->endpoint_indexes[0] = line->endpoint_indexes[0];
 			door->endpoint_indexes[1] = line->endpoint_indexes[1];
 		}
