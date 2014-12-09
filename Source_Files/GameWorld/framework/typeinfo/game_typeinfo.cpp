@@ -161,13 +161,11 @@ static inline void initMathTypeInfo()
 	initPoint2DTypeInfo();
 	initPoint3DTypeInfo();
 	
-	initFixedPoint2DTypeInfo();
 	initFixedPoint3DTypeInfo();
 	
 	initVector2DTypeInfo();
 	initVector3DTypeInfo();
 	
-	initFixedVector2DTypeInfo();
 	initFixedVector3DTypeInfo();
 	
 	initLocation3DTypeInfo();
