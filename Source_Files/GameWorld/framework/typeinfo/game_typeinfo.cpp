@@ -77,14 +77,12 @@ static std::map< size_t, //the type's hash code
 
 #define		getOffset(field)	offset = size_t(&dummy.field) - size_t(&dummy) 
 
-#define		addMember(name)		\
+#define		addMember(memberName)		\
 		{\
-			memberTypeInfo<decltype(dummy.name)> member = \
-			{\
-				#name"",\
-				getOffset(name)\
-			};\
-			mTypeInfo->add<decltype(dummy.name)>(&member);\
+			memberTypeInfo<decltype(dummy.memberName)> member;\
+			member.name = #memberName"";\
+			member.offset = getOffset(memberName);\
+			mTypeInfo->add<decltype(dummy.memberName)>(&member);\
 		}
 		
 
