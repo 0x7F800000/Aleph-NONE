@@ -1,5 +1,5 @@
 /*
-	SCREEN_DRAWING.C
+	SCREEN_DRAWING.CPP
 
 	Copyright (C) 1991-2001 and beyond by Bungie Studios, Inc.
 	and the "Aleph One" developers.
@@ -64,16 +64,7 @@ Dec 17, 2000 (Loren Petrich):
 #define clutSCREEN_COLORS 130
 #define finfFONTS 128
 
-extern TextSpec *_get_font_spec(short font_index);
-
-/*
-struct interface_font_info 
-{
-	TextSpec fonts[NUMBER_OF_INTERFACE_FONTS];
-	short heights[NUMBER_OF_INTERFACE_FONTS];
-	short line_spacing[NUMBER_OF_INTERFACE_FONTS];
-};
-*/
+extern TextSpec *_get_font_spec(int16 font_index);
 
 /* --------- Globals. */
 // LP change: hardcoding this quantity since we know how many we need
@@ -117,20 +108,17 @@ static screen_rectangle interface_rectangles[NUMBER_OF_INTERFACE_RECTANGLES] =
 
 void set_about_alephone_rect(int width, int height)
 {
-	if (!width || !height) return;
-
-	interface_rectangles[_about_alephone_rect].top = 480 - height;
-	interface_rectangles[_about_alephone_rect].left = 640 - width;
-	interface_rectangles[_about_alephone_rect].bottom = 480;
-	interface_rectangles[_about_alephone_rect].right = 640;
+	if (!width || !height) 
+		return;
+	screen_rectangle* const rect = &interface_rectangles[_about_alephone_rect];
+	rect->top 	=	480 - height;
+	rect->left 	=	640 - width;
+	rect->bottom 	=	480;
+	rect->right 	=	640;
 }
 
-// static screen_rectangle *interface_rectangles;
-// static CTabHandle screen_colors;
 // LP change: now hardcoded and XML-changeable
-
 // Copied off of original 'finf' resource
-// static struct interface_font_info interface_fonts = 
 static FontSpecifier InterfaceFonts[NUMBER_OF_INTERFACE_FONTS] =
 {
 	{"Monaco",   9, styleBold,  0, "#4"},
@@ -181,18 +169,15 @@ static rgb_color InterfaceColors[NumInterfaceColors] =
 };
 
 /* ------- Private prototypes */
-static void load_interface_rectangles(void);
+static void load_interface_rectangles();
 #ifdef mac
 static Rect *_get_interface_rect(short index);
 #endif
-static void	load_screen_interface_colors(void);
+static void	load_screen_interface_colors();
 
 /* -------- Code */
-void initialize_screen_drawing(
-	void)
+void initialize_screen_drawing()
 {
-	short loop;
-
 	/* Load the rectangles */
 	load_interface_rectangles();
 	
@@ -200,10 +185,8 @@ void initialize_screen_drawing(
 	load_screen_interface_colors();
 	
 	/* load the font stuff. */
-	for(loop=0; loop<NUMBER_OF_INTERFACE_FONTS; ++loop)
-	{
+	for( size_t loop = 0; loop < NUMBER_OF_INTERFACE_FONTS; ++loop )
 		InterfaceFonts[loop].Init();
-	}
 }
 
 screen_rectangle *get_interface_rectangle(short index)
@@ -227,8 +210,8 @@ FontSpecifier &get_interface_font(short index)
 
 
 // Global variables
-SDL_Surface *draw_surface = NULL;	// Target surface for drawing commands
-static SDL_Surface *old_draw_surface = NULL;
+SDL_Surface *draw_surface = nullptr;	// Target surface for drawing commands
+static SDL_Surface *old_draw_surface = nullptr;
 
 
 // Gets interface font and style;
@@ -251,53 +234,53 @@ extern TextSpec *_get_font_spec(short font_index);
  *  Redirect drawing to screen or offscreen buffer
  */
 
-void _set_port_to_screen_window(void)
+void _set_port_to_screen_window()
 {
-	assert(old_draw_surface == NULL);
-	old_draw_surface = draw_surface;
-	draw_surface = SDL_GetVideoSurface();
+	assert(old_draw_surface == nullptr);
+	old_draw_surface	= draw_surface;
+	draw_surfac		= SDL_GetVideoSurface();
 }
 
-void _set_port_to_gworld(void)
+void _set_port_to_gworld()
 {
-	assert(old_draw_surface == NULL);
-	old_draw_surface = draw_surface;
-	draw_surface = world_pixels;
+	assert(old_draw_surface == nullptr);
+	old_draw_surface 	= draw_surface;
+	draw_surface 		= world_pixels;
 }
 
-void _set_port_to_HUD(void)
+void _set_port_to_HUD()
 {
-	assert(old_draw_surface == NULL);
-	old_draw_surface = draw_surface;
-	draw_surface = HUD_Buffer;
+	assert(old_draw_surface == nullptr);
+	old_draw_surface 	= draw_surface;
+	draw_surface 		= HUD_Buffer;
 }
 
-void _restore_port(void)
+void _restore_port()
 {
-	draw_surface = old_draw_surface;
-	old_draw_surface = NULL;
+	draw_surface 		= old_draw_surface;
+	old_draw_surface 	= nullptr;
 }
 
-void _set_port_to_term(void)
+void _set_port_to_term()
 {
-	assert(old_draw_surface == NULL);
+	assert(old_draw_surface == nullptr);
 	old_draw_surface = draw_surface;
 	draw_surface = Term_Buffer;
 }
 
-void _set_port_to_intro(void)
+void _set_port_to_intro()
 {
-	assert(old_draw_surface == NULL);
-	old_draw_surface = draw_surface;
-	draw_surface = Intro_Buffer;
-	intro_buffer_changed = true;
+	assert(old_draw_surface == nullptr);
+	old_draw_surface 	= draw_surface;
+	draw_surface 		= Intro_Buffer;
+	intro_buffer_changed 	= true;
 }
 
-void _set_port_to_map(void)
+void _set_port_to_map()
 {
-	assert(old_draw_surface == NULL);
-	old_draw_surface = draw_surface;
-	draw_surface = Map_Buffer;
+	assert(old_draw_surface == nullptr);
+	old_draw_surface 	= draw_surface;
+	draw_surface 		= Map_Buffer;
 }
 
 /*
@@ -308,12 +291,13 @@ void set_drawing_clip_rectangle(short top, short left, short bottom, short right
 {
 	if (top < 0)
 		draw_clip_rect_active = false;
-	else {
-		draw_clip_rect_active = true;
-		draw_clip_rect.top = top;
-		draw_clip_rect.left = left;
-		draw_clip_rect.bottom = bottom;
-		draw_clip_rect.right = right;
+	else 
+	{
+		draw_clip_rect_active 	= true;
+		draw_clip_rect.top 	= top;
+		draw_clip_rect.left 	= left;
+		draw_clip_rect.bottom 	= bottom;
+		draw_clip_rect.right 	= right;
 	}
 }
 
@@ -336,10 +320,11 @@ void _draw_screen_shape(shape_descriptor shape_id, screen_rectangle *destination
 
 	// Convert shape to surface
 	SDL_Surface *s = get_shape_surface(shape_id);
-	if (s == NULL)
+	if (s == nullptr)
 		return;
 	
-	if (draw_surface->format->BitsPerPixel == 8) {
+	if (draw_surface->format->BitsPerPixel == 8) 
+	{
 		// SDL doesn't seem to be able to handle direct blits between 8-bit surfaces with different cluts
 		SDL_Surface *s2 = SDL_DisplayFormat(s);
 		SDL_FreeSurface(s);
@@ -347,8 +332,14 @@ void _draw_screen_shape(shape_descriptor shape_id, screen_rectangle *destination
 	}
 	
 	// Blit the surface
-	SDL_BlitSurface(s, source ? &src_rect : NULL, draw_surface, &dst_rect);
-	if (draw_surface == SDL_GetVideoSurface())
+	SDL_BlitSurface(
+		s, 
+		source ? &src_rect : nullptr, 
+		draw_surface, 
+		&dst_rect
+		);
+		
+	if (	draw_surface == SDL_GetVideoSurface()	)
 		SDL_UpdateRects(draw_surface, 1, &dst_rect);
 
 	// Free the surface
@@ -359,10 +350,11 @@ void _draw_screen_shape_at_x_y(shape_descriptor shape_id, short x, short y)
 {
 	// Convert shape to surface
 	SDL_Surface *s = get_shape_surface(shape_id);
-	if (s == NULL)
+	if (s == nullptr)
 		return;
 	
-	if (draw_surface->format->BitsPerPixel == 8) {
+	if (draw_surface->format->BitsPerPixel == 8) 
+	{
 		// SDL doesn't seem to be able to handle direct blits between 8-bit surfaces with different cluts
 		SDL_Surface *s2 = SDL_DisplayFormat(s);
 		SDL_FreeSurface(s);
@@ -373,7 +365,7 @@ void _draw_screen_shape_at_x_y(shape_descriptor shape_id, short x, short y)
 	SDL_Rect dst_rect = {x, y, s->w, s->h};
 
 	// Blit the surface
-	SDL_BlitSurface(s, NULL, draw_surface, &dst_rect);
+	SDL_BlitSurface(s, nullptr, draw_surface, &dst_rect);
 	if (draw_surface == SDL_GetVideoSurface())
 		SDL_UpdateRects(draw_surface, 1, &dst_rect);
 
@@ -394,58 +386,65 @@ inline static int draw_glyph(uint8 c, int x, int y, T *p, int pitch, int clip_le
 	int cpos = c - font->first_character;
 
 	// Calculate source and destination pointers (kerning, ascent etc.)
-	uint8 *src = font->pixmap + font->location_table[cpos];
-	int width = font->location_table[cpos + 1] - font->location_table[cpos];
-	int height = font->rect_height;
-	int advance = font->width_table[cpos * 2 + 1];
-	y -= font->ascent;
-	x += font->maximum_kerning + font->width_table[cpos * 2];
-	p += y * pitch / sizeof(T) + x;
+	uint8 *src 	= font->pixmap + font->location_table[cpos];
+	
+	int width 	= font->location_table[cpos + 1] - font->location_table[cpos];
+	int height 	= font->rect_height;
+	int advance 	= font->width_table[cpos * 2 + 1];
+	
+	y 	-= font->ascent;
+	x 	+= font->maximum_kerning + font->width_table[cpos * 2];
+	p 	+= y * pitch / sizeof(T) + x;
 	if (oblique)
 		p += font->ascent / 2 - 1;
 
 	// Clip on top
 	if (y < clip_top) {
-		height -= clip_top - y;
+		height 	-= clip_top - y;
 		if (height <= 0)
 			return advance;
-		p += (clip_top - y) * pitch / sizeof(T);
-		src += (clip_top - y) * font->bytes_per_row;
+		p 	+= (clip_top - y) * pitch / sizeof(T);
+		src 	+= (clip_top - y) * font->bytes_per_row;
 	}
 
 	// Clip on bottom
-	if (y + height - 1 > clip_bottom) {
-		height -= y + height - 1 - clip_bottom;
+	if (y + height - 1 > clip_bottom) 
+	{
+		height 	-= y + height - 1 - clip_bottom;
 		if (height <= 0)
 			return advance;
 	}
 
 	// Clip on left
-	if (x < clip_left) {
-		width -= (clip_left - x);
+	if (x < clip_left) 
+	{
+		width 	-= (clip_left - x);
 		if (width <= 0)
 			return advance;
-		p += (clip_left - x);
-		src += (clip_left - x);
+		p 	+= (clip_left - x);
+		src 	+= (clip_left - x);
 	}
 
 	// Clip on right
-	if (x + width - 1 > clip_right) {
-		width -= x + width - 1 - clip_right;
+	if (x + width - 1 > clip_right) 
+	{
+		width 	-= x + width - 1 - clip_right;
 		if (width <= 0)
 			return advance;
 	}
 
 	// Blit glyph to screen
-	for (int iy=0; iy<height; iy++) {
-		for (int ix=0; ix<width; ix++) {
+	for (size_t iy = 0; iy < height; iy++) 
+	{
+		for (size_t ix = 0; ix < width; ix++) 
+		{
 			if (src[ix])
 				p[ix] = pixel;			
 		}
 		if (oblique && (iy % 2) == 1)
 			p--;
-		src += font->bytes_per_row;
-		p += pitch / sizeof(T);
+		src 	+= font->bytes_per_row;
+		p 	+= pitch / sizeof(T);
 	}
 
 	return advance;
