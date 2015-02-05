@@ -500,7 +500,8 @@ bool door_is_absolutely_open(int16 door_index)
 
 static int16 door_associated_with_polygon(int16 polygon_index)
 {
-	for( ix i = 0;  i < dynamic_world->sliding_door_count; ++i )
+	for( ix i = 0; i < sliding_door_count;// i < dynamic_world->sliding_door_count; 
+	++i )
 	{
 		sliding_door_data* door = &sliding_doors[i];
 		
