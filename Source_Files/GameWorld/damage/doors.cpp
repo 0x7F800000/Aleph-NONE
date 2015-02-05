@@ -40,6 +40,8 @@ DOORS.CPP
 std::vector<swinging_door_data> SwingingDoorList(MAX_SWINGING_DOORS);
 std::vector<sliding_door_data> SlidingDoorList(MAX_SLIDING_DOORS);
 
+#define		side_data	Side
+
 template<typename T1, typename T2> 
 void copyWorldPoint(T1 destination, T2 src)
 {
