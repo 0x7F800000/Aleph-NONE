@@ -104,7 +104,7 @@ static void open_door(int16 door_index);
 static void close_door(int16 door_index);
 
 static void adjust_door_texture(sliding_door_data *door, int16 adjustment);
-static void play_door_sound(int16 door_index, sliding_door_sound_t sound_code);
+static void play_door_sound(int16 door_index, int16 sound_code);//sliding_door_sound_t sound_code);
 
 void update_doors()
 {
