@@ -440,14 +440,14 @@ void calculate_moving_lines(sliding_door_data *door)
 	line_data *v9 = &map_lines[door->line_indexes[1]];
 	
 	if( v8->clockwise_polygon_side_index == NONE )
-		door->field_22 = v8->counterclockwise_polygon_side_index;
+		door->side_indexes[0] = v8->counterclockwise_polygon_side_index;
 	else
-		door->field_22 = v8->clockwise_polygon_side_index;
+		door->side_indexes[0] = v8->clockwise_polygon_side_index;
 	
 	if( v9->clockwise_polygon_side_index == NONE )
-		door->field_24 = v9->counterclockwise_polygon_side_index;
+		door->side_indexes[1] = v9->counterclockwise_polygon_side_index;
 	else
-		door->field_24 = v9->clockwise_polygon_side_index;
+		door->side_indexes[1] = v9->clockwise_polygon_side_index;
 }
 
 /*
