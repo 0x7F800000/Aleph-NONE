@@ -108,6 +108,8 @@ static void close_door(int16 door_index);
 static void adjust_door_texture(sliding_door_data *door, int16 adjustment);
 static void play_door_sound(int16 door_index, int16 sound_code);//sliding_door_sound_t sound_code);
 
+int16 sliding_door_count = 0;
+
 void update_doors()
 {
 	//stub :C
@@ -117,6 +119,8 @@ void update_swinging_doors()
 {
 	//stub :C
 }
+
+
 
 #define		SignbitMul4(x)		(x86Emu::Signbit<int>(x) * 4)
 /*
