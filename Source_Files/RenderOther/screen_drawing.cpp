@@ -238,7 +238,7 @@ void _set_port_to_screen_window()
 {
 	assert(old_draw_surface == nullptr);
 	old_draw_surface	= draw_surface;
-	draw_surfac		= SDL_GetVideoSurface();
+	draw_surface		= SDL_GetVideoSurface();
 }
 
 void _set_port_to_gworld()
