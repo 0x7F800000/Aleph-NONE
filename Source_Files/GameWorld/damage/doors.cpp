@@ -40,7 +40,6 @@ DOORS.CPP
 std::vector<swinging_door_data> SwingingDoorList(MAX_SWINGING_DOORS);
 std::vector<sliding_door_data> SlidingDoorList(MAX_SLIDING_DOORS);
 
-#define		side_data	Side
 
 template<typename T1, typename T2> 
 void copyWorldPoint(T1 destination, T2 src)
@@ -732,7 +731,7 @@ static void adjust_door_texture(sliding_door_data *door, int16 adjustment)
 	auto side_index = door->side_indexes[ door->door_texture_side ];
 	
 	if ( side_index == NONE )
-		return
+		return;
 	side_data *side = &map_sides[side_index];
 
 	if ( side->type == 0 || side->type == 1 || side->type == 4 )
