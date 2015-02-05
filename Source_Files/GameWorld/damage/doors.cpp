@@ -243,8 +243,8 @@ static void find_center_of_door(swinging_door_data *door, world_point2d *p)
 		sbb eax, edx
 		sar eax, 2
 		mov [ebx+2], ax
-			
 	#endif
+
 	}
 #else
 	#error Need MSVC assembly to compile find_center_of_door
