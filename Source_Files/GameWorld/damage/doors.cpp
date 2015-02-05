@@ -173,12 +173,92 @@ static void find_center_of_door(swinging_door_data *door, world_point2d *p)
 431fc6:	pop ebx
 431fc7:	ret 
 */
+
+
+#ifdef __clang__
+	__asm
+	{
+	#ifdef __x86_64
+		mov rax, door
+		mov rbx, p
+		movsx ecx, word [rax+0xe]
+		movsx edx, word [rax+0x14]
+		movsx esi, word [rax+0x10]		
+		add edx, ecx
+		movsx ecx, word [rax+0x16]
+		add ecx, esi
+		movsx esi, word [rax+0x1a]
+		add edx, esi
+		movsx esi, word [rax+0x1c]
+		add ecx, esi
+		movsx esi, word [rax+0x20]
+		movsx eax, word [rax+0x22]
+		add edx, esi
+		add ecx, eax
+		mov eax, edx
+		
+		sar edx, 31
+		shl edx, 2
+		sbb eax, edx
+		sar eax, 2
+		mov edx, ecx
+		mov [rbx], ax
+		
+		mov eax, ecx
+		sar edx, 31
+		shl edx, 2
+		sbb eax, edx
+		sar eax, 2
+		mov [rbx+2], ax
+		
+	#else
+		mov eax, door
+		mov ebx, p
+		movsx ecx, word [eax+0xe]
+		movsx edx, word [eax+0x14]
+		movsx esi, word [eax+0x10]		
+		add edx, ecx
+		movsx ecx, word [eax+0x16]
+		add ecx, esi
+		movsx esi, word [eax+0x1a]
+		add edx, esi
+		movsx esi, word [eax+0x1c]
+		add ecx, esi
+		movsx esi, word [eax+0x20]
+		movsx eax, word [eax+0x22]
+		add edx, esi
+		add ecx, eax
+		mov eax, edx
+		
+		sar edx, 31
+		shl edx, 2
+		sbb eax, edx
+		sar eax, 2
+		mov edx, ecx
+		mov [ebx], ax
+		
+		mov eax, ecx
+		sar edx, 31
+		shl edx, 2
+		sbb eax, edx
+		sar eax, 2
+		mov [ebx+2], ax
+			
+	#endif
+	}
+#else
+	#error Need MSVC assembly to compile find_center_of_door
+	
+#endif
+
+#if 0
 	//might be necessary to use inline asm with this or emulate sbb somehow
 	const int v3 = door->p2.x + door->p0.x + door->p1.x;
 	const int v4 = door->p3.y + door->p2.y + door->p0.y + door->p1.y;
 	
 	p->x = (door->p3.x + v3 - SignbitMul4(door->p3.x + v3) + SignbitMul4(door->p3.x + v3)) * 4;
 	p->y = (v4 - ((SignbitMul4(v4) + SignbitMul4(v4)))) * 4;
+#endif
 }
 
 /*
