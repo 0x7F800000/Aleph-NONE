@@ -589,7 +589,7 @@ static void open_door(int16 door_index)
 	map_lines[ door->line_indexes[3] ].flags &= 0xBFFF; 
 	
 	adjust_endpoints(door_index);
-	play_door_sound(door_index, reinterpret_cast<sliding_door_sound_t>(0));
+	play_door_sound(door_index, 0);
 	
 	if ( door->flags & 2 )
 	{
@@ -609,7 +609,7 @@ static void close_door(int16 door_index)
 	
 	if( door_is_obstructed(door_index) )
 	{
-		play_door_sound(door_index, reinterpret_cast<sliding_door_sound_t>(5));
+		play_door_sound(door_index, 5);
 		door->abool = true;
 	}
 	else
@@ -617,7 +617,7 @@ static void close_door(int16 door_index)
 		map_lines[ door->line_indexes[0] ].flags |= 0x4000;
 		map_lines[ door->line_indexes[1] ].flags |= 0x4000;
 		adjust_endpoints(door_index);
-		play_door_sound(door_index, reinterpret_cast<sliding_door_sound_t>(2));
+		play_door_sound(door_index, 2);
 		door->abool = false;
 	}
 	if ( door->flags & 2 )
@@ -638,7 +638,7 @@ void player_touch_sliding_door(int16 unused, int16 door_index, bool change)
 	{
 		if( door->flags & 0x40 && door->other_flags & 2 )
 		{
-			play_door_sound(door_index, reinterpret_cast<sliding_door_sound_t>(6));
+			play_door_sound(door_index, 6);
 			return;
 		}
 		switch( door->state )
@@ -647,7 +647,7 @@ void player_touch_sliding_door(int16 unused, int16 door_index, bool change)
 
 			door->state = _sliding_door_is_active;
 			
-			play_door_sound(door_index, reinterpret_cast<sliding_door_sound_t>(4));
+			play_door_sound(door_index, 4);
 			if ( door->flags & 2 )
 			{
 				door->other_flags |= 1;
@@ -663,7 +663,7 @@ void player_touch_sliding_door(int16 unused, int16 door_index, bool change)
 			
 		case _sliding_door_is_active:
 			door->state = _sliding_door_is_open;
-			play_door_sound(door_index, reinterpret_cast<sliding_door_sound_t>(4));
+			play_door_sound(door_index, 4);
 			if ( door->flags & 2 )
 			{
 				door->other_flags |= 1;
@@ -685,7 +685,7 @@ void player_touch_sliding_door(int16 unused, int16 door_index, bool change)
 
 	}
 	else
-		play_door_sound(door_index, reinterpret_cast<sliding_door_sound_t>(6));
+		play_door_sound(door_index, 6);
 }
 
 bool try_and_change_tagged_sliding_door_states(int16 tag, bool state)
