@@ -125,7 +125,6 @@ struct sliding_door_data
 
 extern vector<swinging_door_data> SwingingDoorList;
 extern vector<sliding_door_data> SlidingDoorList;
-extern door_sound_data *door_sounds;
 
 #define		swinging_doors	(&SwingingDoorList[0])
 #define		sliding_doors	(&SlidingDoorList[0])
