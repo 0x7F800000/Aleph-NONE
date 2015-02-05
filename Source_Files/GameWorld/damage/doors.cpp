@@ -136,9 +136,46 @@ void update_swinging_doors()
 */
 static void find_center_of_door(swinging_door_data *door, world_point2d *p)
 {
-	
-	int v3 = door->p2.x + door->p0.x + door->p1.x;
-	int v4 = door->p3.y + door->p2.y + door->p0.y + door->p1.y;
+/*
+431f60:	push ebx
+431f61:	push ecx
+431f62:	push esi
+431f63:	mov ebx, edx
+431f65:	movsx ecx, word [eax+0xe]
+431f69:	movsx edx, word [eax+0x14]
+431f6d:	movsx esi, word [eax+0x10]
+431f71:	add edx, ecx
+431f73:	movsx ecx, word [eax+0x16]
+431f7f:	add ecx, esi
+431f81:	movsx esi, word [eax+0x1a]
+431f87:	add edx, esi
+431f89:	movsx esi, word [eax+0x1c]
+431f8f:	add ecx, esi
+431f91:	movsx esi, word [eax+0x20]
+431f95:	movsx eax, word [eax+0x22]
+431f9d:	add edx, esi
+431f9f:	add ecx, eax
+431fa1:	mov eax, edx
+431fa3:	sar edx, 0x1f
+431fa6:	shl edx, 0x2
+431fa9:	sbb eax, edx
+431fab:	sar eax, 0x2
+431fae:	mov edx, ecx
+431fb0:	mov [ebx], ax
+431fb3:	mov eax, ecx
+431fb5:	sar edx, 0x1f
+431fb8:	shl edx, 0x2
+431fbb:	sbb eax, edx
+431fbd:	sar eax, 0x2
+431fc0:	mov [ebx+0x2], ax
+431fc4:	pop esi
+431fc5:	pop ecx
+431fc6:	pop ebx
+431fc7:	ret 
+*/
+	//might be necessary to use inline asm with this or emulate sbb somehow
+	const int v3 = door->p2.x + door->p0.x + door->p1.x;
+	const int v4 = door->p3.y + door->p2.y + door->p0.y + door->p1.y;
 	
 	p->x = (door->p3.x + v3 - SignbitMul4(door->p3.x + v3) + SignbitMul4(door->p3.x + v3)) * 4;
 	p->y = (v4 - ((SignbitMul4(v4) + SignbitMul4(v4)))) * 4;
