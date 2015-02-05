@@ -33,6 +33,7 @@ DOORS.CPP
 
 #include "swinging_door_definitions.hpp"
 #include "doors.hpp"
+#include "door_sounds.hpp"
 
 #define		sameType(t1, t2)	(std::is_same<t1, t2>::value)
 #define		isPtr(t)		(std::is_pointer<t>::value)
