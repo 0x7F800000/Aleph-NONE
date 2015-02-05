@@ -737,7 +737,7 @@ static void adjust_door_texture(sliding_door_data *door, int16 adjustment)
 		side->primary_texture.x0 -= adjustment;
 }
 
-static void play_door_sound(int16 door_index, sliding_door_sound_t sound_code)
+static void play_door_sound(int16 door_index, int16 sound_code)
 {
 	sliding_door_data *door = &sliding_doors[door_index];
 	door_sound_data *sounds = &door_sounds[door->sound_index];
